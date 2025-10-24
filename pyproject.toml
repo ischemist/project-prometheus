@@ -1,7 +1,84 @@
 [project]
-name = "project-prometheus"
+name = "calcflow"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = []
+authors = [{ name = "Anton Morgunov", email = "anton@ischemist.com" }]
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/ischemist/project-prometheus"
+Issues = "https://github.com/ischemist/project-prometheus/issues"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[dependency-groups]
+dev = [
+    "prek>=0.2.11",
+    "pytest>=8.4.2",
+    "ruff>=0.14.2",
+    "ty>=0.0.1a24",
+]
+
+[tool.ty.src]
+exclude = [
+"tests",
+"scripts"
+]
+
+
+[tool.ruff]
+line-length = 120
+lint.select = [
+    "E",   # pycodestyle
+    "F",   # Pyflakes
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "I",   # isort
+]
+lint.ignore = ["E501"]
+
+[tool.coverage.run]
+omit = [
+    "*/analysis/*.py",
+    "*/constants/*",
+    "*/__init__.py",
+    "*/calcflow/logging.py",
+    "*/calcflow/exceptions.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "pass",
+    "logger\\."
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: fast, isolated, deterministic logic tests.",
+    "contract: fast, cpu-based tests for module i/o contracts (shapes/dtypes).",
+    "integration: slow, cpu-based tests for inter-module interactions.",
+    "regression: slow, numerically-sensitive tests against a golden baseline.",
+]
