@@ -2,26 +2,11 @@ import re
 from functools import cached_property
 from pathlib import Path
 
-from pydantic import BaseModel, computed_field, field_validator
+from pydantic import BaseModel, computed_field
 
 from calcflow.common.exceptions import ParsingError
+from calcflow.common.models import Atom
 from calcflow.constants.ptable import ELEMENT_DATA
-
-
-class Atom(BaseModel, frozen=True):
-    """pydantic model for a single atom."""
-
-    symbol: str
-    x: float
-    y: float
-    z: float
-
-    @field_validator("symbol")
-    @classmethod
-    def validate_symbol(cls, v: str) -> str:
-        if v.upper() not in ELEMENT_DATA:
-            raise ValueError(f"unknown element symbol: '{v}'")
-        return v.capitalize()
 
 
 def _parse_energy_from_comment(comment: str) -> float | None:
