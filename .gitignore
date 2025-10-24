@@ -13,3 +13,5 @@ wheels/
 _prompts/
 collectors/
 docs/
+
+.coverage

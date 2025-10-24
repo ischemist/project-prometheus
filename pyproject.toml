@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "pydantic>=2.12.3",
+]
 authors = [{ name = "Anton Morgunov", email = "anton@ischemist.com" }]
 license = { text = "MIT" }
 classifiers = [
@@ -31,6 +33,7 @@ package-dir = { "" = "src" }
 dev = [
     "prek>=0.2.11",
     "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
     "ruff>=0.14.2",
     "ty>=0.0.1a24",
 ]
@@ -59,7 +62,7 @@ omit = [
     "*/analysis/*.py",
     "*/constants/*",
     "*/__init__.py",
-    "*/calcflow/logging.py",
+    "*/calcflow/utils.py",
     "*/calcflow/exceptions.py",
 ]
 
