@@ -8,8 +8,7 @@ from calcflow.common.models import CalculationResult
 from calcflow.io.core import BlockParser, core_parse
 from calcflow.io.orca.blocks.charges import ChargesParser
 from calcflow.io.orca.blocks.dipole import DipoleParser
-
-# from calcflow.io.orca.blocks.dispersion import DispersionParser
+from calcflow.io.orca.blocks.dispersion import DispersionParser
 from calcflow.io.orca.blocks.finalization import FinalEnergyParser, TerminationParser
 from calcflow.io.orca.blocks.geometry import GeometryParser
 from calcflow.io.orca.blocks.orbitals import OrbitalsParser
@@ -22,7 +21,7 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     OrbitalsParser(),
     ChargesParser(),
     DipoleParser(),
-    # DispersionParser(),
+    DispersionParser(),
     FinalEnergyParser(),
     TerminationParser(),
 ]

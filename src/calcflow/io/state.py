@@ -13,6 +13,7 @@ from calcflow.common.models import (
     Atom,
     AtomicCharges,
     CalculationMetadata,
+    DispersionCorrection,
     MultipoleResults,
     OrbitalsSet,
     ScfResults,
@@ -46,6 +47,7 @@ class ParseState(BaseModel):
     multipole: MultipoleResults | None = None
     smd: SmdResults | None = None
     tddft: TddftResults | None = None
+    dispersion: DispersionCorrection | None = None
 
     # --- Parser Control Flags ---
     parsed_geometry: bool = False

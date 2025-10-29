@@ -143,6 +143,23 @@ class DipoleMoment(BaseModel):
     magnitude: float
 
 
+class DispersionCorrection(BaseModel):
+    """Stores dispersion correction results from DFT-D3/D4 calculations."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    method: str  # e.g., "DFTD3", "DFTD4"
+    functional: str | None = None  # e.g., "omegaB97X-D3"
+    damping: str | None = None  # e.g., "zero damping"
+    molecular_c6_au: float | None = None  # Molecular C6 coefficient in au
+    parameters: Mapping[str, float] | None = None  # Scaling and damping parameters
+    e_disp_kcal: float | None = None  # Total dispersion energy in kcal/mol
+    e_disp_au: float  # Total dispersion energy in Hartree (primary value)
+    e6_kcal: float | None = None  # E6 component in kcal/mol
+    e8_kcal: float | None = None  # E8 component in kcal/mol
+    e8_percentage: float | None = None  # Percentage contribution of E8
+
+
 class QuadrupoleMoment(BaseModel):
     """Stores Cartesian quadrupole moments in Debye-Ang."""
 
@@ -291,6 +308,7 @@ class CalculationResult(BaseModel):
     multipole: MultipoleResults | None = None
     smd: SmdResults | None = None
     tddft: TddftResults | None = None
+    dispersion: DispersionCorrection | None = None
 
     # --- Program Specific Data ---
     # A catch-all for data that is too program-specific to unify. Use sparingly.
