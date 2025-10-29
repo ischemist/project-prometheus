@@ -48,7 +48,7 @@ QCHEM_PATTERNS = [
         block_type="smd_summary",
         description="SMD non-electrostatic energy component",
         versioned_patterns=[
-            (re.compile(rf"^\s*free energy of cavitation.*=\s*{FLOAT}\s*kcal/mol"), V5_4, lambda m: float(m.group(1))),
+            (re.compile(rf"^\s*free energy\s+{FLOAT}\s*kcal/mol"), V5_4, lambda m: float(m.group(1))),
             (re.compile(rf"^\s*G_CDS\s*=\s*{FLOAT}\s*kcal/mol"), V6_0, lambda m: float(m.group(1))),
         ],
     ),

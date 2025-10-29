@@ -10,7 +10,11 @@ from calcflow.utils import logger
 
 # --- Non-versioned patterns specific to the SCF block's structure ---
 SCF_START_PAT = re.compile(r"^\s*General SCF calculation program by")
-SCF_ITER_PAT = re.compile(r"^\s*(\d+)\s+(-?\d+\.\d+)\s+([\d\.eE+-]+)")
+SCF_ITER_HEADER_PAT = re.compile(r"^\s*Cycle\s+Energy\s+DIIS error")
+# Pattern for iteration lines: must have 3+ whitespace-separated fields, where first is small int
+# Energy field is a float (with optional sign), and last field is scientific notation
+# More restrictive: iteration is 1-3 digits, energy has decimal point, diis_error has 'e' or 'E'
+SCF_ITER_PAT = re.compile(r"^\s*(\d{1,3})\s+(-?\d+\.\d+)\s+([\d\.eE+-]+)")
 SCF_CONVERGENCE_PAT = re.compile(r"Convergence criterion met")
 SMD_SUMMARY_START_PAT = re.compile(r"^\s*Summary of SMD free energies:")
 # Heuristic end-of-block markers
@@ -33,6 +37,7 @@ class ScfParser:
         iterations: list[ScfIteration] = []
         converged = False
         in_smd_summary = False
+        in_iter_block = False  # Track whether we've seen the iteration header
         scf_energy_from_iter_block: float | None = None
 
         # Temp storage for version-parsed fields before model creation
@@ -51,22 +56,38 @@ class ScfParser:
                 in_smd_summary = True
                 continue
 
-            # --- 3. Parse Iteration Data ---
-            iter_match = SCF_ITER_PAT.search(line)
-            if iter_match:
-                try:
-                    iteration = int(iter_match.group(1))
-                    energy = float(iter_match.group(2))
-                    diis_error = float(iter_match.group(3))
-                    iterations.append(ScfIteration(iteration=iteration, energy=energy, diis_error=diis_error))
-                    scf_energy_from_iter_block = energy
-                    if SCF_CONVERGENCE_PAT.search(line):
-                        converged = True
-                except (ValueError, IndexError):
-                    state.parsing_warnings.append(f"Could not parse SCF iteration line: {line.strip()}")
+            # --- 3. Detect SCF iteration block header ---
+            if SCF_ITER_HEADER_PAT.search(line):
+                in_iter_block = True
+                logger.debug("Detected SCF iteration block header")
                 continue
 
-            # --- 4. Process Version-Dependent Patterns ---
+            # --- 4. Parse Iteration Data (only after seeing header) ---
+            if in_iter_block:
+                iter_match = SCF_ITER_PAT.search(line)
+                if iter_match:
+                    try:
+                        iteration = int(iter_match.group(1))
+                        energy = float(iter_match.group(2))
+                        diis_error = float(iter_match.group(3))
+                        iterations.append(ScfIteration(iteration=iteration, energy=energy, diis_error=diis_error))
+                        scf_energy_from_iter_block = energy
+                        if SCF_CONVERGENCE_PAT.search(line):
+                            converged = True
+                    except (ValueError, IndexError):
+                        state.parsing_warnings.append(f"Could not parse SCF iteration line: {line.strip()}")
+                    continue
+                elif line.strip().startswith("-------"):
+                    # Separator line between header and iterations
+                    continue
+                elif not line.strip():
+                    # Empty line
+                    continue
+                else:
+                    # End of iteration block
+                    in_iter_block = False
+
+            # --- 5. Process Version-Dependent Patterns ---
             self._process_versioned_patterns(line, state, in_smd_summary, smd_data, final_energy_data)
 
         # --- 5. Finalize and Store Results ---
@@ -106,6 +127,10 @@ class ScfParser:
     ) -> None:
         """
         Helper to iterate through versioned patterns and populate storage dicts.
+
+        For SMD patterns:
+        - Q-Chem 6.2+: Only match within "Summary of SMD free energies:" block
+        - Q-Chem 5.4: Parse SMD lines anywhere (no dedicated summary block header)
         """
         if state.metadata.software_version is None:
             # This should not happen if MetadataParser runs first, but is a safeguard.
@@ -114,9 +139,13 @@ class ScfParser:
         qchem_version = VersionSpec.from_str(state.metadata.software_version)
 
         for p_def in QCHEM_PATTERNS:
-            # Context filtering
-            if p_def.block_type == "smd_summary" and not in_smd_block:
-                continue
+            # Context filtering for SMD patterns
+            # Q-Chem 6.2+ requires "Summary of SMD" header, but 5.4 has inline SMD lines
+            if p_def.block_type == "smd_summary":  # noqa: SIM102
+                # For 6.2+, only parse SMD within summary block
+                if qchem_version >= VersionSpec.from_str("6.0.0") and not in_smd_block:
+                    continue
+                # For 5.4, parse SMD patterns anywhere (no header in 5.4 format)
 
             # Get version-appropriate pattern and match
             versioned_pattern = p_def.get_matching_pattern(qchem_version)
