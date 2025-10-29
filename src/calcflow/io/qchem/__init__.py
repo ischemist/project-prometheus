@@ -8,7 +8,7 @@ from calcflow.common.models import CalculationResult
 from calcflow.io.core import BlockParser, core_parse
 
 # from calcflow.io.qchem.blocks.finalization import TerminationParser
-# from calcflow.io.qchem.blocks.geometry import GeometryParser
+from calcflow.io.qchem.blocks.geometry import GeometryParser
 from calcflow.io.qchem.blocks.metadata import MetadataParser
 
 # from calcflow.io.qchem.blocks.scf import ScfParser
@@ -18,7 +18,7 @@ from calcflow.io.qchem.blocks.metadata import MetadataParser
 PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     # RemBlockParser(),
     MetadataParser(),
-    # GeometryParser(),
+    GeometryParser(),
     # ScfParser(),
     # TerminationParser(),
 ]
