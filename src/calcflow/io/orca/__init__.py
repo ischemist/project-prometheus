@@ -6,8 +6,8 @@ from collections.abc import Sequence
 
 from calcflow.common.models import CalculationResult
 from calcflow.io.core import BlockParser, core_parse
+from calcflow.io.orca.blocks.charges import ChargesParser
 
-# from calcflow.io.orca.blocks.charges import LOEWDIN_CHARGES_START_PAT, MULLIKEN_CHARGES_START_PAT, ChargesParser
 # from calcflow.io.orca.blocks.dipole import DipoleParser
 # from calcflow.io.orca.blocks.dispersion import DispersionParser
 from calcflow.io.orca.blocks.finalization import FinalEnergyParser, TerminationParser
@@ -20,8 +20,7 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     GeometryParser(),
     ScfParser(),
     OrbitalsParser(),
-    # ChargesParser("Mulliken", MULLIKEN_CHARGES_START_PAT),
-    # ChargesParser("Loewdin", LOEWDIN_CHARGES_START_PAT),
+    ChargesParser(),
     # DipoleParser(),
     # DispersionParser(),
     FinalEnergyParser(),

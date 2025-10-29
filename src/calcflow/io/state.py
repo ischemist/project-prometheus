@@ -53,6 +53,7 @@ class ParseState(BaseModel):
     parsed_geometry: bool = False
     parsed_scf: bool = False
     parsed_orbitals: bool = False
+    parsed_charges: bool = False
     parsed_dipole: bool = False
     parsed_dispersion: bool = False
     # Add more as needed for other parsers...
