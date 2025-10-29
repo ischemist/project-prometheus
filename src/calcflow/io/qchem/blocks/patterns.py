@@ -36,7 +36,7 @@ QCHEM_PATTERNS = [
     ),
     # --- SMD Summary Patterns ---
     PatternDefinition(
-        field_name="smd_g_pcm_kcal_mol",
+        field_name="g_pcm_kcal_mol",
         block_type="smd_summary",
         description="SMD polarization energy component",
         versioned_patterns=[
@@ -44,7 +44,7 @@ QCHEM_PATTERNS = [
         ],
     ),
     PatternDefinition(
-        field_name="smd_g_cds_kcal_mol",
+        field_name="g_cds_kcal_mol",
         block_type="smd_summary",
         description="SMD non-electrostatic energy component",
         versioned_patterns=[
@@ -53,7 +53,7 @@ QCHEM_PATTERNS = [
         ],
     ),
     PatternDefinition(
-        field_name="smd_g_enp_au",
+        field_name="g_enp_au",
         block_type="smd_summary",
         description="SCF energy in solvent (E_SCF + G_PCM)",
         versioned_patterns=[
@@ -62,7 +62,7 @@ QCHEM_PATTERNS = [
         ],
     ),
     PatternDefinition(
-        field_name="smd_g_tot_au",
+        field_name="g_tot_au",
         block_type="smd_summary",
         description="Total free energy in solution (G_ENP + G_CDS)",
         versioned_patterns=[

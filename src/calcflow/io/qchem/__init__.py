@@ -10,8 +10,7 @@ from calcflow.io.core import BlockParser, core_parse
 # from calcflow.io.qchem.blocks.finalization import TerminationParser
 from calcflow.io.qchem.blocks.geometry import GeometryParser
 from calcflow.io.qchem.blocks.metadata import MetadataParser
-
-# from calcflow.io.qchem.blocks.scf import ScfParser
+from calcflow.io.qchem.blocks.scf import ScfParser
 
 # The ordered registry of parsers for a standard QChem Single Point calculation.
 # Order can be important. Metadata/REM should usually come first.
@@ -19,7 +18,7 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     # RemBlockParser(),
     MetadataParser(),
     GeometryParser(),
-    # ScfParser(),
+    ScfParser(),
     # TerminationParser(),
 ]
 
