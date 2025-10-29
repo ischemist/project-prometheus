@@ -50,6 +50,7 @@ class ParseState(BaseModel):
     dispersion: DispersionCorrection | None = None
 
     # --- Parser Control Flags ---
+    parsed_metadata: bool = False
     parsed_geometry: bool = False
     parsed_scf: bool = False
     parsed_orbitals: bool = False

@@ -274,6 +274,7 @@ class CalculationMetadata(BaseModel):
     program_version: str | None = None
     n_cores: int | None = None
     run_date: str | None = None
+    host: str | None = None
     calculation_method: str | None = None
     basis_set: str | None = None
     solvent_method: str | None = None

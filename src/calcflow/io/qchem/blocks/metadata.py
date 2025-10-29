@@ -6,16 +6,17 @@ from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
 # --- Regex Patterns ---
-QCHEM_VERSION_PAT = re.compile(r"A\. Remainder of .* Q-Chem (\d+\.\d+(\.\d+)?), Q-Chem, Inc\.")
+# Matches: " Q-Chem 6.2, Q-Chem, Inc., Pleasanton, CA (2024)"
+QCHEM_VERSION_PAT = re.compile(r"Q-Chem (\d+\.\d+(\.\d+)?), Q-Chem, Inc\.")
 HOST_PAT = re.compile(r"^\s*Host:\s*(\S+)")
 RUN_DATE_PAT = re.compile(r"^\s*Q-Chem begins on\s*(.*)")
 
 
 class MetadataParser:
     """
-    Parses general metadata lines like Q-Chem version, host, and run date.
-    This parser is designed to be checked on many lines, but only act once for
-    each piece of metadata it finds.
+    Parses Q-Chem program version from metadata lines.
+    The primary goal is to extract the Q-Chem version, which is required by other parsers.
+    Once the version is found, parsing is complete.
     """
 
     _patterns: dict[str, re.Pattern] = {
@@ -26,23 +27,28 @@ class MetadataParser:
 
     def matches(self, line: str, state: ParseState) -> bool:
         """
-        Checks if the line matches any metadata pattern that hasn't been parsed yet.
+        Checks if the line matches any metadata pattern and version hasn't been parsed yet.
+        Once version is parsed, we're done - return False to stop checking.
         """
-        # Check if all metadata is already found to short-circuit
-        if all([state.metadata.program_version, state.metadata.run_date]):
+        # Early exit: once we have the version, we're done
+        if state.metadata.program_version is not None:
             return False
 
-        for key, pattern in self._patterns.items():
-            if getattr(state.metadata, key) is None and pattern.search(line):
+        # Check if any metadata pattern matches
+        for pattern in self._patterns.values():
+            if pattern.search(line):
                 return True
         return False
 
     def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
         """
-        Parses the matched metadata line and updates state. Consumes only the current line.
+        Parses metadata from the matched line. Consumes only the current line.
+
+        After extracting the Q-Chem version, sets the completion flag.
+        Other fields (host, run_date) are extracted as a bonus but are not required.
         """
         for key, pattern in self._patterns.items():
-            # Check flag again to be safe
+            # Skip if this field is already populated
             if getattr(state.metadata, key) is not None:
                 continue
 
@@ -50,14 +56,17 @@ class MetadataParser:
             if match:
                 value = match.group(1).strip()
 
-                # Special handling for version
+                # Special handling for version: normalize using VersionSpec
                 if key == "program_version":
-                    # Use model_copy to create a mutable copy, update, and reassign
-                    new_metadata = state.metadata.model_copy(update={key: VersionSpec.from_str(value).version})
+                    normalized_version = VersionSpec.from_str(value).version
+                    new_metadata = state.metadata.model_copy(update={key: normalized_version})
+                    state.metadata = new_metadata
+                    # Once we have the version, we're done
+                    state.parsed_metadata = True
+                    logger.debug(f"Parsed Q-Chem version: {normalized_version}")
+                    return
                 else:
+                    # Extract other fields as bonus if found
                     new_metadata = state.metadata.model_copy(update={key: value})
-
-                state.metadata = new_metadata
-                logger.debug(f"Parsed metadata - {key}: {getattr(state.metadata, key)}")
-                # We only parse one piece of metadata per line, so we can stop.
-                return
+                    state.metadata = new_metadata
+                    logger.debug(f"Parsed metadata - {key}: {value}")

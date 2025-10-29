@@ -34,6 +34,13 @@ class VersionSpec:
         except (ValueError, IndexError) as e:
             raise ValueError(f"Invalid version string format: '{version_str}'") from e
 
+    @property
+    def version(self) -> str:
+        """Return the version as a normalized string (omitting patch if zero)."""
+        if self.patch == 0:
+            return f"{self.major}.{self.minor}"
+        return f"{self.major}.{self.minor}.{self.patch}"
+
 
 @dataclass(frozen=True)
 class VersionedPattern:
