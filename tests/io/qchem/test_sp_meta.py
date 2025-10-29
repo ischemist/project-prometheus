@@ -1,15 +1,16 @@
 """
 Tests for the QChem metadata block parser.
 
-These tests verify that the metadata parser correctly extracts the Q-Chem program version,
-which is the critical requirement. Version parsing is essential because other parsers
-(like ScfParser) depend on knowing the Q-Chem version for version-specific pattern matching.
-
-The parser also optionally extracts host and run_date as secondary metadata.
+These tests verify that the metadata parser correctly extracts the Q-Chem software version,
+which is critical because other parsers (like ScfParser) depend on it for version-specific
+pattern matching.
 """
 
 import pytest
 
+from calcflow.common.models import CalculationMetadata
+from calcflow.common.patterns import VersionSpec
+from calcflow.io.qchem.blocks.metadata import MetadataParser
 from calcflow.io.state import ParseState
 
 
@@ -18,7 +19,6 @@ def test_metadata_parser_matches_version_line():
     """
     Unit test: verify MetadataParser.matches() recognizes version lines.
     """
-    from calcflow.io.qchem.blocks.metadata import MetadataParser
 
     parser = MetadataParser()
     state = ParseState(raw_output="")
@@ -29,41 +29,10 @@ def test_metadata_parser_matches_version_line():
 
 
 @pytest.mark.unit
-def test_metadata_parser_matches_run_date_line():
-    """
-    Unit test: verify MetadataParser.matches() recognizes run date lines.
-    """
-    from calcflow.io.qchem.blocks.metadata import MetadataParser
-
-    parser = MetadataParser()
-    state = ParseState(raw_output="")
-
-    # Should match "Q-Chem begins" line
-    date_line = "Q-Chem begins on Sun May  4 14:52:50 2025"
-    assert parser.matches(date_line, state) is True
-
-
-@pytest.mark.unit
-def test_metadata_parser_matches_host_line():
-    """
-    Unit test: verify MetadataParser.matches() recognizes host lines.
-    """
-    from calcflow.io.qchem.blocks.metadata import MetadataParser
-
-    parser = MetadataParser()
-    state = ParseState(raw_output="")
-
-    # Should match "Host:" line
-    host_line = "Host: login30"
-    assert parser.matches(host_line, state) is True
-
-
-@pytest.mark.unit
 def test_metadata_parser_does_not_match_non_metadata():
     """
     Unit test: verify MetadataParser.matches() ignores non-metadata lines.
     """
-    from calcflow.io.qchem.blocks.metadata import MetadataParser
 
     parser = MetadataParser()
     state = ParseState(raw_output="")
@@ -79,14 +48,12 @@ def test_metadata_parser_stops_after_version():
     Unit test: verify MetadataParser.matches() returns False once version is parsed.
     Once we have the version, we're done - no need to check further lines.
     """
-    from calcflow.common.models import CalculationMetadata
-    from calcflow.io.qchem.blocks.metadata import MetadataParser
 
     parser = MetadataParser()
     # Create a state with version already populated
     metadata = CalculationMetadata(
-        program_name="QChem",
-        program_version="6.2",
+        software_name="QChem",
+        software_version="6.2",
     )
     state = ParseState(raw_output="", metadata=metadata)
 
@@ -101,7 +68,6 @@ def test_version_spec_normalization():
     Unit test: verify that VersionSpec.version property normalizes versions correctly.
     Versions with patch=0 should omit the patch number (e.g., "6.2" not "6.2.0").
     """
-    from calcflow.common.patterns import VersionSpec
 
     v1 = VersionSpec.from_str("6.2")
     assert v1.version == "6.2"

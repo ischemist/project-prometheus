@@ -31,7 +31,7 @@ class ParseState(BaseModel):
 
     # --- Raw Data & Metadata ---
     raw_output: str
-    metadata: CalculationMetadata = Field(default_factory=lambda: CalculationMetadata(program_name="unknown"))
+    metadata: CalculationMetadata = Field(default_factory=lambda: CalculationMetadata(software_name="unknown"))
 
     # --- Core Results ---
     termination_status: Literal["NORMAL", "ERROR", "UNKNOWN"] = "UNKNOWN"

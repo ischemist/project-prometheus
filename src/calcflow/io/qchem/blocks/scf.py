@@ -107,11 +107,11 @@ class ScfParser:
         """
         Helper to iterate through versioned patterns and populate storage dicts.
         """
-        if state.metadata.program_version is None:
+        if state.metadata.software_version is None:
             # This should not happen if MetadataParser runs first, but is a safeguard.
             raise InternalCodeError("Cannot process versioned patterns: QChem version not yet parsed.")
 
-        qchem_version = VersionSpec.from_str(state.metadata.program_version)
+        qchem_version = VersionSpec.from_str(state.metadata.software_version)
 
         for p_def in QCHEM_PATTERNS:
             # Context filtering

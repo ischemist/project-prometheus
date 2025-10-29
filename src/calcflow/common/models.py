@@ -270,15 +270,8 @@ class CalculationMetadata(BaseModel):
 
     model_config = IMMUTABLE_MODEL_CONFIG
 
-    program_name: str
-    program_version: str | None = None
-    n_cores: int | None = None
-    run_date: str | None = None
-    host: str | None = None
-    calculation_method: str | None = None
-    basis_set: str | None = None
-    solvent_method: str | None = None
-    solvent_name: str | None = None
+    software_name: str
+    software_version: str | None = None
 
 
 class CalculationResult(BaseModel):
