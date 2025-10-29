@@ -185,113 +185,51 @@ def test_final_geometry_coordinates_are_floats(parsed_qchem_h2o_sp_data: Calcula
 # REGRESSION TESTS: Exact coordinate values
 # =============================================================================
 
+INPUT_COORDS = [
+    (0, "H1", 1.36499, 1.69385, -0.19748),
+    (1, "O", 2.32877, 1.56294, -0.04168),
+    (2, "H2", 2.70244, 1.31157, -0.91665),
+]
 
-@pytest.mark.regression
-def test_input_geometry_h1_x_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify first hydrogen X coordinate."""
-    assert parsed_qchem_h2o_sp_data.input_geometry[0].x == pytest.approx(1.36499, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_input_geometry_h1_y_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify first hydrogen Y coordinate."""
-    assert parsed_qchem_h2o_sp_data.input_geometry[0].y == pytest.approx(1.69385, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_input_geometry_h1_z_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify first hydrogen Z coordinate."""
-    assert parsed_qchem_h2o_sp_data.input_geometry[0].z == pytest.approx(-0.19748, abs=COORD_TOL)
+FINAL_COORDS = [
+    (0, "H1", 1.36499, 1.69385, -0.19748),
+    (1, "O", 2.32877, 1.56294, -0.04168),
+    (2, "H2", 2.70244, 1.31157, -0.91665),
+]
 
 
 @pytest.mark.regression
-def test_input_geometry_oxygen_x_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify oxygen X coordinate."""
-    assert parsed_qchem_h2o_sp_data.input_geometry[1].x == pytest.approx(2.32877, abs=COORD_TOL)
+@pytest.mark.parametrize("atom_idx,atom_name,expected_x,expected_y,expected_z", INPUT_COORDS)
+def test_input_geometry_coordinates(
+    parsed_qchem_h2o_sp_data: CalculationResult,
+    atom_idx: int,
+    atom_name: str,
+    expected_x: float,
+    expected_y: float,
+    expected_z: float,
+):
+    """Regression test: verify input geometry coordinates for all atoms."""
+    atom = parsed_qchem_h2o_sp_data.input_geometry[atom_idx]
+    assert atom.x == pytest.approx(expected_x, abs=COORD_TOL)
+    assert atom.y == pytest.approx(expected_y, abs=COORD_TOL)
+    assert atom.z == pytest.approx(expected_z, abs=COORD_TOL)
 
 
 @pytest.mark.regression
-def test_input_geometry_oxygen_y_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify oxygen Y coordinate."""
-    assert parsed_qchem_h2o_sp_data.input_geometry[1].y == pytest.approx(1.56294, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_input_geometry_oxygen_z_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify oxygen Z coordinate."""
-    assert parsed_qchem_h2o_sp_data.input_geometry[1].z == pytest.approx(-0.04168, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_input_geometry_h2_x_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify second hydrogen X coordinate."""
-    assert parsed_qchem_h2o_sp_data.input_geometry[2].x == pytest.approx(2.70244, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_input_geometry_h2_y_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify second hydrogen Y coordinate."""
-    assert parsed_qchem_h2o_sp_data.input_geometry[2].y == pytest.approx(1.31157, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_input_geometry_h2_z_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify second hydrogen Z coordinate."""
-    assert parsed_qchem_h2o_sp_data.input_geometry[2].z == pytest.approx(-0.91665, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_final_geometry_h1_x_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify first hydrogen X coordinate in final geometry."""
-    assert parsed_qchem_h2o_sp_data.final_geometry[0].x == pytest.approx(1.36499, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_final_geometry_h1_y_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify first hydrogen Y coordinate in final geometry."""
-    assert parsed_qchem_h2o_sp_data.final_geometry[0].y == pytest.approx(1.69385, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_final_geometry_h1_z_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify first hydrogen Z coordinate in final geometry."""
-    assert parsed_qchem_h2o_sp_data.final_geometry[0].z == pytest.approx(-0.19748, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_final_geometry_oxygen_x_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify oxygen X coordinate in final geometry."""
-    assert parsed_qchem_h2o_sp_data.final_geometry[1].x == pytest.approx(2.32877, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_final_geometry_oxygen_y_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify oxygen Y coordinate in final geometry."""
-    assert parsed_qchem_h2o_sp_data.final_geometry[1].y == pytest.approx(1.56294, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_final_geometry_oxygen_z_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify oxygen Z coordinate in final geometry."""
-    assert parsed_qchem_h2o_sp_data.final_geometry[1].z == pytest.approx(-0.04168, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_final_geometry_h2_x_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify second hydrogen X coordinate in final geometry."""
-    assert parsed_qchem_h2o_sp_data.final_geometry[2].x == pytest.approx(2.70244, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_final_geometry_h2_y_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify second hydrogen Y coordinate in final geometry."""
-    assert parsed_qchem_h2o_sp_data.final_geometry[2].y == pytest.approx(1.31157, abs=COORD_TOL)
-
-
-@pytest.mark.regression
-def test_final_geometry_h2_z_coordinate(parsed_qchem_h2o_sp_data: CalculationResult):
-    """Regression test: verify second hydrogen Z coordinate in final geometry."""
-    assert parsed_qchem_h2o_sp_data.final_geometry[2].z == pytest.approx(-0.91665, abs=COORD_TOL)
+@pytest.mark.parametrize("atom_idx,atom_name,expected_x,expected_y,expected_z", FINAL_COORDS)
+def test_final_geometry_coordinates(
+    parsed_qchem_h2o_sp_data: CalculationResult,
+    atom_idx: int,
+    atom_name: str,
+    expected_x: float,
+    expected_y: float,
+    expected_z: float,
+):
+    """Regression test: verify final geometry coordinates for all atoms."""
+    atom = parsed_qchem_h2o_sp_data.final_geometry[atom_idx]
+    assert atom.x == pytest.approx(expected_x, abs=COORD_TOL)
+    assert atom.y == pytest.approx(expected_y, abs=COORD_TOL)
+    assert atom.z == pytest.approx(expected_z, abs=COORD_TOL)
 
 
 # =============================================================================
