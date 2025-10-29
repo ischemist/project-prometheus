@@ -12,15 +12,14 @@ from calcflow.io.core import BlockParser, core_parse
 # from calcflow.io.orca.blocks.dispersion import DispersionParser
 from calcflow.io.orca.blocks.finalization import FinalEnergyParser, TerminationParser
 from calcflow.io.orca.blocks.geometry import GeometryParser
-
-# from calcflow.io.orca.blocks.orbitals import OrbitalsParser
+from calcflow.io.orca.blocks.orbitals import OrbitalsParser
 from calcflow.io.orca.blocks.scf import ScfParser
 
 # The ordered registry of parsers for a standard ORCA Single Point calculation.
 PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     GeometryParser(),
     ScfParser(),
-    # OrbitalsParser(),
+    OrbitalsParser(),
     # ChargesParser("Mulliken", MULLIKEN_CHARGES_START_PAT),
     # ChargesParser("Loewdin", LOEWDIN_CHARGES_START_PAT),
     # DipoleParser(),

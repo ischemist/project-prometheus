@@ -62,6 +62,7 @@ omit = [
     "*/analysis/*.py",
     "*/constants/*",
     "*/__init__.py",
+    "*/calcflow/common/types.py",
     "*/calcflow/utils.py",
     "*/calcflow/exceptions.py",
 ]
