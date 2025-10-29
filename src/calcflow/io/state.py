@@ -13,7 +13,6 @@ from calcflow.common.models import (
     Atom,
     AtomicCharges,
     CalculationMetadata,
-    DipoleMoment,
     MultipoleResults,
     OrbitalsSet,
     ScfResults,
@@ -45,7 +44,6 @@ class ParseState(BaseModel):
     orbitals: OrbitalsSet | None = None
     atomic_charges: list[AtomicCharges] = Field(default_factory=list)
     multipole: MultipoleResults | None = None
-    dipole_moment: DipoleMoment | None = None  # Specific for ORCA's simpler output
     smd: SmdResults | None = None
     tddft: TddftResults | None = None
 
