@@ -11,6 +11,7 @@ from calcflow.io.core import BlockParser, core_parse
 from calcflow.io.qchem.blocks.charges import ChargesParser
 from calcflow.io.qchem.blocks.geometry import GeometryParser
 from calcflow.io.qchem.blocks.metadata import MetadataParser
+from calcflow.io.qchem.blocks.multipole import MultipoleParser
 from calcflow.io.qchem.blocks.orbitals import OrbitalsParser
 from calcflow.io.qchem.blocks.scf import ScfParser
 
@@ -23,6 +24,7 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     ScfParser(),
     ChargesParser(),
     OrbitalsParser(),
+    MultipoleParser(),
     # TerminationParser(),
 ]
 

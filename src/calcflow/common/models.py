@@ -173,14 +173,55 @@ class QuadrupoleMoment(BaseModel):
     zz: float
 
 
+class OctopoleMoment(BaseModel):
+    """Stores Cartesian octopole moments in Debye-Ang^2."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    xxx: float
+    xxy: float
+    xyy: float
+    yyy: float
+    xxz: float
+    xyz: float
+    yyz: float
+    xzz: float
+    yzz: float
+    zzz: float
+
+
+class HexadecapoleMoment(BaseModel):
+    """Stores Cartesian hexadecapole moments in Debye-Ang^3."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    xxxx: float
+    xxxy: float
+    xxyy: float
+    xyyy: float
+    yyyy: float
+    xxxz: float
+    xxyz: float
+    xyyz: float
+    yyyz: float
+    xxzz: float
+    xyzz: float
+    yyzz: float
+    xzzz: float
+    yzzz: float
+    zzzz: float
+
+
 class MultipoleResults(BaseModel):
     """Container for various electric multipole moments."""
 
     model_config = IMMUTABLE_MODEL_CONFIG
 
+    charge: float | None = None  # Total charge in ESU x 10^10
     dipole: DipoleMoment | None = None
     quadrupole: QuadrupoleMoment | None = None
-    # Add Octopole, Hexadecapole if needed
+    octopole: OctopoleMoment | None = None
+    hexadecapole: HexadecapoleMoment | None = None
 
 
 class SmdResults(BaseModel):
