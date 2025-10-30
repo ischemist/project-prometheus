@@ -18,15 +18,35 @@ from calcflow.common.models import (
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
-# Regex pattern for identifying the multipole block header
+# Regex patterns
 MULTIPOLE_START_PAT = re.compile(r"Cartesian Multipole Moments")
-
-# End marker for the multipole block
 MULTIPOLE_END_PAT = re.compile(r"^\s*-+\s*$")
-
-# Component patterns
 CHARGE_PAT = re.compile(r"^\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*$")
 COMPONENT_PAT = re.compile(r"([A-Za-z]+)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
+FLOAT_PAT = r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)"
+
+# Expected component keys for each multipole type
+MULTIPOLE_KEYS = {
+    "quadrupole": {"xx", "xy", "yy", "xz", "yz", "zz"},
+    "octopole": {"xxx", "xxy", "xyy", "yyy", "xxz", "xyz", "yyz", "xzz", "yzz", "zzz"},
+    "hexadecapole": {
+        "xxxx",
+        "xxxy",
+        "xxyy",
+        "xyyy",
+        "yyyy",
+        "xxxz",
+        "xxyz",
+        "xyyz",
+        "yyyz",
+        "xxzz",
+        "xyzz",
+        "yyzz",
+        "xzzz",
+        "yzzz",
+        "zzzz",
+    },
+}
 
 
 class MultipoleParser:
@@ -39,12 +59,7 @@ class MultipoleParser:
     """
 
     def matches(self, line: str, state: ParseState) -> bool:
-        """
-        Check if this line marks the beginning of the multipole moments block.
-
-        Returns True only if we haven't already parsed multipole moments and the line
-        contains the multipole block header.
-        """
+        """Check if this line marks the beginning of the multipole moments block."""
         return bool(MULTIPOLE_START_PAT.search(line)) and not state.parsed_multipole
 
     def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
@@ -70,16 +85,14 @@ class MultipoleParser:
         quadrupole: QuadrupoleMoment | None = None
         octopole: OctopoleMoment | None = None
         hexadecapole: HexadecapoleMoment | None = None
-
-        # Accumulate components for multi-line sections
-        quadrupole_components: dict[str, float] = {}
-        octopole_components: dict[str, float] = {}
-        hexadecapole_components: dict[str, float] = {}
-
+        components: dict[str, dict[str, float]] = {
+            "quadrupole": {},
+            "octopole": {},
+            "hexadecapole": {},
+        }
         current_section: str = ""
 
         for line in iterator:
-            # Check for end marker
             if MULTIPOLE_END_PAT.search(line):
                 break
 
@@ -87,7 +100,7 @@ class MultipoleParser:
             if not stripped:
                 continue
 
-            # Detect section headers
+            # Detect section headers using match
             if "Charge (ESU" in stripped:
                 current_section = "charge"
                 continue
@@ -99,190 +112,105 @@ class MultipoleParser:
                 continue
             elif "Octopole Moments" in stripped:
                 current_section = "octopole"
-                octopole_components.clear()
+                components["octopole"].clear()
                 continue
             elif "Hexadecapole Moments" in stripped:
                 current_section = "hexadecapole"
-                hexadecapole_components.clear()
+                components["hexadecapole"].clear()
                 continue
 
             # Parse data based on current section
-            if current_section == "charge":
-                match = CHARGE_PAT.match(stripped)
-                if match:
-                    try:
-                        charge = float(match.group(1))
-                        current_section = ""
-                    except ValueError:
-                        state.parsing_warnings.append(f"Could not parse charge: {stripped}")
-                        current_section = ""
-
-            elif current_section == "dipole":
-                # Extract X, Y, Z on first line and Tot on second
-                x_match = re.search(r"X\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)", stripped)
-                y_match = re.search(r"Y\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)", stripped)
-                z_match = re.search(r"Z\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)", stripped)
-                tot_match = re.search(r"Tot\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)", stripped)
-
-                try:
-                    if x_match and y_match and z_match:
-                        x = float(x_match.group(1))
-                        y = float(y_match.group(1))
-                        z = float(z_match.group(1))
-                        if tot_match:
-                            magnitude = float(tot_match.group(1))
-                            dipole = DipoleMoment(x=x, y=y, z=z, magnitude=magnitude)
+            match current_section:
+                case "charge":
+                    if m := CHARGE_PAT.match(stripped):
+                        try:
+                            charge = float(m.group(1))
+                        except ValueError:
+                            state.parsing_warnings.append(f"Could not parse charge: {stripped}")
+                        finally:
                             current_section = ""
-                        else:
-                            # Magnitude will come on next line
-                            dipole = DipoleMoment(x=x, y=y, z=z, magnitude=0.0)
-                    elif tot_match and dipole is not None:
-                        # This is the Tot line when X/Y/Z were on previous line
-                        magnitude = float(tot_match.group(1))
-                        dipole = DipoleMoment(x=dipole.x, y=dipole.y, z=dipole.z, magnitude=magnitude)
-                        current_section = ""
-                except ValueError:
-                    state.parsing_warnings.append(f"Could not parse dipole: {stripped}")
-                    current_section = ""
 
-            elif current_section == "quadrupole":
-                # Accumulate all components from potentially 2 lines
-                for match in COMPONENT_PAT.finditer(stripped):
-                    component_name = match.group(1).lower()
-                    try:
-                        value = float(match.group(2))
-                        quadrupole_components[component_name] = value
-                    except ValueError:
-                        pass
+                case "dipole":
+                    result = self._parse_dipole(stripped, dipole, state)
+                    if result is not None:
+                        dipole = result
+                        if result.magnitude > 0:  # Only clear section if magnitude was found
+                            current_section = ""
 
-                # Check if we have all 6 components
-                expected_keys = {"xx", "xy", "yy", "xz", "yz", "zz"}
-                if expected_keys.issubset(set(quadrupole_components.keys())):
-                    try:
-                        quadrupole = QuadrupoleMoment(
-                            xx=quadrupole_components["xx"],
-                            xy=quadrupole_components["xy"],
-                            yy=quadrupole_components["yy"],
-                            xz=quadrupole_components["xz"],
-                            yz=quadrupole_components["yz"],
-                            zz=quadrupole_components["zz"],
-                        )
-                        current_section = ""
-                        quadrupole_components.clear()
-                    except (ValueError, KeyError):
-                        state.parsing_warnings.append(
-                            f"Could not create quadrupole from components: {quadrupole_components}"
-                        )
-                        current_section = ""
+                case "quadrupole":
+                    self._accumulate_components(stripped, components["quadrupole"])
+                    if MULTIPOLE_KEYS["quadrupole"].issubset(components["quadrupole"].keys()):
+                        try:
+                            quadrupole = QuadrupoleMoment(**components["quadrupole"])
+                        except (ValueError, TypeError):
+                            state.parsing_warnings.append(f"Could not create quadrupole: {components['quadrupole']}")
+                        finally:
+                            current_section = ""
+                            components["quadrupole"].clear()
 
-            elif current_section == "octopole":
-                # Accumulate all components from this line
-                for match in COMPONENT_PAT.finditer(stripped):
-                    component_name = match.group(1).lower()
-                    try:
-                        value = float(match.group(2))
-                        octopole_components[component_name] = value
-                    except ValueError:
-                        pass
+                case "octopole":
+                    self._accumulate_components(stripped, components["octopole"])
+                    if MULTIPOLE_KEYS["octopole"].issubset(components["octopole"].keys()):
+                        try:
+                            octopole = OctopoleMoment(**components["octopole"])
+                        except (ValueError, TypeError):
+                            state.parsing_warnings.append(f"Could not create octopole: {components['octopole']}")
+                        finally:
+                            current_section = ""
+                            components["octopole"].clear()
 
-                # Check if we have all 10 components
-                expected_keys = {"xxx", "xxy", "xyy", "yyy", "xxz", "xyz", "yyz", "xzz", "yzz", "zzz"}
-                if expected_keys.issubset(set(octopole_components.keys())):
-                    try:
-                        octopole = OctopoleMoment(
-                            xxx=octopole_components["xxx"],
-                            xxy=octopole_components["xxy"],
-                            xyy=octopole_components["xyy"],
-                            yyy=octopole_components["yyy"],
-                            xxz=octopole_components["xxz"],
-                            xyz=octopole_components["xyz"],
-                            yyz=octopole_components["yyz"],
-                            xzz=octopole_components["xzz"],
-                            yzz=octopole_components["yzz"],
-                            zzz=octopole_components["zzz"],
-                        )
-                        current_section = ""
-                        octopole_components.clear()
-                    except (ValueError, KeyError):
-                        state.parsing_warnings.append(
-                            f"Could not create octopole from components: {octopole_components}"
-                        )
-                        current_section = ""
+                case "hexadecapole":
+                    self._accumulate_components(stripped, components["hexadecapole"])
+                    if MULTIPOLE_KEYS["hexadecapole"].issubset(components["hexadecapole"].keys()):
+                        try:
+                            hexadecapole = HexadecapoleMoment(**components["hexadecapole"])
+                        except (ValueError, TypeError):
+                            state.parsing_warnings.append(
+                                f"Could not create hexadecapole: {components['hexadecapole']}"
+                            )
+                        finally:
+                            current_section = ""
+                            components["hexadecapole"].clear()
 
-            elif current_section == "hexadecapole":
-                # Accumulate all components from this line
-                for match in COMPONENT_PAT.finditer(stripped):
-                    component_name = match.group(1).lower()
-                    try:
-                        value = float(match.group(2))
-                        hexadecapole_components[component_name] = value
-                    except ValueError:
-                        pass
-
-                # Check if we have all 15 components
-                expected_keys = {
-                    "xxxx",
-                    "xxxy",
-                    "xxyy",
-                    "xyyy",
-                    "yyyy",
-                    "xxxz",
-                    "xxyz",
-                    "xyyz",
-                    "yyyz",
-                    "xxzz",
-                    "xyzz",
-                    "yyzz",
-                    "xzzz",
-                    "yzzz",
-                    "zzzz",
-                }
-                if expected_keys.issubset(set(hexadecapole_components.keys())):
-                    try:
-                        hexadecapole = HexadecapoleMoment(
-                            xxxx=hexadecapole_components["xxxx"],
-                            xxxy=hexadecapole_components["xxxy"],
-                            xxyy=hexadecapole_components["xxyy"],
-                            xyyy=hexadecapole_components["xyyy"],
-                            yyyy=hexadecapole_components["yyyy"],
-                            xxxz=hexadecapole_components["xxxz"],
-                            xxyz=hexadecapole_components["xxyz"],
-                            xyyz=hexadecapole_components["xyyz"],
-                            yyyz=hexadecapole_components["yyyz"],
-                            xxzz=hexadecapole_components["xxzz"],
-                            xyzz=hexadecapole_components["xyzz"],
-                            yyzz=hexadecapole_components["yyzz"],
-                            xzzz=hexadecapole_components["xzzz"],
-                            yzzz=hexadecapole_components["yzzz"],
-                            zzzz=hexadecapole_components["zzzz"],
-                        )
-                        current_section = ""
-                        hexadecapole_components.clear()
-                    except (ValueError, KeyError):
-                        state.parsing_warnings.append(
-                            f"Could not create hexadecapole from components: {hexadecapole_components}"
-                        )
-                        current_section = ""
-
-        # Create MultipoleResults and add to state
-        if (
-            charge is not None
-            or dipole is not None
-            or quadrupole is not None
-            or octopole is not None
-            or hexadecapole is not None
-        ):
-            multipole = MultipoleResults(
+        if any([charge, dipole, quadrupole, octopole, hexadecapole]):
+            state.multipole = MultipoleResults(
                 charge=charge,
                 dipole=dipole,
                 quadrupole=quadrupole,
                 octopole=octopole,
                 hexadecapole=hexadecapole,
             )
-            state.multipole = multipole
             logger.debug("Parsed Cartesian multipole moments")
         else:
             state.parsing_warnings.append("Multipole moments block found but no moments were parsed.")
 
-        # Set flag to prevent duplicate parsing
         state.parsed_multipole = True
+
+    @staticmethod
+    def _parse_dipole(line: str, current_dipole: DipoleMoment | None, state: ParseState) -> DipoleMoment | None:
+        """Parse dipole moment from line, handling split across two lines."""
+        x_match = re.search(rf"X\s+{FLOAT_PAT}", line)
+        y_match = re.search(rf"Y\s+{FLOAT_PAT}", line)
+        z_match = re.search(rf"Z\s+{FLOAT_PAT}", line)
+        tot_match = re.search(rf"Tot\s+{FLOAT_PAT}", line)
+
+        try:
+            if x_match and y_match and z_match:
+                x, y, z = float(x_match.group(1)), float(y_match.group(1)), float(z_match.group(1))
+                magnitude = float(tot_match.group(1)) if tot_match else 0.0
+                return DipoleMoment(x=x, y=y, z=z, magnitude=magnitude)
+            elif tot_match and current_dipole:
+                magnitude = float(tot_match.group(1))
+                return DipoleMoment(x=current_dipole.x, y=current_dipole.y, z=current_dipole.z, magnitude=magnitude)
+        except ValueError:
+            state.parsing_warnings.append(f"Could not parse dipole: {line}")
+        return None
+
+    @staticmethod
+    def _accumulate_components(line: str, components: dict[str, float]) -> None:
+        """Extract and accumulate multipole components from a line."""
+        for m in COMPONENT_PAT.finditer(line):
+            try:  # noqa: SIM105
+                components[m.group(1).lower()] = float(m.group(2))
+            except ValueError:
+                pass
