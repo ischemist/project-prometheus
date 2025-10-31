@@ -127,6 +127,54 @@ EXPECTED_UKS_STATE_9_BETA_2 = {
 }
 EXPECTED_UKS_STATE_9_OMEGA = 50.1
 
+# UKS 5.4 TDDFT data (parsed_qchem_54_h2o_uks_tddft_data)
+EXPECTED_UKS_54_NUM_NTO_STATES = 10
+
+# State 1: Single contribution per spin with opposite signs
+EXPECTED_UKS_54_STATE_1_NUM_CONTRIBUTIONS = 2
+EXPECTED_UKS_54_STATE_1_ALPHA = {
+    "hole_offset": 0,
+    "electron_offset": 0,
+    "weight_percent": 49.9,
+    "is_alpha_spin": True,
+}
+EXPECTED_UKS_54_STATE_1_BETA = {
+    "hole_offset": 0,
+    "electron_offset": 0,
+    "weight_percent": 49.9,
+    "is_alpha_spin": False,
+}
+EXPECTED_UKS_54_STATE_1_OMEGA_ALPHA = 50.1
+EXPECTED_UKS_54_STATE_1_OMEGA_BETA = 50.1
+
+# State 9: Multiple contributions per spin
+EXPECTED_UKS_54_STATE_9_NUM_CONTRIBUTIONS = 4
+EXPECTED_UKS_54_STATE_9_ALPHA_1 = {
+    "hole_offset": 2,
+    "electron_offset": 0,
+    "weight_percent": 48.6,
+    "is_alpha_spin": True,
+}
+EXPECTED_UKS_54_STATE_9_ALPHA_2 = {
+    "hole_offset": 1,
+    "electron_offset": 1,
+    "weight_percent": 1.0,
+    "is_alpha_spin": True,
+}
+EXPECTED_UKS_54_STATE_9_BETA_1 = {
+    "hole_offset": 2,
+    "electron_offset": 0,
+    "weight_percent": 48.6,
+    "is_alpha_spin": False,
+}
+EXPECTED_UKS_54_STATE_9_BETA_2 = {
+    "hole_offset": 1,
+    "electron_offset": 1,
+    "weight_percent": 1.0,
+    "is_alpha_spin": False,
+}
+EXPECTED_UKS_54_STATE_9_OMEGA = 50.1
+
 # Numerical tolerance
 WEIGHT_TOL = 0.1
 OMEGA_TOL = 0.2
@@ -511,3 +559,101 @@ def test_uks_nto_state_9_multiple_alpha_beta(parsed_qchem_62_h2o_uks_tddft_data:
 
     assert state_9.omega_alpha_percent == pytest.approx(EXPECTED_UKS_STATE_9_OMEGA, abs=OMEGA_TOL)
     assert state_9.omega_beta_percent == pytest.approx(EXPECTED_UKS_STATE_9_OMEGA, abs=OMEGA_TOL)
+
+
+# =============================================================================
+# REGRESSION TESTS: Exact numerical values (UKS 5.4)
+# =============================================================================
+
+
+@pytest.mark.regression
+def test_uks_54_nto_state_count(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify exact number of NTO states parsed for UKS 5.4."""
+    nto_analyses = parsed_qchem_54_h2o_uks_tddft_data.nto_analyses
+    assert nto_analyses is not None
+    assert len(nto_analyses) == EXPECTED_UKS_54_NUM_NTO_STATES
+
+
+@pytest.mark.regression
+def test_uks_54_nto_state_1_alpha_beta(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify UKS 5.4 state 1 has alpha and beta contributions with opposite signs."""
+    nto_analyses = parsed_qchem_54_h2o_uks_tddft_data.nto_analyses
+    assert nto_analyses is not None
+    assert len(nto_analyses) > 0
+
+    state_1 = nto_analyses[0]
+    assert state_1.state_number == 1
+    assert len(state_1.contributions) == EXPECTED_UKS_54_STATE_1_NUM_CONTRIBUTIONS
+
+    # Find alpha and beta contributions
+    alpha_contrib = None
+    beta_contrib = None
+    for contrib in state_1.contributions:
+        if contrib.is_alpha_spin is True:
+            alpha_contrib = contrib
+        elif contrib.is_alpha_spin is False:
+            beta_contrib = contrib
+
+    assert alpha_contrib is not None
+    assert beta_contrib is not None
+
+    assert alpha_contrib.hole_offset == EXPECTED_UKS_54_STATE_1_ALPHA["hole_offset"]
+    assert alpha_contrib.electron_offset == EXPECTED_UKS_54_STATE_1_ALPHA["electron_offset"]
+    assert alpha_contrib.weight_percent == pytest.approx(
+        EXPECTED_UKS_54_STATE_1_ALPHA["weight_percent"], abs=WEIGHT_TOL
+    )
+
+    assert beta_contrib.hole_offset == EXPECTED_UKS_54_STATE_1_BETA["hole_offset"]
+    assert beta_contrib.electron_offset == EXPECTED_UKS_54_STATE_1_BETA["electron_offset"]
+    assert beta_contrib.weight_percent == pytest.approx(EXPECTED_UKS_54_STATE_1_BETA["weight_percent"], abs=WEIGHT_TOL)
+
+    assert state_1.omega_alpha_percent == pytest.approx(EXPECTED_UKS_54_STATE_1_OMEGA_ALPHA, abs=OMEGA_TOL)
+    assert state_1.omega_beta_percent == pytest.approx(EXPECTED_UKS_54_STATE_1_OMEGA_BETA, abs=OMEGA_TOL)
+
+
+@pytest.mark.regression
+def test_uks_54_nto_state_9_multiple_alpha_beta(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify UKS 5.4 state 9 has multiple alpha and beta contributions."""
+    nto_analyses = parsed_qchem_54_h2o_uks_tddft_data.nto_analyses
+    assert nto_analyses is not None
+    assert len(nto_analyses) > 8
+
+    state_9 = nto_analyses[8]
+    assert state_9.state_number == 9
+    assert len(state_9.contributions) == EXPECTED_UKS_54_STATE_9_NUM_CONTRIBUTIONS
+
+    # Separate alpha and beta
+    alpha_contribs = [c for c in state_9.contributions if c.is_alpha_spin is True]
+    beta_contribs = [c for c in state_9.contributions if c.is_alpha_spin is False]
+
+    assert len(alpha_contribs) == 2
+    assert len(beta_contribs) == 2
+
+    # Alpha contributions
+    assert alpha_contribs[0].hole_offset == EXPECTED_UKS_54_STATE_9_ALPHA_1["hole_offset"]
+    assert alpha_contribs[0].electron_offset == EXPECTED_UKS_54_STATE_9_ALPHA_1["electron_offset"]
+    assert alpha_contribs[0].weight_percent == pytest.approx(
+        EXPECTED_UKS_54_STATE_9_ALPHA_1["weight_percent"], abs=WEIGHT_TOL
+    )
+
+    assert alpha_contribs[1].hole_offset == EXPECTED_UKS_54_STATE_9_ALPHA_2["hole_offset"]
+    assert alpha_contribs[1].electron_offset == EXPECTED_UKS_54_STATE_9_ALPHA_2["electron_offset"]
+    assert alpha_contribs[1].weight_percent == pytest.approx(
+        EXPECTED_UKS_54_STATE_9_ALPHA_2["weight_percent"], abs=WEIGHT_TOL
+    )
+
+    # Beta contributions
+    assert beta_contribs[0].hole_offset == EXPECTED_UKS_54_STATE_9_BETA_1["hole_offset"]
+    assert beta_contribs[0].electron_offset == EXPECTED_UKS_54_STATE_9_BETA_1["electron_offset"]
+    assert beta_contribs[0].weight_percent == pytest.approx(
+        EXPECTED_UKS_54_STATE_9_BETA_1["weight_percent"], abs=WEIGHT_TOL
+    )
+
+    assert beta_contribs[1].hole_offset == EXPECTED_UKS_54_STATE_9_BETA_2["hole_offset"]
+    assert beta_contribs[1].electron_offset == EXPECTED_UKS_54_STATE_9_BETA_2["electron_offset"]
+    assert beta_contribs[1].weight_percent == pytest.approx(
+        EXPECTED_UKS_54_STATE_9_BETA_2["weight_percent"], abs=WEIGHT_TOL
+    )
+
+    assert state_9.omega_alpha_percent == pytest.approx(EXPECTED_UKS_54_STATE_9_OMEGA, abs=OMEGA_TOL)
+    assert state_9.omega_beta_percent == pytest.approx(EXPECTED_UKS_54_STATE_9_OMEGA, abs=OMEGA_TOL)
