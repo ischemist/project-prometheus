@@ -158,10 +158,25 @@ class TransitionDensityMatrixParser(BlockParser):
                 line_buffer = line
                 break
 
-            if line_buffer:  # noqa: SIM102
-                # A sub-parser over-read. Check if it's the next state header
+            # If a sub-parser over-read, check what it found
+            if line_buffer:
+                # If it's the next state header, we're done with this state
                 if self.STATE_HEADER_PAT.match(line_buffer):
                     break
+                # Otherwise, re-process the buffered line through dispatch logic
+                line = line_buffer
+                line_buffer = None
+                # Re-check against all dispatch conditions
+                if "CT numbers" in line:
+                    ct_data, line_buffer = self._parse_ct_numbers_section(iterator)
+                    data.update(ct_data)
+                    if line_buffer and self.STATE_HEADER_PAT.match(line_buffer):
+                        break
+                elif "Exciton analysis of the transition density matrix" in line:
+                    exciton_data, line_buffer = self._parse_exciton_section(iterator)
+                    data.update(exciton_data)
+                    if line_buffer and self.STATE_HEADER_PAT.match(line_buffer):
+                        break
 
         try:
             model = TransitionDensityMatrix.model_validate(data)
