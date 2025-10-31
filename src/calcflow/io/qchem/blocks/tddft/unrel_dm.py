@@ -49,12 +49,8 @@ class UnrelaxedDensityMatrixParser(BlockParser):
     excited state listed. It handles both RKS and UKS output formats.
     """
 
-    START_PAT: ClassVar[re.Pattern] = re.compile(
-        r"Analysis of Unrelaxed Density Matrices"
-    )
-    STATE_HEADER_PAT: ClassVar[re.Pattern] = re.compile(
-        r"^\s*(Singlet|Triplet|Excited State)\s+(\d+)\s*:"
-    )
+    START_PAT: ClassVar[re.Pattern] = re.compile(r"Analysis of Unrelaxed Density Matrices")
+    STATE_HEADER_PAT: ClassVar[re.Pattern] = re.compile(r"^\s*(Singlet|Triplet|Excited State)\s+(\d+)\s*:")
     END_PAT: ClassVar[re.Pattern] = re.compile(r"^\s*-{5,}\s*$")
 
     def matches(self, line: str, state: ParseState) -> bool:
@@ -66,9 +62,9 @@ class UnrelaxedDensityMatrixParser(BlockParser):
         logger.debug("Parsing 'Analysis of Unrelaxed Density Matrices' block.")
         all_analyses: list[UnrelaxedDensityMatrix] = []
 
-        # Consume up to the first state header
         line_buffer = None
-        for line in iterator:
+        # Consume until we find the first actual state header
+        for line in chain([start_line], iterator):
             if self.STATE_HEADER_PAT.match(line):
                 line_buffer = line
                 break
@@ -76,19 +72,26 @@ class UnrelaxedDensityMatrixParser(BlockParser):
         while line_buffer is not None:
             state_match = self.STATE_HEADER_PAT.match(line_buffer)
             if not state_match:
-                # We are no longer in a state block
                 state.buffered_line = line_buffer
                 break
 
             multiplicity, state_num_str = state_match.groups()
             state_num = int(state_num_str)
+            # FIX: Construct the full multiplicity string as expected by tests.
+            full_multiplicity_str = f"{multiplicity} {state_num_str}"
             logger.debug(f"Parsing DM analysis for state {state_num}.")
 
-            analysis, line_buffer = self._parse_single_state_block(
-                iterator, state_num, multiplicity
-            )
+            analysis, line_buffer = self._parse_single_state_block(iterator, state_num, full_multiplicity_str)
             if analysis:
                 all_analyses.append(analysis)
+            else:
+                # If a block fails to parse, we need to find the next one to avoid an infinite loop
+                for line in iterator:
+                    if self.STATE_HEADER_PAT.match(line) or "---" in line:
+                        line_buffer = line
+                        break
+                else:
+                    line_buffer = None
 
         if not all_analyses:
             msg = "Found 'Unrelaxed DM' block but parsed no states."
@@ -137,7 +140,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
                 line_buffer = line
                 break
 
-            if line_buffer:
+            if line_buffer:  # noqa: SIM102
                 # A sub-parser over-read. We need to process the buffered line.
                 # This is unlikely with the new design but is a safeguard.
                 if self.STATE_HEADER_PAT.match(line_buffer):
@@ -147,9 +150,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
             model = UnrelaxedDensityMatrix.model_validate(data)
             return model, line_buffer
         except ValidationError as e:
-            logger.error(
-                f"Pydantic validation failed for state {state_number}: {e}", exc_info=True
-            )
+            logger.error(f"Pydantic validation failed for state {state_number}: {e}", exc_info=True)
             return None, line_buffer
 
     def _parse_key_value_line(self, line: str, key: str) -> float | None:
@@ -200,15 +201,14 @@ class UnrelaxedDensityMatrixParser(BlockParser):
                 nos[current_spin_key] = NaturalOrbitals.model_validate(sub_data)
         return nos, line_buffer
 
-    def _parse_mulliken_section(
-        self, iterator: LineIterator
-    ) -> tuple[AtomicCharges | None, str | None]:
+    def _parse_mulliken_section(self, iterator: LineIterator) -> tuple[AtomicCharges | None, str | None]:
         header_line = next(iterator)
         next(iterator)  # separator
 
         is_uks = "Spin (e)" in header_line
         data: dict[str, Any] = {
-            "method": "Mulliken (Unrelaxed DM)", "charges": {},
+            "method": "Mulliken (Unrelaxed DM)",
+            "charges": {},
             "spins": {} if is_uks else None,
             "hole_populations": {} if not is_uks else None,
             "electron_populations": {} if not is_uks else None,
@@ -248,9 +248,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
 
         return (AtomicCharges.model_validate(data) if data["charges"] else None), line_buffer
 
-    def _parse_multipole_section(
-        self, iterator: LineIterator
-    ) -> tuple[dict[str, Any], str | None]:
+    def _parse_multipole_section(self, iterator: LineIterator) -> tuple[dict[str, Any], str | None]:
         data: dict[str, Any] = {}
         line_buffer = None
         for line in iterator:
@@ -269,58 +267,95 @@ class UnrelaxedDensityMatrixParser(BlockParser):
                 break
         return data, line_buffer
 
-    def _parse_exciton_section(
-        self, iterator: LineIterator
-    ) -> tuple[dict[str, ExcitonAnalysis | None], str | None]:
-        exciton = {"exciton_total": None, "exciton_alpha": None, "exciton_beta": None}
+    def _parse_exciton_section(self, iterator: LineIterator) -> tuple[dict[str, ExcitonAnalysis | None], str | None]:
+        """
+        Orchestrates parsing of the potentially multi-part exciton block, now
+        with robust handling of transitions between Total, Alpha, and Beta sections.
+        """
+        exciton: dict[str, ExcitonAnalysis | None] = {}
+        line_buffer = None
 
-        # Check first line after header to determine RKS/UKS
-        try:
-            first_line = next(iterator)
-        except StopIteration:
-            return exciton, None
+        # Find the first meaningful line to determine if this is an RKS or UKS block.
+        for line in iterator:
+            if line.strip():
+                line_buffer = line
+                break
+        else:
+            return {}, None  # Reached end of iterator
 
-        if "Total:" in first_line:  # UKS
-            exciton["exciton_total"], line_buffer = self._parse_exciton_sub_block(iterator)
-            if line_buffer and "Alpha spin:" in line_buffer:
-                exciton["exciton_alpha"], line_buffer = self._parse_exciton_sub_block(iterator)
-            if line_buffer and "Beta spin:" in line_buffer:
-                exciton["exciton_beta"], line_buffer = self._parse_exciton_sub_block(iterator)
+        # RKS case: the first line is data, not a "Total:" header.
+        if "Total:" not in line_buffer:
+            exciton["exciton_total"], line_buffer = self._parse_exciton_sub_block(iterator, initial_line=line_buffer)
             return exciton, line_buffer
-        else:  # RKS
-            return {"exciton_total": self._parse_exciton_sub_block(iterator, first_line)[0]}, None
+
+        # UKS case: the line we found was "Total:".
+        # We've consumed the header, so we can now parse the sub-block.
+        exciton["exciton_total"], line_buffer = self._parse_exciton_sub_block(iterator)
+
+        # CRITICAL FIX: After parsing a sub-block, if the buffer is empty (due to
+        # ending on a blank line), we must actively search for the next header.
+        if line_buffer is None:
+            for line in iterator:
+                if line.strip():
+                    line_buffer = line
+                    break
+
+        if line_buffer and "Alpha spin:" in line_buffer:
+            exciton["exciton_alpha"], line_buffer = self._parse_exciton_sub_block(iterator)
+
+            # Repeat the search logic for the Beta block.
+            if line_buffer is None:
+                for line in iterator:
+                    if line.strip():
+                        line_buffer = line
+                        break
+
+        if line_buffer and "Beta spin:" in line_buffer:
+            exciton["exciton_beta"], line_buffer = self._parse_exciton_sub_block(iterator)
+
+        # Return the final state of the buffer so the main loop can continue correctly.
+        return exciton, line_buffer
 
     def _parse_exciton_sub_block(
         self, iterator: LineIterator, initial_line: str | None = None
     ) -> tuple[ExcitonAnalysis, str | None]:
+        """
+        FIXED: Reworked to be a robust state machine that correctly identifies
+        terminating lines and returns them, preventing the parent loop from breaking.
+        """
         data: dict[str, Any] = {}
-        line_buffer = None
-
-        line_iter = chain([initial_line], iterator) if initial_line else iterator
-
         expecting_hole_components = False
         expecting_electron_components = False
 
-        for line in line_iter:
-            if not line.strip():
-                break
-            if any(kw in line for kw in ["Alpha spin:", "Beta spin:", "Mulliken", "Multipole"]):
-                line_buffer = line
+        line_source = chain([initial_line], iterator) if initial_line else iterator
+
+        for line in line_source:
+            stripped = line.strip()
+
+            # Check for terminators FIRST. This is the crucial change.
+            if (
+                any(kw in stripped for kw in ["Alpha spin:", "Beta spin:"])
+                or any(kw in line for kw in ["Mulliken Population", "Multipole moment"])
+                or self.STATE_HEADER_PAT.match(line)
+            ):
+                return ExcitonAnalysis.model_validate(data), line
+
+            if not stripped:  # A blank line terminates the current sub-block.
                 break
 
-            # State machine for component lines
+            # State machine for component lines that appear on the *next* line.
             if expecting_hole_components:
-                if "Cartesian components [Ang]:" in line:
+                if "Cartesian components" in line:
                     data["hole_size_components_ang"] = self._parse_vector_line(line)
                 expecting_hole_components = False
-                continue
+                continue  # This was a component line, skip other parsing for it.
             if expecting_electron_components:
-                if "Cartesian components [Ang]:" in line:
+                if "Cartesian components" in line:
                     data["electron_size_components_ang"] = self._parse_vector_line(line)
                 expecting_electron_components = False
                 continue
 
-            # Parse regular lines
+            # Parse regular key-value/vector lines
             if "<r_h> [Ang]:" in line:
                 data["r_h_ang"] = self._parse_vector_line(line)
             elif "<r_e> [Ang]:" in line:
@@ -334,4 +369,4 @@ class UnrelaxedDensityMatrixParser(BlockParser):
                 data["electron_size_ang"] = self._parse_key_value_line(line, "Electron size")
                 expecting_electron_components = True
 
-        return ExcitonAnalysis.model_validate(data), line_buffer
+        return ExcitonAnalysis.model_validate(data), None

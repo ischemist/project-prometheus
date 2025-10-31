@@ -15,3 +15,5 @@ collectors/
 docs/
 
 .coverage
+.ignore
+#ex-*.md
