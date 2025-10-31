@@ -63,6 +63,7 @@ class ParseState(BaseModel):
     parsed_timing: bool = False
     parsed_tddft_tda: bool = False
     parsed_tddft_full: bool = False
+    parsed_tddft_gs_ref: bool = False
     # Add more as needed for other parsers...
 
     # --- Communication & Error Handling ---

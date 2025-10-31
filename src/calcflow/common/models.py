@@ -297,6 +297,20 @@ class NTOStateAnalysis(BaseModel):
     omega_beta_percent: float | None = None
 
 
+class GroundStateReference(BaseModel):
+    """Ground state (reference) data from excited state analysis blocks."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    frontier_nos: Sequence[float]  # Occupation of frontier NOs
+    num_electrons: float  # Total electron count
+    num_unpaired_electrons: float | None = None  # n_u value (typically for RKS with unpaired analysis)
+    mulliken_charges: Sequence[float]  # Per-atom charges in e
+    mulliken_spins: Sequence[float] | None = None  # Per-atom spin (UKS only)
+    dipole_moment_debye: float  # Total dipole moment
+    dipole_components_debye: tuple[float, float, float]  # (X, Y, Z) in Debye
+
+
 class TddftResults(BaseModel):
     """Container for all TDDFT-related parsed data."""
 
@@ -308,6 +322,7 @@ class TddftResults(BaseModel):
 
     # More detailed, program-specific analyses can be added here as needed
     nto_analyses: Sequence[NTOStateAnalysis] | None = None
+    ground_state_ref: "GroundStateReference | None" = None
     # Add ExcitedStateDetailedAnalysis if the unified model proves necessary
 
 
