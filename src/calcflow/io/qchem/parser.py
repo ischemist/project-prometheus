@@ -16,6 +16,7 @@ from calcflow.io.qchem.blocks.orbitals import OrbitalsParser
 from calcflow.io.qchem.blocks.scf import ScfParser
 from calcflow.io.qchem.blocks.tddft.excitations import ExcitationsParser
 from calcflow.io.qchem.blocks.tddft.gs_ref import GroundStateRefParser
+from calcflow.io.qchem.blocks.tddft.nto import NTOParser
 from calcflow.io.qchem.blocks.tddft.trans_dm import TransitionDensityMatrixParser
 from calcflow.io.qchem.blocks.tddft.unrel_dm import UnrelaxedDensityMatrixParser
 from calcflow.io.qchem.blocks.timing import TimingParser
@@ -31,6 +32,7 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     OrbitalsParser(),
     MultipoleParser(),
     ExcitationsParser(),
+    NTOParser(),
     GroundStateRefParser(),
     UnrelaxedDensityMatrixParser(),
     TransitionDensityMatrixParser(),

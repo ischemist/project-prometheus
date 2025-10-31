@@ -479,6 +479,7 @@ class CalculationResult(BaseModel):
     multipole: MultipoleResults | None = None
     smd: SmdResults | None = None
     tddft: TddftResults | None = None
+    nto_analyses: Sequence[NTOStateAnalysis] | None = None
     dispersion: DispersionCorrection | None = None
     timing: TimingResults | None = None
 

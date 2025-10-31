@@ -15,6 +15,7 @@ from calcflow.common.models import (
     CalculationMetadata,
     DispersionCorrection,
     MultipoleResults,
+    NTOStateAnalysis,
     OrbitalsSet,
     ScfResults,
     SmdResults,
@@ -48,6 +49,7 @@ class ParseState(BaseModel):
     multipole: MultipoleResults | None = None
     smd: SmdResults | None = None
     tddft: TddftResults | None = None
+    nto_analyses: list[NTOStateAnalysis] | None = None
     dispersion: DispersionCorrection | None = None
     timing: TimingResults | None = None
 
@@ -65,6 +67,7 @@ class ParseState(BaseModel):
     parsed_tddft_full: bool = False
     parsed_tddft_gs_ref: bool = False
     parsed_tddft_unrelaxed_dm: bool = False
+    parsed_nto: bool = False
     # Add more as needed for other parsers...
 
     # --- Communication & Error Handling ---
