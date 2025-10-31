@@ -283,6 +283,9 @@ class ExcitedState(BaseModel):
     total_energy_au: float
     oscillator_strength: float | None = None
     transitions: Sequence[OrbitalTransition] = Field(default_factory=list)
+    trans_mom_x: float | None = None  # Transition moment X component
+    trans_mom_y: float | None = None  # Transition moment Y component
+    trans_mom_z: float | None = None  # Transition moment Z component
 
 
 class NTOContribution(BaseModel):

@@ -35,10 +35,12 @@ EXPECTED_RKS_TDA_STATE_1_EXCITATION_EV = 7.5954
 EXPECTED_RKS_TDA_STATE_1_TOTAL_ENERGY_AU = -76.16212816
 EXPECTED_RKS_TDA_STATE_1_STRENGTH = 0.0518861703
 EXPECTED_RKS_TDA_STATE_1_TRANSITION = (4, 0, 0.9957)  # (from_idx, to_idx, amplitude)
+EXPECTED_RKS_TDA_STATE_1_TRANS_MOM = (-0.0869, -0.5093, 0.1092)  # (X, Y, Z)
 
 EXPECTED_RKS_TDDFT_STATE_1_EXCITATION_EV = 7.5725
 EXPECTED_RKS_TDDFT_STATE_1_TOTAL_ENERGY_AU = -76.16297039
 EXPECTED_RKS_TDDFT_STATE_1_STRENGTH = 0.0518397380
+EXPECTED_RKS_TDDFT_STATE_1_TRANS_MOM = (-0.0870, -0.5098, 0.1093)  # (X, Y, Z)
 
 EXPECTED_RKS_TDDFT_STATE_8_NUM_TRANSITIONS = 2  # Has D(3)->V(2) and D(5)->V(6)
 EXPECTED_RKS_TDDFT_STATE_8_TRANSITION_1 = (2, 1, 0.9122)
@@ -235,6 +237,20 @@ def test_excited_state_required_fields_present(parsed_qchem_62_h2o_rks_tddft_dat
         # Optional fields
         assert excited_state.oscillator_strength is None or isinstance(excited_state.oscillator_strength, float)
         assert isinstance(excited_state.transitions, (list, tuple))
+
+
+@pytest.mark.contract
+def test_excited_state_transition_moment_fields_present(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+    """Contract test: verify ExcitedState has transition moment fields with correct types."""
+    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tda_states is not None
+
+    for excited_state in tddft.tda_states:
+        # Transition moment components should be optional floats
+        assert excited_state.trans_mom_x is None or isinstance(excited_state.trans_mom_x, float)
+        assert excited_state.trans_mom_y is None or isinstance(excited_state.trans_mom_y, float)
+        assert excited_state.trans_mom_z is None or isinstance(excited_state.trans_mom_z, float)
 
 
 @pytest.mark.contract
@@ -474,6 +490,34 @@ def test_rks_tda_state_1_transitions_exact(parsed_qchem_62_h2o_rks_tddft_data: C
     assert transition.from_idx == EXPECTED_RKS_TDA_STATE_1_TRANSITION[0]
     assert transition.to_idx == EXPECTED_RKS_TDA_STATE_1_TRANSITION[1]
     assert transition.amplitude == pytest.approx(EXPECTED_RKS_TDA_STATE_1_TRANSITION[2], abs=1e-4)
+
+
+@pytest.mark.regression
+def test_rks_tda_state_1_transition_moment_exact(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+    """Regression test: verify exact transition moment components for RKS TDA state 1."""
+    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tda_states is not None
+    assert len(tddft.tda_states) > 0
+
+    state = tddft.tda_states[0]
+    assert state.trans_mom_x == pytest.approx(EXPECTED_RKS_TDA_STATE_1_TRANS_MOM[0], abs=1e-4)
+    assert state.trans_mom_y == pytest.approx(EXPECTED_RKS_TDA_STATE_1_TRANS_MOM[1], abs=1e-4)
+    assert state.trans_mom_z == pytest.approx(EXPECTED_RKS_TDA_STATE_1_TRANS_MOM[2], abs=1e-4)
+
+
+@pytest.mark.regression
+def test_rks_tddft_state_1_transition_moment_exact(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+    """Regression test: verify exact transition moment components for RKS TDDFT state 1."""
+    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tddft_states is not None
+    assert len(tddft.tddft_states) > 0
+
+    state = tddft.tddft_states[0]
+    assert state.trans_mom_x == pytest.approx(EXPECTED_RKS_TDDFT_STATE_1_TRANS_MOM[0], abs=1e-4)
+    assert state.trans_mom_y == pytest.approx(EXPECTED_RKS_TDDFT_STATE_1_TRANS_MOM[1], abs=1e-4)
+    assert state.trans_mom_z == pytest.approx(EXPECTED_RKS_TDDFT_STATE_1_TRANS_MOM[2], abs=1e-4)
 
 
 @pytest.mark.regression

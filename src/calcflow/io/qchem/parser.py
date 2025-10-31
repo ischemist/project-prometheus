@@ -6,8 +6,6 @@ from collections.abc import Sequence
 
 from calcflow.common.models import CalculationResult
 from calcflow.io.core import BlockParser, core_parse
-
-# from calcflow.io.qchem.blocks.finalization import TerminationParser
 from calcflow.io.qchem.blocks.charges import ChargesParser
 from calcflow.io.qchem.blocks.geometry import GeometryParser
 from calcflow.io.qchem.blocks.metadata import MetadataParser
@@ -21,10 +19,8 @@ from calcflow.io.qchem.blocks.tddft.trans_dm import TransitionDensityMatrixParse
 from calcflow.io.qchem.blocks.tddft.unrel_dm import UnrelaxedDensityMatrixParser
 from calcflow.io.qchem.blocks.timing import TimingParser
 
-# The ordered registry of parsers for a standard QChem Single Point calculation.
-# Order can be important. Metadata/REM should usually come first.
+# The ordered registry of parsers for a standard QChem calculations.
 PARSER_REGISTRY_SP: Sequence[BlockParser] = [
-    # RemBlockParser(),
     MetadataParser(),
     GeometryParser(),
     ScfParser(),
@@ -37,13 +33,12 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     UnrelaxedDensityMatrixParser(),
     TransitionDensityMatrixParser(),
     TimingParser(),
-    # TerminationParser(),
 ]
 
 
 def parse_qchem_output(output: str) -> CalculationResult:
     """
-    Parses the text output of a QChem single-point calculation.
+    Parses the text output of a QChem calculation.
 
     Args:
         output: The string content of the QChem output file.

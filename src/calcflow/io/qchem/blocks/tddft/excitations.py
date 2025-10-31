@@ -203,4 +203,7 @@ class ExcitationsParser:
             total_energy_au=state_data["total_energy_au"] or 0.0,  # Fallback if not found (shouldn't happen)
             oscillator_strength=state_data.get("oscillator_strength"),
             transitions=state_data.get("transitions", []),
+            trans_mom_x=state_data.get("trans_mom_x"),
+            trans_mom_y=state_data.get("trans_mom_y"),
+            trans_mom_z=state_data.get("trans_mom_z"),
         )
