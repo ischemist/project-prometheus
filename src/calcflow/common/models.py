@@ -173,14 +173,55 @@ class QuadrupoleMoment(BaseModel):
     zz: float
 
 
+class OctopoleMoment(BaseModel):
+    """Stores Cartesian octopole moments in Debye-Ang^2."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    xxx: float
+    xxy: float
+    xyy: float
+    yyy: float
+    xxz: float
+    xyz: float
+    yyz: float
+    xzz: float
+    yzz: float
+    zzz: float
+
+
+class HexadecapoleMoment(BaseModel):
+    """Stores Cartesian hexadecapole moments in Debye-Ang^3."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    xxxx: float
+    xxxy: float
+    xxyy: float
+    xyyy: float
+    yyyy: float
+    xxxz: float
+    xxyz: float
+    xyyz: float
+    yyyz: float
+    xxzz: float
+    xyzz: float
+    yyzz: float
+    xzzz: float
+    yzzz: float
+    zzzz: float
+
+
 class MultipoleResults(BaseModel):
     """Container for various electric multipole moments."""
 
     model_config = IMMUTABLE_MODEL_CONFIG
 
+    charge: float | None = None  # Total charge in ESU x 10^10
     dipole: DipoleMoment | None = None
     quadrupole: QuadrupoleMoment | None = None
-    # Add Octopole, Hexadecapole if needed
+    octopole: OctopoleMoment | None = None
+    hexadecapole: HexadecapoleMoment | None = None
 
 
 class SmdResults(BaseModel):
@@ -192,6 +233,16 @@ class SmdResults(BaseModel):
     g_cds_kcal_mol: float | None = None  # Non-electrostatic (CDS) component
     g_enp_au: float | None = None  # E_SCF including G_PCM
     g_tot_au: float | None = None  # Total free energy in solution
+
+
+class TimingResults(BaseModel):
+    """Stores timing information from calculation runs."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    total_cpu_time_seconds: float | None = None  # QChem: CPU time
+    total_wall_time_seconds: float | None = None  # Wall time (clock time)
+    module_times: Mapping[str, float] | None = None  # ORCA: module name -> wall time in seconds
 
 
 # =============================================================================
@@ -270,14 +321,8 @@ class CalculationMetadata(BaseModel):
 
     model_config = IMMUTABLE_MODEL_CONFIG
 
-    program_name: str
-    program_version: str | None = None
-    n_cores: int | None = None
-    run_date: str | None = None
-    calculation_method: str | None = None
-    basis_set: str | None = None
-    solvent_method: str | None = None
-    solvent_name: str | None = None
+    software_name: str
+    software_version: str | None = None
 
 
 class CalculationResult(BaseModel):
@@ -309,6 +354,7 @@ class CalculationResult(BaseModel):
     smd: SmdResults | None = None
     tddft: TddftResults | None = None
     dispersion: DispersionCorrection | None = None
+    timing: TimingResults | None = None
 
     # --- Program Specific Data ---
     # A catch-all for data that is too program-specific to unify. Use sparingly.

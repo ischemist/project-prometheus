@@ -26,7 +26,7 @@
 - **contract**: fast (<10ms), parser produces correct data *structure* with small fixtures
 - **integration**: moderate (10-500ms), multiple components working together, full files
 - **regression**: slow, high-precision numerical checks, catches unintended changes
-- **Guiding principles**: fixtures are king, one assertion per test, use `parametrize` for edge cases, separate integration from regression
+- **Guiding principles**: fixtures are king, use `parametrize` for edge cases, separate integration from regression
 
 ## Parser Design (see docs/parser-spec.md)
 - **Strategy pattern**: CoreParser iterates lines, mutable ParseState holds results, BlockParser registry handles specific sections
