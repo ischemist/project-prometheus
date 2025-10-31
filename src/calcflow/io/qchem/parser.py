@@ -41,7 +41,7 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
 ]
 
 
-def parse_qchem_sp(output: str) -> CalculationResult:
+def parse_qchem_output(output: str) -> CalculationResult:
     """
     Parses the text output of a QChem single-point calculation.
 
