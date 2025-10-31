@@ -29,7 +29,7 @@ from calcflow.common.models import CalculationResult, GroundStateReference, Tddf
 EXPECTED_RKS_FRONTIER_NOS = [0.0000, 2.0000]
 EXPECTED_RKS_NUM_ELECTRONS = 10.0
 EXPECTED_RKS_NUM_UNPAIRED = 0.0
-EXPECTED_RKS_MULLIKEN_CHARGES = [0.230554, -0.460460, 0.229906]
+EXPECTED_RKS_MULLIKEN_CHARGES = {0: 0.230554, 1: -0.460460, 2: 0.229906}
 EXPECTED_RKS_MULLIKEN_SPINS = None
 EXPECTED_RKS_DIPOLE_MOMENT = 2.015379
 EXPECTED_RKS_DIPOLE_COMPONENTS = (-0.995831, -0.203503, -1.740304)
@@ -38,8 +38,8 @@ EXPECTED_RKS_DIPOLE_COMPONENTS = (-0.995831, -0.203503, -1.740304)
 EXPECTED_UKS_FRONTIER_NOS = [0.0000, 2.0000]  # spin-traced
 EXPECTED_UKS_NUM_ELECTRONS = 10.0
 EXPECTED_UKS_NUM_UNPAIRED = 0.0
-EXPECTED_UKS_MULLIKEN_CHARGES = [0.230554, -0.460460, 0.229906]
-EXPECTED_UKS_MULLIKEN_SPINS = [0.000000, 0.000000, 0.000000]
+EXPECTED_UKS_MULLIKEN_CHARGES = {0: 0.230554, 1: -0.460460, 2: 0.229906}
+EXPECTED_UKS_MULLIKEN_SPINS = {0: 0.000000, 1: 0.000000, 2: 0.000000}
 EXPECTED_UKS_DIPOLE_MOMENT = 2.015379
 EXPECTED_UKS_DIPOLE_COMPONENTS = (-0.995831, -0.203503, -1.740304)
 
@@ -78,14 +78,15 @@ class TestRksGroundStateReference:
     def test_mulliken_charges(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
         """Mulliken charges should be parsed correctly for all atoms."""
         gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
-        assert len(gs_ref.mulliken_charges) == 3
-        for actual, expected in zip(gs_ref.mulliken_charges, EXPECTED_RKS_MULLIKEN_CHARGES, strict=True):
-            assert abs(actual - expected) < 1e-5
+        assert len(gs_ref.mulliken.charges) == 3
+        for atom_idx, expected_charge in EXPECTED_RKS_MULLIKEN_CHARGES.items():
+            actual_charge = gs_ref.mulliken.charges[atom_idx]
+            assert abs(actual_charge - expected_charge) < 1e-5
 
     def test_mulliken_spins_none_for_rks(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
         """Mulliken spins should be None for RKS."""
         gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
-        assert gs_ref.mulliken_spins is None
+        assert gs_ref.mulliken.spins is None
 
     def test_dipole_moment(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
         """Total dipole moment should be parsed correctly."""
@@ -128,17 +129,19 @@ class TestUksGroundStateReference:
     def test_mulliken_charges(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
         """Mulliken charges should be parsed correctly for all atoms."""
         gs_ref = parsed_qchem_62_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert len(gs_ref.mulliken_charges) == 3
-        for actual, expected in zip(gs_ref.mulliken_charges, EXPECTED_UKS_MULLIKEN_CHARGES, strict=True):
-            assert abs(actual - expected) < 1e-5
+        assert len(gs_ref.mulliken.charges) == 3
+        for atom_idx, expected_charge in EXPECTED_UKS_MULLIKEN_CHARGES.items():
+            actual_charge = gs_ref.mulliken.charges[atom_idx]
+            assert abs(actual_charge - expected_charge) < 1e-5
 
     def test_mulliken_spins(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
         """Mulliken spins should be parsed correctly for UKS."""
         gs_ref = parsed_qchem_62_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert gs_ref.mulliken_spins is not None
-        assert len(gs_ref.mulliken_spins) == 3
-        for actual, expected in zip(gs_ref.mulliken_spins, EXPECTED_UKS_MULLIKEN_SPINS, strict=True):
-            assert abs(actual - expected) < 1e-5
+        assert gs_ref.mulliken.spins is not None
+        assert len(gs_ref.mulliken.spins) == 3
+        for atom_idx, expected_spin in EXPECTED_UKS_MULLIKEN_SPINS.items():
+            actual_spin = gs_ref.mulliken.spins[atom_idx]
+            assert abs(actual_spin - expected_spin) < 1e-5
 
     def test_dipole_moment(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
         """Total dipole moment should be parsed correctly."""

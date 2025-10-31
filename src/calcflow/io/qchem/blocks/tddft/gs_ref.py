@@ -15,7 +15,7 @@ import re
 from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
-from calcflow.common.models import GroundStateReference, TddftResults
+from calcflow.common.models import AtomicCharges, GroundStateReference, TddftResults
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -81,11 +81,13 @@ class GroundStateRefParser:
             "frontier_nos": [],
             "num_electrons": None,
             "num_unpaired_electrons": None,
-            "mulliken_charges": [],
-            "mulliken_spins": [],
+            "mulliken_charges": {},  # atom_index -> charge
+            "mulliken_spins": {},  # atom_index -> spin
             "dipole_moment_debye": None,
             "dipole_components_debye": None,
         }
+
+        atom_index = -1  # Track which atom we're parsing in Mulliken table
 
         seen_frontier_nos = False
         in_mulliken_table = False
@@ -159,13 +161,14 @@ class GroundStateRefParser:
                 # Try to match an atom line
                 atom_match = MULLIKEN_ATOM_PAT.search(line)
                 if atom_match:
+                    atom_index = int(atom_match.group(1)) - 1  # Convert to 0-based indexing
                     charge = float(atom_match.group(2))
-                    gs_data["mulliken_charges"].append(charge)
+                    gs_data["mulliken_charges"][atom_index] = charge
 
                     # If spin value present, add it
                     if atom_match.group(3) is not None:
                         spin = float(atom_match.group(3))
-                        gs_data["mulliken_spins"].append(spin)
+                        gs_data["mulliken_spins"][atom_index] = spin
                     continue
 
                 # Check for end of Mulliken table (separator or Sum line)
@@ -207,12 +210,18 @@ class GroundStateRefParser:
         # Convert mulliken_spins to None if empty (RKS case)
         mulliken_spins = gs_data["mulliken_spins"] if gs_data["mulliken_spins"] else None
 
+        # Create AtomicCharges model
+        mulliken = AtomicCharges(
+            method="Mulliken",
+            charges=gs_data["mulliken_charges"],
+            spins=mulliken_spins,
+        )
+
         gs_ref = GroundStateReference(
             frontier_nos=gs_data["frontier_nos"],
             num_electrons=gs_data["num_electrons"],
             num_unpaired_electrons=gs_data["num_unpaired_electrons"],
-            mulliken_charges=gs_data["mulliken_charges"],
-            mulliken_spins=mulliken_spins,
+            mulliken=mulliken,
             dipole_moment_debye=gs_data["dipole_moment_debye"],
             dipole_components_debye=gs_data["dipole_components_debye"],
         )

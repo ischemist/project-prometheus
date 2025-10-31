@@ -130,6 +130,7 @@ class AtomicCharges(BaseModel):
 
     method: str  # e.g., "Mulliken", "Loewdin", "Hirshfeld"
     charges: Mapping[int, float]  # Atom index (0-based) to charge
+    spins: Mapping[int, float] | None = None  # Atom index to spin density (UKS only)
 
 
 class DipoleMoment(BaseModel):
@@ -305,8 +306,7 @@ class GroundStateReference(BaseModel):
     frontier_nos: Sequence[float]  # Occupation of frontier NOs
     num_electrons: float  # Total electron count
     num_unpaired_electrons: float | None = None  # n_u value (typically for RKS with unpaired analysis)
-    mulliken_charges: Sequence[float]  # Per-atom charges in e
-    mulliken_spins: Sequence[float] | None = None  # Per-atom spin (UKS only)
+    mulliken: AtomicCharges  # Per-atom charges (and optionally spins for UKS) in e
     dipole_moment_debye: float  # Total dipole moment
     dipole_components_debye: tuple[float, float, float]  # (X, Y, Z) in Debye
 
