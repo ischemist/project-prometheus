@@ -100,6 +100,66 @@ EXPECTED_UKS_STATE_10_DIPOLE_MOMENT = 0.634124
 EXPECTED_UKS_STATE_10_R_H_TOTAL = (2.221157, 1.541133, -0.228933)
 EXPECTED_UKS_STATE_10_SEPARATION_TOTAL = 0.551031
 
+# UKS 5.4 data - Excited State 1
+EXPECTED_UKS_54_STATE_1_FRONTIER_NOS_ALPHA = [0.4996, 0.5003]
+EXPECTED_UKS_54_STATE_1_NUM_ELECTRONS_ALPHA = 5.000000
+EXPECTED_UKS_54_STATE_1_FRONTIER_NOS_BETA = [0.4996, 0.5003]
+EXPECTED_UKS_54_STATE_1_NUM_ELECTRONS_BETA = 5.000000
+EXPECTED_UKS_54_STATE_1_FRONTIER_NOS_SPIN_TRACED = [0.9991, 1.0007]
+EXPECTED_UKS_54_STATE_1_NUM_ELECTRONS_SPIN_TRACED = 10.000000
+EXPECTED_UKS_54_STATE_1_NUM_UNPAIRED = 2.00012
+EXPECTED_UKS_54_STATE_1_NUM_UNPAIRED_NL = 2.00000
+EXPECTED_UKS_54_STATE_1_PR_NO = 2.003363
+EXPECTED_UKS_54_STATE_1_MULLIKEN_CHARGES = {0: -0.272264, 1: 0.541008, 2: -0.268744}
+EXPECTED_UKS_54_STATE_1_MULLIKEN_SPINS = {0: 0.000000, 1: 0.000000, 2: -0.000000}
+EXPECTED_UKS_54_STATE_1_DIPOLE_MOMENT = 1.231477
+EXPECTED_UKS_54_STATE_1_DIPOLE_COMPONENTS = (0.621980, 0.120499, 1.056010)
+EXPECTED_UKS_54_STATE_1_R_H_TOTAL = (2.311708, 1.559437, -0.071560)
+EXPECTED_UKS_54_STATE_1_R_E_TOTAL = (1.975434, 1.492090, -0.652796)
+EXPECTED_UKS_54_STATE_1_SEPARATION_TOTAL = 0.674870
+EXPECTED_UKS_54_STATE_1_HOLE_SIZE_TOTAL = 0.827901
+EXPECTED_UKS_54_STATE_1_ELECTRON_SIZE_TOTAL = 1.861783
+
+# UKS 5.4 data - Excited State 2
+EXPECTED_UKS_54_STATE_2_FRONTIER_NOS_ALPHA = [0.4996, 0.5003]
+EXPECTED_UKS_54_STATE_2_NUM_ELECTRONS_ALPHA = 5.000000
+EXPECTED_UKS_54_STATE_2_FRONTIER_NOS_BETA = [0.4996, 0.5003]
+EXPECTED_UKS_54_STATE_2_NUM_ELECTRONS_BETA = 5.000000
+EXPECTED_UKS_54_STATE_2_FRONTIER_NOS_SPIN_TRACED = [0.9992, 1.0006]
+EXPECTED_UKS_54_STATE_2_NUM_ELECTRONS_SPIN_TRACED = 10.000000
+EXPECTED_UKS_54_STATE_2_NUM_UNPAIRED = 1.99930
+EXPECTED_UKS_54_STATE_2_NUM_UNPAIRED_NL = 2.00000
+EXPECTED_UKS_54_STATE_2_PR_NO = 2.001426
+EXPECTED_UKS_54_STATE_2_MULLIKEN_CHARGES = {0: -0.283169, 1: 0.562822, 2: -0.279653}
+EXPECTED_UKS_54_STATE_2_MULLIKEN_SPINS = {0: 0.000000, 1: -0.000000, 2: 0.000000}
+EXPECTED_UKS_54_STATE_2_DIPOLE_MOMENT = 1.409928
+EXPECTED_UKS_54_STATE_2_DIPOLE_COMPONENTS = (0.710060, 0.138451, 1.210183)
+EXPECTED_UKS_54_STATE_2_R_H_TOTAL = (2.311785, 1.559453, -0.071430)
+EXPECTED_UKS_54_STATE_2_R_E_TOTAL = (1.957005, 1.488336, -0.685052)
+EXPECTED_UKS_54_STATE_2_SEPARATION_TOTAL = 0.712361
+EXPECTED_UKS_54_STATE_2_HOLE_SIZE_TOTAL = 0.827946
+EXPECTED_UKS_54_STATE_2_ELECTRON_SIZE_TOTAL = 1.932808
+
+# UKS 5.4 data - Excited State 7
+EXPECTED_UKS_54_STATE_7_FRONTIER_NOS_ALPHA = [0.4902, 0.5097]
+EXPECTED_UKS_54_STATE_7_NUM_ELECTRONS_ALPHA = 5.000000
+EXPECTED_UKS_54_STATE_7_FRONTIER_NOS_BETA = [0.4902, 0.5097]
+EXPECTED_UKS_54_STATE_7_NUM_ELECTRONS_BETA = 5.000000
+EXPECTED_UKS_54_STATE_7_FRONTIER_NOS_SPIN_TRACED = [0.9804, 1.0193]
+EXPECTED_UKS_54_STATE_7_NUM_ELECTRONS_SPIN_TRACED = 10.000000
+EXPECTED_UKS_54_STATE_7_NUM_UNPAIRED = 2.00541
+EXPECTED_UKS_54_STATE_7_NUM_UNPAIRED_NL = 2.00217
+EXPECTED_UKS_54_STATE_7_PR_NO = 2.090472
+EXPECTED_UKS_54_STATE_7_MULLIKEN_CHARGES = {0: -0.229283, 1: 0.466761, 2: -0.237478}
+EXPECTED_UKS_54_STATE_7_MULLIKEN_SPINS = {0: -0.000000, 1: 0.000000, 2: -0.000000}
+EXPECTED_UKS_54_STATE_7_DIPOLE_MOMENT = 1.916470
+EXPECTED_UKS_54_STATE_7_DIPOLE_COMPONENTS = (0.921424, 0.200661, 1.668403)
+EXPECTED_UKS_54_STATE_7_R_H_TOTAL = (2.349369, 1.567221, -0.005281)
+EXPECTED_UKS_54_STATE_7_R_E_TOTAL = (1.951284, 1.483303, -0.713040)
+EXPECTED_UKS_54_STATE_7_SEPARATION_TOTAL = 0.816355
+EXPECTED_UKS_54_STATE_7_HOLE_SIZE_TOTAL = 0.860981
+EXPECTED_UKS_54_STATE_7_ELECTRON_SIZE_TOTAL = 2.078160
+
 # Numerical tolerance
 FLOAT_TOL = 1e-6
 
@@ -478,3 +538,231 @@ class TestUksUnrelaxedDensityMatrixRegression:
             assert exciton.r_h_ang[i] == pytest.approx(expected, abs=FLOAT_TOL)
 
         assert exciton.separation_ang == pytest.approx(EXPECTED_UKS_STATE_10_SEPARATION_TOTAL, abs=FLOAT_TOL)
+
+    def test_54_state_1_nos(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact NOs values for UKS 5.4 Excited State 1."""
+        unrel_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+        assert unrel_dms is not None
+        dm = next(dm for dm in unrel_dms if dm.state_number == 1)
+
+        assert dm.state_number == 1
+        assert dm.multiplicity == "Excited State 1"
+
+        # Alpha NOs
+        assert dm.nos_alpha is not None
+        assert list(dm.nos_alpha.frontier_occupations) == pytest.approx(
+            EXPECTED_UKS_54_STATE_1_FRONTIER_NOS_ALPHA, abs=FLOAT_TOL
+        )
+        assert dm.nos_alpha.num_electrons == pytest.approx(EXPECTED_UKS_54_STATE_1_NUM_ELECTRONS_ALPHA, abs=FLOAT_TOL)
+
+        # Beta NOs
+        assert dm.nos_beta is not None
+        assert list(dm.nos_beta.frontier_occupations) == pytest.approx(
+            EXPECTED_UKS_54_STATE_1_FRONTIER_NOS_BETA, abs=FLOAT_TOL
+        )
+        assert dm.nos_beta.num_electrons == pytest.approx(EXPECTED_UKS_54_STATE_1_NUM_ELECTRONS_BETA, abs=FLOAT_TOL)
+
+        # Spin-traced NOs
+        nos = dm.nos_spin_traced
+        assert list(nos.frontier_occupations) == pytest.approx(
+            EXPECTED_UKS_54_STATE_1_FRONTIER_NOS_SPIN_TRACED, abs=FLOAT_TOL
+        )
+        assert nos.num_electrons == pytest.approx(EXPECTED_UKS_54_STATE_1_NUM_ELECTRONS_SPIN_TRACED, abs=FLOAT_TOL)
+        assert nos.num_unpaired == pytest.approx(EXPECTED_UKS_54_STATE_1_NUM_UNPAIRED, abs=FLOAT_TOL)
+        assert nos.num_unpaired_nl == pytest.approx(EXPECTED_UKS_54_STATE_1_NUM_UNPAIRED_NL, abs=FLOAT_TOL)
+        assert nos.pr_no == pytest.approx(EXPECTED_UKS_54_STATE_1_PR_NO, abs=FLOAT_TOL)
+
+    def test_54_state_1_mulliken(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact Mulliken charges and spins for UKS 5.4 Excited State 1."""
+        unrel_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+        assert unrel_dms is not None
+        dm = next(dm for dm in unrel_dms if dm.state_number == 1)
+
+        for atom_idx, expected_charge in EXPECTED_UKS_54_STATE_1_MULLIKEN_CHARGES.items():
+            actual_charge = dm.mulliken.charges[atom_idx]
+            assert actual_charge == pytest.approx(expected_charge, abs=FLOAT_TOL)
+
+        assert dm.mulliken.spins is not None
+        for atom_idx, expected_spin in EXPECTED_UKS_54_STATE_1_MULLIKEN_SPINS.items():
+            actual_spin = dm.mulliken.spins[atom_idx]
+            assert actual_spin == pytest.approx(expected_spin, abs=FLOAT_TOL)
+
+    def test_54_state_1_multipole(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact multipole moments for UKS 5.4 Excited State 1."""
+        unrel_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+        assert unrel_dms is not None
+        dm = next(dm for dm in unrel_dms if dm.state_number == 1)
+
+        assert dm.dipole_moment_debye == pytest.approx(EXPECTED_UKS_54_STATE_1_DIPOLE_MOMENT, abs=FLOAT_TOL)
+
+        for i, expected in enumerate(EXPECTED_UKS_54_STATE_1_DIPOLE_COMPONENTS):
+            assert dm.dipole_components_debye[i] == pytest.approx(expected, abs=FLOAT_TOL)
+
+    def test_54_state_1_exciton_total(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact exciton analysis (Total) for UKS 5.4 Excited State 1."""
+        unrel_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+        assert unrel_dms is not None
+        dm = next(dm for dm in unrel_dms if dm.state_number == 1)
+        exciton = dm.exciton_total
+
+        for i, expected in enumerate(EXPECTED_UKS_54_STATE_1_R_H_TOTAL):
+            assert exciton.r_h_ang[i] == pytest.approx(expected, abs=FLOAT_TOL)
+
+        for i, expected in enumerate(EXPECTED_UKS_54_STATE_1_R_E_TOTAL):
+            assert exciton.r_e_ang[i] == pytest.approx(expected, abs=FLOAT_TOL)
+
+        assert exciton.separation_ang == pytest.approx(EXPECTED_UKS_54_STATE_1_SEPARATION_TOTAL, abs=FLOAT_TOL)
+        assert exciton.hole_size_ang == pytest.approx(EXPECTED_UKS_54_STATE_1_HOLE_SIZE_TOTAL, abs=FLOAT_TOL)
+        assert exciton.electron_size_ang == pytest.approx(EXPECTED_UKS_54_STATE_1_ELECTRON_SIZE_TOTAL, abs=FLOAT_TOL)
+
+    def test_54_state_2_nos(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact NOs values for UKS 5.4 Excited State 2."""
+        unrel_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+        assert unrel_dms is not None
+        dm = next(dm for dm in unrel_dms if dm.state_number == 2)
+
+        assert dm.state_number == 2
+        assert dm.multiplicity == "Excited State 2"
+
+        # Alpha NOs
+        assert dm.nos_alpha is not None
+        assert list(dm.nos_alpha.frontier_occupations) == pytest.approx(
+            EXPECTED_UKS_54_STATE_2_FRONTIER_NOS_ALPHA, abs=FLOAT_TOL
+        )
+        assert dm.nos_alpha.num_electrons == pytest.approx(EXPECTED_UKS_54_STATE_2_NUM_ELECTRONS_ALPHA, abs=FLOAT_TOL)
+
+        # Beta NOs
+        assert dm.nos_beta is not None
+        assert list(dm.nos_beta.frontier_occupations) == pytest.approx(
+            EXPECTED_UKS_54_STATE_2_FRONTIER_NOS_BETA, abs=FLOAT_TOL
+        )
+        assert dm.nos_beta.num_electrons == pytest.approx(EXPECTED_UKS_54_STATE_2_NUM_ELECTRONS_BETA, abs=FLOAT_TOL)
+
+        # Spin-traced NOs
+        nos = dm.nos_spin_traced
+        assert list(nos.frontier_occupations) == pytest.approx(
+            EXPECTED_UKS_54_STATE_2_FRONTIER_NOS_SPIN_TRACED, abs=FLOAT_TOL
+        )
+        assert nos.num_electrons == pytest.approx(EXPECTED_UKS_54_STATE_2_NUM_ELECTRONS_SPIN_TRACED, abs=FLOAT_TOL)
+        assert nos.num_unpaired == pytest.approx(EXPECTED_UKS_54_STATE_2_NUM_UNPAIRED, abs=FLOAT_TOL)
+        assert nos.num_unpaired_nl == pytest.approx(EXPECTED_UKS_54_STATE_2_NUM_UNPAIRED_NL, abs=FLOAT_TOL)
+        assert nos.pr_no == pytest.approx(EXPECTED_UKS_54_STATE_2_PR_NO, abs=FLOAT_TOL)
+
+    def test_54_state_2_mulliken(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact Mulliken charges and spins for UKS 5.4 Excited State 2."""
+        unrel_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+        assert unrel_dms is not None
+        dm = next(dm for dm in unrel_dms if dm.state_number == 2)
+
+        for atom_idx, expected_charge in EXPECTED_UKS_54_STATE_2_MULLIKEN_CHARGES.items():
+            actual_charge = dm.mulliken.charges[atom_idx]
+            assert actual_charge == pytest.approx(expected_charge, abs=FLOAT_TOL)
+
+        assert dm.mulliken.spins is not None
+        for atom_idx, expected_spin in EXPECTED_UKS_54_STATE_2_MULLIKEN_SPINS.items():
+            actual_spin = dm.mulliken.spins[atom_idx]
+            assert actual_spin == pytest.approx(expected_spin, abs=FLOAT_TOL)
+
+    def test_54_state_2_multipole(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact multipole moments for UKS 5.4 Excited State 2."""
+        unrel_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+        assert unrel_dms is not None
+        dm = next(dm for dm in unrel_dms if dm.state_number == 2)
+
+        assert dm.dipole_moment_debye == pytest.approx(EXPECTED_UKS_54_STATE_2_DIPOLE_MOMENT, abs=FLOAT_TOL)
+
+        for i, expected in enumerate(EXPECTED_UKS_54_STATE_2_DIPOLE_COMPONENTS):
+            assert dm.dipole_components_debye[i] == pytest.approx(expected, abs=FLOAT_TOL)
+
+    def test_54_state_2_exciton_total(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact exciton analysis (Total) for UKS 5.4 Excited State 2."""
+        unrel_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+        assert unrel_dms is not None
+        dm = next(dm for dm in unrel_dms if dm.state_number == 2)
+        exciton = dm.exciton_total
+
+        for i, expected in enumerate(EXPECTED_UKS_54_STATE_2_R_H_TOTAL):
+            assert exciton.r_h_ang[i] == pytest.approx(expected, abs=FLOAT_TOL)
+
+        for i, expected in enumerate(EXPECTED_UKS_54_STATE_2_R_E_TOTAL):
+            assert exciton.r_e_ang[i] == pytest.approx(expected, abs=FLOAT_TOL)
+
+        assert exciton.separation_ang == pytest.approx(EXPECTED_UKS_54_STATE_2_SEPARATION_TOTAL, abs=FLOAT_TOL)
+        assert exciton.hole_size_ang == pytest.approx(EXPECTED_UKS_54_STATE_2_HOLE_SIZE_TOTAL, abs=FLOAT_TOL)
+        assert exciton.electron_size_ang == pytest.approx(EXPECTED_UKS_54_STATE_2_ELECTRON_SIZE_TOTAL, abs=FLOAT_TOL)
+
+    def test_54_state_7_nos(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact NOs values for UKS 5.4 Excited State 7."""
+        unrel_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+        assert unrel_dms is not None
+        dm = next(dm for dm in unrel_dms if dm.state_number == 7)
+
+        assert dm.state_number == 7
+        assert dm.multiplicity == "Excited State 7"
+
+        # Alpha NOs
+        assert dm.nos_alpha is not None
+        assert list(dm.nos_alpha.frontier_occupations) == pytest.approx(
+            EXPECTED_UKS_54_STATE_7_FRONTIER_NOS_ALPHA, abs=FLOAT_TOL
+        )
+        assert dm.nos_alpha.num_electrons == pytest.approx(EXPECTED_UKS_54_STATE_7_NUM_ELECTRONS_ALPHA, abs=FLOAT_TOL)
+
+        # Beta NOs
+        assert dm.nos_beta is not None
+        assert list(dm.nos_beta.frontier_occupations) == pytest.approx(
+            EXPECTED_UKS_54_STATE_7_FRONTIER_NOS_BETA, abs=FLOAT_TOL
+        )
+        assert dm.nos_beta.num_electrons == pytest.approx(EXPECTED_UKS_54_STATE_7_NUM_ELECTRONS_BETA, abs=FLOAT_TOL)
+
+        # Spin-traced NOs
+        nos = dm.nos_spin_traced
+        assert list(nos.frontier_occupations) == pytest.approx(
+            EXPECTED_UKS_54_STATE_7_FRONTIER_NOS_SPIN_TRACED, abs=FLOAT_TOL
+        )
+        assert nos.num_electrons == pytest.approx(EXPECTED_UKS_54_STATE_7_NUM_ELECTRONS_SPIN_TRACED, abs=FLOAT_TOL)
+        assert nos.num_unpaired == pytest.approx(EXPECTED_UKS_54_STATE_7_NUM_UNPAIRED, abs=FLOAT_TOL)
+        assert nos.num_unpaired_nl == pytest.approx(EXPECTED_UKS_54_STATE_7_NUM_UNPAIRED_NL, abs=FLOAT_TOL)
+        assert nos.pr_no == pytest.approx(EXPECTED_UKS_54_STATE_7_PR_NO, abs=FLOAT_TOL)
+
+    def test_54_state_7_mulliken(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact Mulliken charges and spins for UKS 5.4 Excited State 7."""
+        unrel_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+        assert unrel_dms is not None
+        dm = next(dm for dm in unrel_dms if dm.state_number == 7)
+
+        for atom_idx, expected_charge in EXPECTED_UKS_54_STATE_7_MULLIKEN_CHARGES.items():
+            actual_charge = dm.mulliken.charges[atom_idx]
+            assert actual_charge == pytest.approx(expected_charge, abs=FLOAT_TOL)
+
+        assert dm.mulliken.spins is not None
+        for atom_idx, expected_spin in EXPECTED_UKS_54_STATE_7_MULLIKEN_SPINS.items():
+            actual_spin = dm.mulliken.spins[atom_idx]
+            assert actual_spin == pytest.approx(expected_spin, abs=FLOAT_TOL)
+
+    def test_54_state_7_multipole(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact multipole moments for UKS 5.4 Excited State 7."""
+        unrel_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+        assert unrel_dms is not None
+        dm = next(dm for dm in unrel_dms if dm.state_number == 7)
+
+        assert dm.dipole_moment_debye == pytest.approx(EXPECTED_UKS_54_STATE_7_DIPOLE_MOMENT, abs=FLOAT_TOL)
+
+        for i, expected in enumerate(EXPECTED_UKS_54_STATE_7_DIPOLE_COMPONENTS):
+            assert dm.dipole_components_debye[i] == pytest.approx(expected, abs=FLOAT_TOL)
+
+    def test_54_state_7_exciton_total(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact exciton analysis (Total) for UKS 5.4 Excited State 7."""
+        unrel_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+        assert unrel_dms is not None
+        dm = next(dm for dm in unrel_dms if dm.state_number == 7)
+        exciton = dm.exciton_total
+
+        for i, expected in enumerate(EXPECTED_UKS_54_STATE_7_R_H_TOTAL):
+            assert exciton.r_h_ang[i] == pytest.approx(expected, abs=FLOAT_TOL)
+
+        for i, expected in enumerate(EXPECTED_UKS_54_STATE_7_R_E_TOTAL):
+            assert exciton.r_e_ang[i] == pytest.approx(expected, abs=FLOAT_TOL)
+
+        assert exciton.separation_ang == pytest.approx(EXPECTED_UKS_54_STATE_7_SEPARATION_TOTAL, abs=FLOAT_TOL)
+        assert exciton.hole_size_ang == pytest.approx(EXPECTED_UKS_54_STATE_7_HOLE_SIZE_TOTAL, abs=FLOAT_TOL)
+        assert exciton.electron_size_ang == pytest.approx(EXPECTED_UKS_54_STATE_7_ELECTRON_SIZE_TOTAL, abs=FLOAT_TOL)
