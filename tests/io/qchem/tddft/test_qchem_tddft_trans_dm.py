@@ -135,6 +135,78 @@ EXPECTED_UKS_STATE_5_TRANS_DIPOLE_TOTAL = 0.003619
 EXPECTED_UKS_STATE_5_SEPARATION_TOTAL = 0.764045
 EXPECTED_UKS_STATE_5_SEPARATION_ALPHA = 0.764045
 
+# QChem 5.4 UKS TDDFT data - Excited State 2 (from ex-tran-dm.md)
+EXPECTED_QC54_STATE_2_NUM = 2
+EXPECTED_QC54_STATE_2_MULTIPLICITY = "Excited State 2"
+EXPECTED_QC54_STATE_2_OMEGA = 1.0011
+EXPECTED_QC54_STATE_2_OMEGA_ALPHA = 0.5005
+EXPECTED_QC54_STATE_2_OMEGA_BETA = 0.5005
+EXPECTED_QC54_STATE_2_PHE = -0.0230
+EXPECTED_QC54_STATE_2_PHE_ALPHA = -0.0230
+EXPECTED_QC54_STATE_2_PHE_BETA = -0.0230
+# Exciton Total
+EXPECTED_QC54_STATE_2_TRANS_DIPOLE_TOTAL = 1.343589
+EXPECTED_QC54_STATE_2_TRANS_DIPOLE_COMPONENTS_TOTAL = (0.221046, 1.295819, -0.277890)
+EXPECTED_QC54_STATE_2_R_H_TOTAL = (2.311727, 1.559441, -0.071529)
+EXPECTED_QC54_STATE_2_R_E_TOTAL = (1.957062, 1.488347, -0.684953)
+EXPECTED_QC54_STATE_2_SEPARATION_TOTAL = 0.712131
+EXPECTED_QC54_STATE_2_HOLE_SIZE_TOTAL = 0.828081
+EXPECTED_QC54_STATE_2_HOLE_SIZE_COMPONENTS_TOTAL = (0.390126, 0.616966, 0.390990)
+EXPECTED_QC54_STATE_2_ELEC_SIZE_TOTAL = 1.932792
+EXPECTED_QC54_STATE_2_ELEC_SIZE_COMPONENTS_TOTAL = (1.229133, 1.031595, 1.077372)
+EXPECTED_QC54_STATE_2_RMS_SEPARATION_TOTAL = 2.219123
+EXPECTED_QC54_STATE_2_RMS_SEPARATION_COMPONENTS_TOTAL = (1.336700, 1.203917, 1.299354)
+EXPECTED_QC54_STATE_2_COVARIANCE_TOTAL = 0.002016
+EXPECTED_QC54_STATE_2_CORRELATION_TOTAL = 0.001259
+EXPECTED_QC54_STATE_2_COM_SIZE_TOTAL = 1.051836
+EXPECTED_QC54_STATE_2_COM_COMPONENTS_TOTAL = (0.645165, 0.601105, 0.573406)
+# Exciton Alpha
+EXPECTED_QC54_STATE_2_TRANS_DIPOLE_ALPHA = 0.671794
+EXPECTED_QC54_STATE_2_TRANS_DIPOLE_COMPONENTS_ALPHA = (0.110523, 0.647909, -0.138945)
+EXPECTED_QC54_STATE_2_SEPARATION_ALPHA = 0.712131
+EXPECTED_QC54_STATE_2_COVARIANCE_ALPHA = 0.002016
+EXPECTED_QC54_STATE_2_CORRELATION_ALPHA = 0.001259
+# Exciton Beta
+EXPECTED_QC54_STATE_2_TRANS_DIPOLE_BETA = 0.671794
+EXPECTED_QC54_STATE_2_TRANS_DIPOLE_COMPONENTS_BETA = (0.110523, 0.647909, -0.138945)
+EXPECTED_QC54_STATE_2_SEPARATION_BETA = 0.712131
+
+# QChem 5.4 UKS TDDFT data - Excited State 7 (from ex-tran-dm.md)
+EXPECTED_QC54_STATE_7_NUM = 7
+EXPECTED_QC54_STATE_7_MULTIPLICITY = "Excited State 7"
+EXPECTED_QC54_STATE_7_OMEGA = 1.0027
+EXPECTED_QC54_STATE_7_OMEGA_ALPHA = 0.5014
+EXPECTED_QC54_STATE_7_OMEGA_BETA = 0.5014
+EXPECTED_QC54_STATE_7_PHE = 0.0432
+EXPECTED_QC54_STATE_7_PHE_ALPHA = 0.0432
+EXPECTED_QC54_STATE_7_PHE_BETA = 0.0432
+# Exciton Total
+EXPECTED_QC54_STATE_7_TRANS_DIPOLE_TOTAL = 0.000000
+EXPECTED_QC54_STATE_7_TRANS_DIPOLE_COMPONENTS_TOTAL = (-0.000000, 0.000000, 0.000000)
+EXPECTED_QC54_STATE_7_R_H_TOTAL = (2.349125, 1.567172, -0.005700)
+EXPECTED_QC54_STATE_7_R_E_TOTAL = (1.951527, 1.483352, -0.712621)
+EXPECTED_QC54_STATE_7_SEPARATION_TOTAL = 0.815381
+EXPECTED_QC54_STATE_7_HOLE_SIZE_TOTAL = 0.861474
+EXPECTED_QC54_STATE_7_HOLE_SIZE_COMPONENTS_TOTAL = (0.498740, 0.374148, 0.594482)
+EXPECTED_QC54_STATE_7_ELEC_SIZE_TOTAL = 2.078147
+EXPECTED_QC54_STATE_7_ELEC_SIZE_COMPONENTS_TOTAL = (1.498453, 0.937763, 1.092674)
+EXPECTED_QC54_STATE_7_RMS_SEPARATION_TOTAL = 2.377245
+EXPECTED_QC54_STATE_7_RMS_SEPARATION_COMPONENTS_TOTAL = (1.613486, 1.011235, 1.423152)
+EXPECTED_QC54_STATE_7_COVARIANCE_TOTAL = 0.037191
+EXPECTED_QC54_STATE_7_CORRELATION_TOTAL = 0.020774
+EXPECTED_QC54_STATE_7_COM_SIZE_TOTAL = 1.133051
+EXPECTED_QC54_STATE_7_COM_COMPONENTS_TOTAL = (0.797332, 0.505767, 0.626311)
+# Exciton Alpha
+EXPECTED_QC54_STATE_7_TRANS_DIPOLE_ALPHA = 1.095767
+EXPECTED_QC54_STATE_7_TRANS_DIPOLE_COMPONENTS_ALPHA = (-0.935082, 0.267658, 0.504665)
+EXPECTED_QC54_STATE_7_SEPARATION_ALPHA = 0.815381
+EXPECTED_QC54_STATE_7_COVARIANCE_ALPHA = 0.037191
+EXPECTED_QC54_STATE_7_CORRELATION_ALPHA = 0.020774
+# Exciton Beta
+EXPECTED_QC54_STATE_7_TRANS_DIPOLE_BETA = 1.095767
+EXPECTED_QC54_STATE_7_TRANS_DIPOLE_COMPONENTS_BETA = (0.935082, -0.267658, -0.504665)
+EXPECTED_QC54_STATE_7_SEPARATION_BETA = 0.815381
+
 # Numerical tolerance
 FLOAT_TOL = 1e-6
 
@@ -417,3 +489,153 @@ class TestUksTransitionDensityMatrixRegression:
         assert dm.sum_abs_trans_charges == pytest.approx(EXPECTED_UKS_STATE_5_QTA, abs=FLOAT_TOL)
         assert dm.omega == pytest.approx(EXPECTED_UKS_STATE_5_OMEGA, abs=FLOAT_TOL)
         assert dm.exciton_total.separation_ang == pytest.approx(EXPECTED_UKS_STATE_5_SEPARATION_TOTAL, abs=FLOAT_TOL)
+
+
+@pytest.mark.regression
+class TestQc54UksTransitionDensityMatrixRegression:
+    """Regression tests for QChem 5.4 UKS transition density matrix values."""
+
+    def test_state_2_ct_numbers(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact CT numbers for QChem 5.4 Excited State 2."""
+        trans_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.transition_density_matrices
+        assert trans_dms is not None
+        assert len(trans_dms) >= 2
+
+        dm = trans_dms[1]  # 0-indexed, State 2 is at index 1
+        assert dm.state_number == EXPECTED_QC54_STATE_2_NUM
+        assert dm.multiplicity == EXPECTED_QC54_STATE_2_MULTIPLICITY
+        assert dm.omega == pytest.approx(EXPECTED_QC54_STATE_2_OMEGA, abs=FLOAT_TOL)
+        assert dm.omega_alpha == pytest.approx(EXPECTED_QC54_STATE_2_OMEGA_ALPHA, abs=FLOAT_TOL)
+        assert dm.omega_beta == pytest.approx(EXPECTED_QC54_STATE_2_OMEGA_BETA, abs=FLOAT_TOL)
+        assert dm.phe == pytest.approx(EXPECTED_QC54_STATE_2_PHE, abs=FLOAT_TOL)
+        assert dm.phe_alpha == pytest.approx(EXPECTED_QC54_STATE_2_PHE_ALPHA, abs=FLOAT_TOL)
+        assert dm.phe_beta == pytest.approx(EXPECTED_QC54_STATE_2_PHE_BETA, abs=FLOAT_TOL)
+
+    def test_state_2_exciton_total(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact exciton (Total) for QChem 5.4 Excited State 2."""
+        trans_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.transition_density_matrices
+        assert trans_dms is not None
+        dm = trans_dms[1]
+        exciton = dm.exciton_total
+
+        assert exciton.trans_dipole_moment_debye == pytest.approx(
+            EXPECTED_QC54_STATE_2_TRANS_DIPOLE_TOTAL, abs=FLOAT_TOL
+        )
+        assert exciton.trans_dipole_moment_components_debye[0] == pytest.approx(
+            EXPECTED_QC54_STATE_2_TRANS_DIPOLE_COMPONENTS_TOTAL[0], abs=FLOAT_TOL
+        )
+        assert exciton.trans_dipole_moment_components_debye[1] == pytest.approx(
+            EXPECTED_QC54_STATE_2_TRANS_DIPOLE_COMPONENTS_TOTAL[1], abs=FLOAT_TOL
+        )
+        assert exciton.trans_dipole_moment_components_debye[2] == pytest.approx(
+            EXPECTED_QC54_STATE_2_TRANS_DIPOLE_COMPONENTS_TOTAL[2], abs=FLOAT_TOL
+        )
+        assert exciton.r_h_ang[0] == pytest.approx(EXPECTED_QC54_STATE_2_R_H_TOTAL[0], abs=FLOAT_TOL)
+        assert exciton.r_h_ang[1] == pytest.approx(EXPECTED_QC54_STATE_2_R_H_TOTAL[1], abs=FLOAT_TOL)
+        assert exciton.r_h_ang[2] == pytest.approx(EXPECTED_QC54_STATE_2_R_H_TOTAL[2], abs=FLOAT_TOL)
+        assert exciton.r_e_ang[0] == pytest.approx(EXPECTED_QC54_STATE_2_R_E_TOTAL[0], abs=FLOAT_TOL)
+        assert exciton.r_e_ang[1] == pytest.approx(EXPECTED_QC54_STATE_2_R_E_TOTAL[1], abs=FLOAT_TOL)
+        assert exciton.r_e_ang[2] == pytest.approx(EXPECTED_QC54_STATE_2_R_E_TOTAL[2], abs=FLOAT_TOL)
+        assert exciton.separation_ang == pytest.approx(EXPECTED_QC54_STATE_2_SEPARATION_TOTAL, abs=FLOAT_TOL)
+        assert exciton.hole_size_ang == pytest.approx(EXPECTED_QC54_STATE_2_HOLE_SIZE_TOTAL, abs=FLOAT_TOL)
+        assert exciton.electron_size_ang == pytest.approx(EXPECTED_QC54_STATE_2_ELEC_SIZE_TOTAL, abs=FLOAT_TOL)
+        assert exciton.rms_separation_ang == pytest.approx(EXPECTED_QC54_STATE_2_RMS_SEPARATION_TOTAL, abs=FLOAT_TOL)
+        assert exciton.covariance == pytest.approx(EXPECTED_QC54_STATE_2_COVARIANCE_TOTAL, abs=FLOAT_TOL)
+        assert exciton.correlation_coef == pytest.approx(EXPECTED_QC54_STATE_2_CORRELATION_TOTAL, abs=FLOAT_TOL)
+        assert exciton.center_of_mass_size_ang == pytest.approx(EXPECTED_QC54_STATE_2_COM_SIZE_TOTAL, abs=FLOAT_TOL)
+
+    def test_state_2_exciton_alpha(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact exciton (Alpha) for QChem 5.4 Excited State 2."""
+        trans_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.transition_density_matrices
+        assert trans_dms is not None
+        dm = trans_dms[1]
+        exciton = dm.exciton_alpha
+
+        assert exciton is not None
+        assert exciton.trans_dipole_moment_debye == pytest.approx(
+            EXPECTED_QC54_STATE_2_TRANS_DIPOLE_ALPHA, abs=FLOAT_TOL
+        )
+        assert exciton.separation_ang == pytest.approx(EXPECTED_QC54_STATE_2_SEPARATION_ALPHA, abs=FLOAT_TOL)
+        assert exciton.covariance == pytest.approx(EXPECTED_QC54_STATE_2_COVARIANCE_ALPHA, abs=FLOAT_TOL)
+        assert exciton.correlation_coef == pytest.approx(EXPECTED_QC54_STATE_2_CORRELATION_ALPHA, abs=FLOAT_TOL)
+
+    def test_state_2_exciton_beta(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact exciton (Beta) for QChem 5.4 Excited State 2."""
+        trans_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.transition_density_matrices
+        assert trans_dms is not None
+        dm = trans_dms[1]
+        exciton = dm.exciton_beta
+
+        assert exciton is not None
+        assert exciton.trans_dipole_moment_debye == pytest.approx(
+            EXPECTED_QC54_STATE_2_TRANS_DIPOLE_BETA, abs=FLOAT_TOL
+        )
+        assert exciton.separation_ang == pytest.approx(EXPECTED_QC54_STATE_2_SEPARATION_BETA, abs=FLOAT_TOL)
+
+    def test_state_7_ct_numbers(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact CT numbers for QChem 5.4 Excited State 7."""
+        trans_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.transition_density_matrices
+        assert trans_dms is not None
+        assert len(trans_dms) >= 7
+
+        dm = trans_dms[6]  # 0-indexed, State 7 is at index 6
+        assert dm.state_number == EXPECTED_QC54_STATE_7_NUM
+        assert dm.multiplicity == EXPECTED_QC54_STATE_7_MULTIPLICITY
+        assert dm.omega == pytest.approx(EXPECTED_QC54_STATE_7_OMEGA, abs=FLOAT_TOL)
+        assert dm.omega_alpha == pytest.approx(EXPECTED_QC54_STATE_7_OMEGA_ALPHA, abs=FLOAT_TOL)
+        assert dm.omega_beta == pytest.approx(EXPECTED_QC54_STATE_7_OMEGA_BETA, abs=FLOAT_TOL)
+        assert dm.phe == pytest.approx(EXPECTED_QC54_STATE_7_PHE, abs=FLOAT_TOL)
+        assert dm.phe_alpha == pytest.approx(EXPECTED_QC54_STATE_7_PHE_ALPHA, abs=FLOAT_TOL)
+        assert dm.phe_beta == pytest.approx(EXPECTED_QC54_STATE_7_PHE_BETA, abs=FLOAT_TOL)
+
+    def test_state_7_exciton_total(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact exciton (Total) for QChem 5.4 Excited State 7."""
+        trans_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.transition_density_matrices
+        assert trans_dms is not None
+        dm = trans_dms[6]
+        exciton = dm.exciton_total
+
+        assert exciton.trans_dipole_moment_debye == pytest.approx(
+            EXPECTED_QC54_STATE_7_TRANS_DIPOLE_TOTAL, abs=FLOAT_TOL
+        )
+        assert exciton.r_h_ang[0] == pytest.approx(EXPECTED_QC54_STATE_7_R_H_TOTAL[0], abs=FLOAT_TOL)
+        assert exciton.r_h_ang[1] == pytest.approx(EXPECTED_QC54_STATE_7_R_H_TOTAL[1], abs=FLOAT_TOL)
+        assert exciton.r_h_ang[2] == pytest.approx(EXPECTED_QC54_STATE_7_R_H_TOTAL[2], abs=FLOAT_TOL)
+        assert exciton.r_e_ang[0] == pytest.approx(EXPECTED_QC54_STATE_7_R_E_TOTAL[0], abs=FLOAT_TOL)
+        assert exciton.r_e_ang[1] == pytest.approx(EXPECTED_QC54_STATE_7_R_E_TOTAL[1], abs=FLOAT_TOL)
+        assert exciton.r_e_ang[2] == pytest.approx(EXPECTED_QC54_STATE_7_R_E_TOTAL[2], abs=FLOAT_TOL)
+        assert exciton.separation_ang == pytest.approx(EXPECTED_QC54_STATE_7_SEPARATION_TOTAL, abs=FLOAT_TOL)
+        assert exciton.hole_size_ang == pytest.approx(EXPECTED_QC54_STATE_7_HOLE_SIZE_TOTAL, abs=FLOAT_TOL)
+        assert exciton.electron_size_ang == pytest.approx(EXPECTED_QC54_STATE_7_ELEC_SIZE_TOTAL, abs=FLOAT_TOL)
+        assert exciton.rms_separation_ang == pytest.approx(EXPECTED_QC54_STATE_7_RMS_SEPARATION_TOTAL, abs=FLOAT_TOL)
+        assert exciton.covariance == pytest.approx(EXPECTED_QC54_STATE_7_COVARIANCE_TOTAL, abs=FLOAT_TOL)
+        assert exciton.correlation_coef == pytest.approx(EXPECTED_QC54_STATE_7_CORRELATION_TOTAL, abs=FLOAT_TOL)
+        assert exciton.center_of_mass_size_ang == pytest.approx(EXPECTED_QC54_STATE_7_COM_SIZE_TOTAL, abs=FLOAT_TOL)
+
+    def test_state_7_exciton_alpha(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact exciton (Alpha) for QChem 5.4 Excited State 7."""
+        trans_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.transition_density_matrices
+        assert trans_dms is not None
+        dm = trans_dms[6]
+        exciton = dm.exciton_alpha
+
+        assert exciton is not None
+        assert exciton.trans_dipole_moment_debye == pytest.approx(
+            EXPECTED_QC54_STATE_7_TRANS_DIPOLE_ALPHA, abs=FLOAT_TOL
+        )
+        assert exciton.separation_ang == pytest.approx(EXPECTED_QC54_STATE_7_SEPARATION_ALPHA, abs=FLOAT_TOL)
+        assert exciton.covariance == pytest.approx(EXPECTED_QC54_STATE_7_COVARIANCE_ALPHA, abs=FLOAT_TOL)
+        assert exciton.correlation_coef == pytest.approx(EXPECTED_QC54_STATE_7_CORRELATION_ALPHA, abs=FLOAT_TOL)
+
+    def test_state_7_exciton_beta(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Verify exact exciton (Beta) for QChem 5.4 Excited State 7."""
+        trans_dms = parsed_qchem_54_h2o_uks_tddft_data.tddft.transition_density_matrices
+        assert trans_dms is not None
+        dm = trans_dms[6]
+        exciton = dm.exciton_beta
+
+        assert exciton is not None
+        assert exciton.trans_dipole_moment_debye == pytest.approx(
+            EXPECTED_QC54_STATE_7_TRANS_DIPOLE_BETA, abs=FLOAT_TOL
+        )
+        assert exciton.separation_ang == pytest.approx(EXPECTED_QC54_STATE_7_SEPARATION_BETA, abs=FLOAT_TOL)

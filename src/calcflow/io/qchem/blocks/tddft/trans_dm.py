@@ -427,6 +427,7 @@ class TransitionDensityMatrixParser(BlockParser):
                 or any(kw in line for kw in ["Mulliken Population", "Multipole moment"])
                 or self.STATE_HEADER_PAT.match(line)
             ):
+                exciton_data.update(trans_metrics)
                 return trans_metrics, ExcitonAnalysis.model_validate(exciton_data), line
 
             if not stripped:  # A blank line terminates the current sub-block
@@ -455,7 +456,7 @@ class TransitionDensityMatrixParser(BlockParser):
                 continue
             if expecting_trans_components:
                 if "Cartesian components [D]:" in line:
-                    trans_metrics["trans_dipole_components_debye"] = self._parse_vector_line(line)
+                    trans_metrics["trans_dipole_moment_components_debye"] = self._parse_vector_line(line)
                 expecting_trans_components = False
                 continue
             if expecting_trans_r2_components:
@@ -498,4 +499,5 @@ class TransitionDensityMatrixParser(BlockParser):
                 exciton_data["center_of_mass_size_ang"] = self._parse_key_value_line(line, "Center-of-mass size")
                 expecting_com_components = True
 
+        exciton_data.update(trans_metrics)
         return trans_metrics, ExcitonAnalysis.model_validate(exciton_data), None

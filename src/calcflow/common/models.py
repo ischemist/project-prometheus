@@ -352,6 +352,11 @@ class ExcitonAnalysis(BaseModel):
     correlation_coef: float | None = None
     center_of_mass_size_ang: float | None = None
     center_of_mass_components_ang: tuple[float, float, float] | None = None
+    # Transition-specific properties (transition dipole moment, etc.)
+    trans_dipole_moment_debye: float | None = None  # Trans. dipole moment [D]
+    trans_dipole_moment_components_debye: tuple[float, float, float] | None = None  # Cartesian components [D]
+    trans_r2_au: float | None = None  # Transition <r^2> [a.u.]
+    trans_r2_components_au: tuple[float, float, float] | None = None  # Cartesian components [a.u.]
 
 
 class UnrelaxedDensityMatrix(BaseModel):
@@ -386,7 +391,8 @@ class TransitionDensityMatrix(BaseModel):
     state_number: int
     multiplicity: str | None = None  # "Singlet N" or "Excited State N"
     # Mulliken Population Analysis (Transition DM)
-    mulliken: AtomicCharges  # Reuse existing model
+    # Note: QChem 5.4 doesn't include this section in transition DM analysis
+    mulliken: AtomicCharges | None = None  # Reuse existing model
     # CT numbers and transition metrics
     sum_abs_trans_charges: float | None = None  # QTa
     sum_squared_trans_charges: float | None = None  # QT2

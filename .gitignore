@@ -16,4 +16,4 @@ docs/
 
 .coverage
 .ignore
-#ex-*.md
+ex-*.md
