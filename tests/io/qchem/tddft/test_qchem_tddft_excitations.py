@@ -62,6 +62,32 @@ EXPECTED_UKS_TDDFT_STATE_7_NUM_TRANSITIONS = 4  # Has alpha and beta versions
 EXPECTED_UKS_NUM_TDA_STATES = 10
 EXPECTED_UKS_NUM_TDDFT_STATES = 10
 
+# UKS TDDFT data from QChem 5.4 (parsed_qchem_54_h2o_uks_tddft_data)
+EXPECTED_UKS_54_TDA_STATE_1_EXCITATION_EV = 7.1479
+EXPECTED_UKS_54_TDA_STATE_1_TOTAL_ENERGY_AU = -76.17857122
+EXPECTED_UKS_54_TDA_STATE_1_STRENGTH = 0.0
+
+EXPECTED_UKS_54_TDA_STATE_2_EXCITATION_EV = 7.5954
+EXPECTED_UKS_54_TDA_STATE_2_TOTAL_ENERGY_AU = -76.16212816
+EXPECTED_UKS_54_TDA_STATE_2_STRENGTH = 0.0518863673
+
+EXPECTED_UKS_54_TDA_STATE_3_EXCITATION_EV = 9.0388
+EXPECTED_UKS_54_TDA_STATE_3_TOTAL_ENERGY_AU = -76.10908350
+
+EXPECTED_UKS_54_TDDFT_STATE_1_EXCITATION_EV = 7.1232
+EXPECTED_UKS_54_TDDFT_STATE_1_TOTAL_ENERGY_AU = -76.17948063
+EXPECTED_UKS_54_TDDFT_STATE_1_STRENGTH = 0.0
+
+EXPECTED_UKS_54_TDDFT_STATE_2_EXCITATION_EV = 7.5725
+EXPECTED_UKS_54_TDDFT_STATE_2_TOTAL_ENERGY_AU = -76.16297039
+EXPECTED_UKS_54_TDDFT_STATE_2_STRENGTH = 0.0518397939
+
+EXPECTED_UKS_54_TDDFT_STATE_7_EXCITATION_EV = 10.9639
+EXPECTED_UKS_54_TDDFT_STATE_7_NUM_TRANSITIONS = 4  # D(4)->V(2), D(4)->V(3) with alpha/beta
+
+EXPECTED_UKS_54_NUM_TDA_STATES = 10
+EXPECTED_UKS_54_NUM_TDDFT_STATES = 10
+
 # Numerical tolerance
 ENERGY_TOL = 1e-4
 STRENGTH_TOL = 1e-8
@@ -578,3 +604,163 @@ def test_uks_tddft_state_7_multiple_transitions(parsed_qchem_62_h2o_uks_tddft_da
     has_alpha = any(t.is_alpha_spin is True for t in state.transitions)
     has_beta = any(t.is_alpha_spin is False for t in state.transitions)
     assert has_alpha and has_beta
+
+
+# =============================================================================
+# REGRESSION TESTS: QChem 5.4 UKS TDDFT (parsed_qchem_54_h2o_uks_tddft_data)
+# =============================================================================
+
+
+@pytest.mark.regression
+def test_uks_54_tda_state_count(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify exact number of TDA states parsed for QChem 5.4 UKS."""
+    tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tda_states is not None
+    assert len(tddft.tda_states) == EXPECTED_UKS_54_NUM_TDA_STATES
+
+
+@pytest.mark.regression
+def test_uks_54_tddft_state_count(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify exact number of TDDFT states parsed for QChem 5.4 UKS."""
+    tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tddft_states is not None
+    assert len(tddft.tddft_states) == EXPECTED_UKS_54_NUM_TDDFT_STATES
+
+
+@pytest.mark.regression
+@pytest.mark.parametrize(
+    "state_idx,expected_energy,expected_total_energy,expected_strength",
+    [
+        (
+            0,
+            EXPECTED_UKS_54_TDA_STATE_1_EXCITATION_EV,
+            EXPECTED_UKS_54_TDA_STATE_1_TOTAL_ENERGY_AU,
+            EXPECTED_UKS_54_TDA_STATE_1_STRENGTH,
+        ),
+        (
+            1,
+            EXPECTED_UKS_54_TDA_STATE_2_EXCITATION_EV,
+            EXPECTED_UKS_54_TDA_STATE_2_TOTAL_ENERGY_AU,
+            EXPECTED_UKS_54_TDA_STATE_2_STRENGTH,
+        ),
+        (2, EXPECTED_UKS_54_TDA_STATE_3_EXCITATION_EV, EXPECTED_UKS_54_TDA_STATE_3_TOTAL_ENERGY_AU, 0.0),
+    ],
+    ids=["uks-54-tda-state-1", "uks-54-tda-state-2", "uks-54-tda-state-3"],
+)
+def test_uks_54_tda_state_energies_exact(
+    parsed_qchem_54_h2o_uks_tddft_data: CalculationResult,
+    state_idx: int,
+    expected_energy: float,
+    expected_total_energy: float,
+    expected_strength: float,
+):
+    """Regression test: verify exact TDA energies for QChem 5.4 UKS."""
+    tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tda_states is not None
+    assert len(tddft.tda_states) > state_idx
+
+    state = tddft.tda_states[state_idx]
+    assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
+    assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
+    assert state.oscillator_strength == pytest.approx(expected_strength, abs=STRENGTH_TOL)
+
+
+@pytest.mark.regression
+@pytest.mark.parametrize(
+    "state_idx,expected_energy,expected_total_energy,expected_strength",
+    [
+        (
+            0,
+            EXPECTED_UKS_54_TDDFT_STATE_1_EXCITATION_EV,
+            EXPECTED_UKS_54_TDDFT_STATE_1_TOTAL_ENERGY_AU,
+            EXPECTED_UKS_54_TDDFT_STATE_1_STRENGTH,
+        ),
+        (
+            1,
+            EXPECTED_UKS_54_TDDFT_STATE_2_EXCITATION_EV,
+            EXPECTED_UKS_54_TDDFT_STATE_2_TOTAL_ENERGY_AU,
+            EXPECTED_UKS_54_TDDFT_STATE_2_STRENGTH,
+        ),
+        (6, EXPECTED_UKS_54_TDDFT_STATE_7_EXCITATION_EV, -76.03833772, 0.0),
+    ],
+    ids=["uks-54-tddft-state-1", "uks-54-tddft-state-2", "uks-54-tddft-state-7"],
+)
+def test_uks_54_tddft_state_energies_exact(
+    parsed_qchem_54_h2o_uks_tddft_data: CalculationResult,
+    state_idx: int,
+    expected_energy: float,
+    expected_total_energy: float,
+    expected_strength: float,
+):
+    """Regression test: verify exact full TDDFT energies for QChem 5.4 UKS."""
+    tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tddft_states is not None
+    assert len(tddft.tddft_states) > state_idx
+
+    state = tddft.tddft_states[state_idx]
+    assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
+    assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
+    assert state.oscillator_strength == pytest.approx(expected_strength, abs=STRENGTH_TOL)
+
+
+@pytest.mark.regression
+def test_uks_54_tda_state_1_has_alpha_and_beta(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify QChem 5.4 UKS TDA state 1 has alpha and beta transitions."""
+    tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tda_states is not None
+    assert len(tddft.tda_states) > 0
+
+    state = tddft.tda_states[0]
+    assert len(state.transitions) == 2  # One alpha, one beta
+
+    # Should have both alpha and beta
+    has_alpha = any(t.is_alpha_spin is True for t in state.transitions)
+    has_beta = any(t.is_alpha_spin is False for t in state.transitions)
+    assert has_alpha and has_beta
+
+
+@pytest.mark.regression
+def test_uks_54_tddft_state_7_multiple_transitions(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify QChem 5.4 UKS TDDFT state 7 has multiple transitions."""
+    tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tddft_states is not None
+    assert len(tddft.tddft_states) > 6
+
+    state = tddft.tddft_states[6]  # State 7 (0-indexed)
+    # State 7 has D(4)->V(2) and D(4)->V(3) transitions with alpha/beta variants
+    assert len(state.transitions) == EXPECTED_UKS_54_TDDFT_STATE_7_NUM_TRANSITIONS
+
+    # Should have both alpha and beta transitions
+    has_alpha = any(t.is_alpha_spin is True for t in state.transitions)
+    has_beta = any(t.is_alpha_spin is False for t in state.transitions)
+    assert has_alpha and has_beta
+
+
+@pytest.mark.regression
+def test_uks_54_tda_state_2_strength_exact(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify exact oscillator strength for QChem 5.4 UKS TDA state 2."""
+    tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tda_states is not None
+    assert len(tddft.tda_states) > 1
+
+    state = tddft.tda_states[1]
+    assert state.oscillator_strength == pytest.approx(EXPECTED_UKS_54_TDA_STATE_2_STRENGTH, abs=STRENGTH_TOL)
+
+
+@pytest.mark.regression
+def test_uks_54_tddft_state_2_strength_exact(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify exact oscillator strength for QChem 5.4 UKS TDDFT state 2."""
+    tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tddft_states is not None
+    assert len(tddft.tddft_states) > 1
+
+    state = tddft.tddft_states[1]
+    assert state.oscillator_strength == pytest.approx(EXPECTED_UKS_54_TDDFT_STATE_2_STRENGTH, abs=STRENGTH_TOL)
