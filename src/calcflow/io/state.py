@@ -19,6 +19,7 @@ from calcflow.common.models import (
     ScfResults,
     SmdResults,
     TddftResults,
+    TimingResults,
 )
 
 
@@ -48,6 +49,7 @@ class ParseState(BaseModel):
     smd: SmdResults | None = None
     tddft: TddftResults | None = None
     dispersion: DispersionCorrection | None = None
+    timing: TimingResults | None = None
 
     # --- Parser Control Flags ---
     parsed_metadata: bool = False
@@ -58,6 +60,7 @@ class ParseState(BaseModel):
     parsed_dipole: bool = False
     parsed_dispersion: bool = False
     parsed_multipole: bool = False
+    parsed_timing: bool = False
     # Add more as needed for other parsers...
 
     # --- Communication & Error Handling ---

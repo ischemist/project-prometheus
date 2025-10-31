@@ -235,6 +235,16 @@ class SmdResults(BaseModel):
     g_tot_au: float | None = None  # Total free energy in solution
 
 
+class TimingResults(BaseModel):
+    """Stores timing information from calculation runs."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    total_cpu_time_seconds: float | None = None  # QChem: CPU time
+    total_wall_time_seconds: float | None = None  # Wall time (clock time)
+    module_times: Mapping[str, float] | None = None  # ORCA: module name -> wall time in seconds
+
+
 # =============================================================================
 # §3. TDDFT & EXCITED STATE MODELS
 # =============================================================================
@@ -344,6 +354,7 @@ class CalculationResult(BaseModel):
     smd: SmdResults | None = None
     tddft: TddftResults | None = None
     dispersion: DispersionCorrection | None = None
+    timing: TimingResults | None = None
 
     # --- Program Specific Data ---
     # A catch-all for data that is too program-specific to unify. Use sparingly.

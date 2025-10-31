@@ -13,6 +13,7 @@ from calcflow.io.orca.blocks.finalization import FinalEnergyParser, TerminationP
 from calcflow.io.orca.blocks.geometry import GeometryParser
 from calcflow.io.orca.blocks.orbitals import OrbitalsParser
 from calcflow.io.orca.blocks.scf import ScfParser
+from calcflow.io.orca.blocks.timing import TimingParser
 
 # The ordered registry of parsers for a standard ORCA Single Point calculation.
 PARSER_REGISTRY_SP: Sequence[BlockParser] = [
@@ -24,6 +25,7 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     DispersionParser(),
     FinalEnergyParser(),
     TerminationParser(),
+    TimingParser(),
 ]
 
 
