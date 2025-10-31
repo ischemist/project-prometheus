@@ -14,6 +14,7 @@ from calcflow.io.qchem.blocks.metadata import MetadataParser
 from calcflow.io.qchem.blocks.multipole import MultipoleParser
 from calcflow.io.qchem.blocks.orbitals import OrbitalsParser
 from calcflow.io.qchem.blocks.scf import ScfParser
+from calcflow.io.qchem.blocks.tddft.excitations import ExcitationsParser
 from calcflow.io.qchem.blocks.timing import TimingParser
 
 # The ordered registry of parsers for a standard QChem Single Point calculation.
@@ -26,6 +27,7 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     ChargesParser(),
     OrbitalsParser(),
     MultipoleParser(),
+    ExcitationsParser(),
     TimingParser(),
     # TerminationParser(),
 ]
