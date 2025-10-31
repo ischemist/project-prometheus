@@ -131,6 +131,13 @@ class AtomicCharges(BaseModel):
     method: str  # e.g., "Mulliken", "Loewdin", "Hirshfeld"
     charges: Mapping[int, float]  # Atom index (0-based) to charge
     spins: Mapping[int, float] | None = None  # Atom index to spin density (UKS only)
+    # For excited state difference density analysis (TDDFT unrelaxed DM)
+    hole_populations: Mapping[int, float] | None = None  # h+ values (RKS)
+    electron_populations: Mapping[int, float] | None = None  # e- values (RKS)
+    hole_populations_alpha: Mapping[int, float] | None = None  # h+ alpha (UKS)
+    hole_populations_beta: Mapping[int, float] | None = None  # h+ beta (UKS)
+    electron_populations_alpha: Mapping[int, float] | None = None  # e- alpha (UKS)
+    electron_populations_beta: Mapping[int, float] | None = None  # e- beta (UKS)
 
 
 class DipoleMoment(BaseModel):
