@@ -311,6 +311,63 @@ class GroundStateReference(BaseModel):
     dipole_components_debye: tuple[float, float, float]  # (X, Y, Z) in Debye
 
 
+class NaturalOrbitals(BaseModel):
+    """Natural orbital occupations for excited state density matrix analysis."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    frontier_occupations: Sequence[float]  # e.g., [0.9992, 1.0006]
+    num_electrons: float
+    num_unpaired: float | None = None  # n_u value
+    num_unpaired_nl: float | None = None  # n_u,nl value
+    pr_no: float | None = None  # NO participation ratio
+
+
+class ExcitonAnalysis(BaseModel):
+    """Exciton analysis from density matrix (hole/electron separation)."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    r_h_ang: tuple[float, float, float]  # <r_h> in Angstroms (X, Y, Z)
+    r_e_ang: tuple[float, float, float]  # <r_e> in Angstroms
+    separation_ang: float  # |<r_e - r_h>|
+    hole_size_ang: float
+    hole_size_components_ang: tuple[float, float, float] | None = None
+    electron_size_ang: float
+    electron_size_components_ang: tuple[float, float, float] | None = None
+    # Fields only present in transition density matrix:
+    rms_separation_ang: float | None = None
+    rms_separation_components_ang: tuple[float, float, float] | None = None
+    covariance: float | None = None
+    correlation_coef: float | None = None
+    center_of_mass_size_ang: float | None = None
+    center_of_mass_components_ang: tuple[float, float, float] | None = None
+
+
+class UnrelaxedDensityMatrix(BaseModel):
+    """Unrelaxed density matrix analysis for a single excited state."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    state_number: int
+    multiplicity: str | None = None  # "Singlet N" or "Excited State N"
+    # Natural Orbitals
+    nos_spin_traced: NaturalOrbitals  # Main one (or only one for RKS)
+    nos_alpha: NaturalOrbitals | None = None  # UKS only
+    nos_beta: NaturalOrbitals | None = None  # UKS only
+    # Mulliken (State/Difference DM)
+    mulliken: AtomicCharges  # Reuse existing model (charges + optional spins)
+    # Multipole moment of density matrix
+    molecular_charge: float
+    num_electrons: float
+    dipole_moment_debye: float
+    dipole_components_debye: tuple[float, float, float]
+    # Exciton analysis
+    exciton_total: ExcitonAnalysis
+    exciton_alpha: ExcitonAnalysis | None = None  # UKS only
+    exciton_beta: ExcitonAnalysis | None = None  # UKS only
+
+
 class TddftResults(BaseModel):
     """Container for all TDDFT-related parsed data."""
 
@@ -323,6 +380,7 @@ class TddftResults(BaseModel):
     # More detailed, program-specific analyses can be added here as needed
     nto_analyses: Sequence[NTOStateAnalysis] | None = None
     ground_state_ref: "GroundStateReference | None" = None
+    unrelaxed_density_matrices: Sequence[UnrelaxedDensityMatrix] | None = None
     # Add ExcitedStateDetailedAnalysis if the unified model proves necessary
 
 
