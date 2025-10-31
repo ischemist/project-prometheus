@@ -35,10 +35,10 @@ OCCUPATION_VAL_PAT = re.compile(r"^\s+([\d.-]+)(?:\s+([\d.-]+))?(?:\s+([\d.-]+))
 
 # Electron count patterns
 NUM_ELECTRONS_PAT = re.compile(r"^\s+Number of electrons:\s+([\d.]+)")
-NUM_UNPAIRED_PAT = re.compile(r"^\s+Number of unpaired electrons:\s+n_u = ([-\d.]+)")
+NUM_UNPAIRED_PAT = re.compile(r"^\s+Number of unpaired electrons:\s+n_u\s*=\s*([-\d.]+)")
 
-# Mulliken analysis section marker
-MULLIKEN_START_PAT = re.compile(r"^\s+Mulliken Population Analysis \(State DM\)")
+# Mulliken analysis section marker (matches both 5.4 without suffix and 6.2 with (State DM))
+MULLIKEN_START_PAT = re.compile(r"^\s+Mulliken Population Analysis")
 
 # Atom line in Mulliken table (with optional spin column)
 # Format: " 1 H        0.230554" or " 1 H        0.230554        0.000000"

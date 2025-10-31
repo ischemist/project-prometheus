@@ -43,6 +43,16 @@ EXPECTED_UKS_MULLIKEN_SPINS = {0: 0.000000, 1: 0.000000, 2: 0.000000}
 EXPECTED_UKS_DIPOLE_MOMENT = 2.015379
 EXPECTED_UKS_DIPOLE_COMPONENTS = (-0.995831, -0.203503, -1.740304)
 
+# 5.4 UKS TDDFT ground state reference (parsed_qchem_54_h2o_uks_tddft_data)
+# Note: 5.4 uses "Mulliken Population Analysis" without "(State DM)" suffix
+EXPECTED_54_UKS_FRONTIER_NOS = [0.0000, 2.0000]  # spin-traced
+EXPECTED_54_UKS_NUM_ELECTRONS = 10.0
+EXPECTED_54_UKS_NUM_UNPAIRED = 0.0
+EXPECTED_54_UKS_MULLIKEN_CHARGES = {0: 0.230554, 1: -0.460460, 2: 0.229906}
+EXPECTED_54_UKS_MULLIKEN_SPINS = {0: 0.000000, 1: 0.000000, 2: 0.000000}
+EXPECTED_54_UKS_DIPOLE_MOMENT = 2.015378  # Minor difference from 6.2's 2.015379
+EXPECTED_54_UKS_DIPOLE_COMPONENTS = (-0.995831, -0.203503, -1.740304)
+
 
 # =============================================================================
 # CONTRACT TESTS
@@ -152,4 +162,69 @@ class TestUksGroundStateReference:
         """Dipole moment Cartesian components should be parsed correctly."""
         gs_ref = parsed_qchem_62_h2o_uks_tddft_data.tddft.ground_state_ref
         for actual, expected in zip(gs_ref.dipole_components_debye, EXPECTED_UKS_DIPOLE_COMPONENTS, strict=True):
+            assert abs(actual - expected) < 1e-5
+
+
+# =============================================================================
+# REGRESSION TESTS FOR 5.4 VERSION DIFFERENCES
+# =============================================================================
+
+
+@pytest.mark.regression
+class Test54UksGroundStateReference:
+    """Regression tests for QChem 5.4 UKS ground state reference parsing.
+
+    5.4 differs from 6.2 primarily in:
+    - Mulliken section header: "Mulliken Population Analysis" vs "Mulliken Population Analysis (State DM)"
+    - Minor numerical differences in dipole moment (2.015378 vs 2.015379)
+    """
+
+    def test_gs_ref_exists(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Ground state reference should exist in 5.4 TDDFT results."""
+        assert parsed_qchem_54_h2o_uks_tddft_data.tddft is not None
+        assert isinstance(parsed_qchem_54_h2o_uks_tddft_data.tddft, TddftResults)
+        assert parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref is not None
+        assert isinstance(parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref, GroundStateReference)
+
+    def test_frontier_nos(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Frontier NO occupations (spin-traced) should be parsed correctly from 5.4."""
+        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
+        assert list(gs_ref.frontier_nos) == EXPECTED_54_UKS_FRONTIER_NOS
+
+    def test_num_electrons(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Total electron count should be parsed correctly from 5.4."""
+        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
+        assert gs_ref.num_electrons == EXPECTED_54_UKS_NUM_ELECTRONS
+
+    def test_num_unpaired_electrons(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Number of unpaired electrons should be parsed correctly from 5.4."""
+        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
+        assert gs_ref.num_unpaired_electrons == EXPECTED_54_UKS_NUM_UNPAIRED
+
+    def test_mulliken_charges(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Mulliken charges should be parsed correctly from 5.4 format (without State DM suffix)."""
+        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
+        assert len(gs_ref.mulliken.charges) == 3
+        for atom_idx, expected_charge in EXPECTED_54_UKS_MULLIKEN_CHARGES.items():
+            actual_charge = gs_ref.mulliken.charges[atom_idx]
+            assert abs(actual_charge - expected_charge) < 1e-5
+
+    def test_mulliken_spins(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Mulliken spins should be parsed correctly from 5.4 UKS calculation."""
+        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
+        assert gs_ref.mulliken.spins is not None
+        assert len(gs_ref.mulliken.spins) == 3
+        for atom_idx, expected_spin in EXPECTED_54_UKS_MULLIKEN_SPINS.items():
+            actual_spin = gs_ref.mulliken.spins[atom_idx]
+            assert abs(actual_spin - expected_spin) < 1e-5
+
+    def test_dipole_moment(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Total dipole moment should match 5.4 value (minor difference from 6.2)."""
+        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
+        assert abs(gs_ref.dipole_moment_debye - EXPECTED_54_UKS_DIPOLE_MOMENT) < 1e-5
+
+    def test_dipole_components(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+        """Dipole moment Cartesian components should be parsed correctly from 5.4."""
+        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
+        for actual, expected in zip(gs_ref.dipole_components_debye, EXPECTED_54_UKS_DIPOLE_COMPONENTS, strict=True):
             assert abs(actual - expected) < 1e-5
