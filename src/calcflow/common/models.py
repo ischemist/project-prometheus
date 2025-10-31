@@ -138,6 +138,9 @@ class AtomicCharges(BaseModel):
     hole_populations_beta: Mapping[int, float] | None = None  # h+ beta (UKS)
     electron_populations_alpha: Mapping[int, float] | None = None  # e- alpha (UKS)
     electron_populations_beta: Mapping[int, float] | None = None  # e- beta (UKS)
+    # For transition density matrix analysis
+    trans_charges: Mapping[int, float] | None = None  # "Trans. (e)" column
+    del_q: Mapping[int, float] | None = None  # "Del q" column
 
 
 class DipoleMoment(BaseModel):
@@ -375,6 +378,42 @@ class UnrelaxedDensityMatrix(BaseModel):
     exciton_beta: ExcitonAnalysis | None = None  # UKS only
 
 
+class TransitionDensityMatrix(BaseModel):
+    """Transition density matrix analysis for a single excited state."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    state_number: int
+    multiplicity: str | None = None  # "Singlet N" or "Excited State N"
+    # Mulliken Population Analysis (Transition DM)
+    mulliken: AtomicCharges  # Reuse existing model
+    # CT numbers and transition metrics
+    sum_abs_trans_charges: float | None = None  # QTa
+    sum_squared_trans_charges: float | None = None  # QT2
+    omega: float | None = None
+    omega_alpha: float | None = None  # UKS only
+    omega_beta: float | None = None  # UKS only
+    two_alpha_beta: float | None = None  # 2<alpha|beta>
+    loc: float | None = None
+    loc_alpha: float | None = None  # UKS only
+    loc_beta: float | None = None  # UKS only
+    loca: float | None = None  # LOCa
+    loca_alpha: float | None = None  # UKS only
+    loca_beta: float | None = None  # UKS only
+    phe: float | None = None  # <Phe>
+    phe_alpha: float | None = None  # UKS only
+    phe_beta: float | None = None  # UKS only
+    # Transition-specific properties not in standard exciton analysis
+    trans_dipole_moment_debye: float | None = None  # Trans. dipole moment [D]
+    trans_r2_au: float | None = None  # Transition <r^2> [a.u.]
+    trans_dipole_components_debye: tuple[float, float, float] | None = None  # Cartesian components [D]
+    trans_r2_components_au: tuple[float, float, float] | None = None  # Cartesian components [a.u.]
+    # Exciton analysis (reuse existing model - already has all transition DM fields)
+    exciton_total: ExcitonAnalysis
+    exciton_alpha: ExcitonAnalysis | None = None  # UKS only
+    exciton_beta: ExcitonAnalysis | None = None  # UKS only
+
+
 class TddftResults(BaseModel):
     """Container for all TDDFT-related parsed data."""
 
@@ -388,6 +427,7 @@ class TddftResults(BaseModel):
     nto_analyses: Sequence[NTOStateAnalysis] | None = None
     ground_state_ref: "GroundStateReference | None" = None
     unrelaxed_density_matrices: Sequence[UnrelaxedDensityMatrix] | None = None
+    transition_density_matrices: Sequence[TransitionDensityMatrix] | None = None
     # Add ExcitedStateDetailedAnalysis if the unified model proves necessary
 
 
