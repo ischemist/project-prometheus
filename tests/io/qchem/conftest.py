@@ -106,7 +106,15 @@ FIXTURE_SPECS = {
         "parsed_qchem_54_h2o_mom_xas_job1",
         "parsed_qchem_62_h2o_mom_xas_job1",
     ],
-    # Blocks present in TDDFT calculations only
+    # TDA-only calculations (TDA excitations without full TDDFT)
+    "tda_excitations": [
+        "parsed_qchem_54_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_rks_tddft_data",
+        "parsed_qchem_54_h2o_mom_xas_job2",
+        "parsed_qchem_62_h2o_mom_xas_job2",
+    ],
+    # Full TDDFT calculations (both TDA and TDDFT blocks present)
     "tddft_excitations": [
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",

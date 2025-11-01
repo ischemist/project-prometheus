@@ -193,7 +193,7 @@ def test_excitations_parser_does_not_mutate_state_in_matches():
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tda_excitations"])
 def test_tddft_results_has_correct_type(fixture_name: str, request):
     """Contract test: verify tddft field is TddftResults instance across all fixtures."""
     data = request.getfixturevalue(fixture_name)
@@ -202,7 +202,7 @@ def test_tddft_results_has_correct_type(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tda_excitations"])
 def test_tda_states_is_sequence(fixture_name: str, request):
     """Contract test: verify tda_states is a sequence of ExcitedState objects."""
     data = request.getfixturevalue(fixture_name)
@@ -228,7 +228,7 @@ def test_tddft_states_is_sequence(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tda_excitations"])
 def test_excited_state_required_fields_present(fixture_name: str, request):
     """Contract test: verify each ExcitedState has required fields with correct types."""
     data = request.getfixturevalue(fixture_name)
@@ -249,7 +249,7 @@ def test_excited_state_required_fields_present(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tda_excitations"])
 def test_excited_state_transition_moment_fields_present(fixture_name: str, request):
     """Contract test: verify ExcitedState has transition moment fields with correct types."""
     data = request.getfixturevalue(fixture_name)
@@ -265,7 +265,7 @@ def test_excited_state_transition_moment_fields_present(fixture_name: str, reque
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tda_excitations"])
 def test_orbital_transition_structure(fixture_name: str, request):
     """Contract test: verify OrbitalTransition structure in excited states."""
     data = request.getfixturevalue(fixture_name)
