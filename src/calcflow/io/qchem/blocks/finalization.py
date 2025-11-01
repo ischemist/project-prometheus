@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
-NORMAL_TERM_PAT = re.compile(r"Thank you very much for using Q-Chem\. Have a nice day\.")
+NORMAL_TERM_PAT = re.compile(r"Thank you very much for using Q-Chem\.\s+Have a nice day\.")
 ERROR_TERM_PAT = re.compile(r"(ERROR:|error:|aborting|failed)", re.IGNORECASE)
 
 

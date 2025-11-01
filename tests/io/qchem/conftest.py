@@ -180,6 +180,18 @@ FIXTURE_SPECS = {
         "parsed_qchem_54_h2o_mom_xas_job1",
         "parsed_qchem_62_h2o_mom_xas_job1",
     ],
+    # Finalization block (present in all fixtures - all concluded successfully with NORMAL status)
+    "finalization": [
+        "parsed_qchem_54_h2o_sp_data",
+        "parsed_qchem_62_h2o_sp_data",
+        "parsed_qchem_54_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_rks_tddft_data",
+        "parsed_qchem_54_h2o_mom_sp_job1",
+        "parsed_qchem_62_h2o_mom_sp_job1",
+        "parsed_qchem_54_h2o_mom_xas_job1",
+        "parsed_qchem_62_h2o_mom_xas_job1",
+    ],
 }
 
 
