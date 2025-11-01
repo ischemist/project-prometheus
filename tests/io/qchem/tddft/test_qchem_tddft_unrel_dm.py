@@ -184,117 +184,142 @@ def test_unrelaxed_dm_parser_exists():
 
 
 @pytest.mark.contract
-class TestRksUnrelaxedDensityMatrix:
-    """Contract tests for RKS unrelaxed density matrix parsing."""
-
-    def test_unrelaxed_dm_exists(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Unrelaxed density matrices should exist in TDDFT results."""
-        assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
-        assert isinstance(parsed_qchem_62_h2o_rks_tddft_data.tddft, TddftResults)
-        assert parsed_qchem_62_h2o_rks_tddft_data.tddft.unrelaxed_density_matrices is not None
-        assert len(parsed_qchem_62_h2o_rks_tddft_data.tddft.unrelaxed_density_matrices) > 0
-
-    def test_unrelaxed_dm_structure(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Each unrelaxed DM should have correct structure."""
-        unrel_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.unrelaxed_density_matrices
-        assert unrel_dms is not None
-
-        for dm in unrel_dms:
-            assert isinstance(dm, UnrelaxedDensityMatrix)
-            assert isinstance(dm.state_number, int)
-            assert dm.state_number > 0
-            assert isinstance(dm.multiplicity, str)
-            assert isinstance(dm.nos_spin_traced, NaturalOrbitals)
-            assert isinstance(dm.exciton_total, ExcitonAnalysis)
-
-    def test_rks_has_no_alpha_beta_nos(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """RKS should not have alpha/beta NOs."""
-        unrel_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.unrelaxed_density_matrices
-        assert unrel_dms is not None
-
-        for dm in unrel_dms:
-            assert dm.nos_alpha is None, "RKS should not have alpha NOs"
-            assert dm.nos_beta is None, "RKS should not have beta NOs"
-
-    def test_rks_has_no_alpha_beta_exciton(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """RKS should not have alpha/beta exciton analysis."""
-        unrel_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.unrelaxed_density_matrices
-        assert unrel_dms is not None
-
-        for dm in unrel_dms:
-            assert dm.exciton_alpha is None, "RKS should not have alpha exciton"
-            assert dm.exciton_beta is None, "RKS should not have beta exciton"
-
-    def test_nos_structure(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """NaturalOrbitals should have correct structure."""
-        unrel_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.unrelaxed_density_matrices
-        assert unrel_dms is not None
-        dm = unrel_dms[0]
-        nos = dm.nos_spin_traced
-
-        assert isinstance(nos.frontier_occupations, (list, tuple))
-        assert len(nos.frontier_occupations) == 2
-        assert isinstance(nos.num_electrons, float)
-        assert isinstance(nos.num_unpaired, (float, type(None)))
-        assert isinstance(nos.pr_no, (float, type(None)))
-
-    def test_exciton_structure(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """ExcitonAnalysis should have correct structure."""
-        unrel_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.unrelaxed_density_matrices
-        assert unrel_dms is not None
-        dm = unrel_dms[0]
-        exciton = dm.exciton_total
-
-        assert isinstance(exciton.r_h_ang, tuple)
-        assert len(exciton.r_h_ang) == 3
-        assert isinstance(exciton.r_e_ang, tuple)
-        assert len(exciton.r_e_ang) == 3
-        assert isinstance(exciton.separation_ang, float)
-        assert isinstance(exciton.hole_size_ang, float)
-        assert isinstance(exciton.electron_size_ang, float)
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2"],
+)
+def test_unrelaxed_dm_exists(fixture_name: str, request) -> None:
+    """Unrelaxed density matrices should exist in TDDFT results."""
+    data = request.getfixturevalue(fixture_name)
+    assert data.tddft is not None
+    assert isinstance(data.tddft, TddftResults)
+    assert data.tddft.unrelaxed_density_matrices is not None
+    assert len(data.tddft.unrelaxed_density_matrices) > 0
 
 
 @pytest.mark.contract
-class TestUksUnrelaxedDensityMatrix:
-    """Contract tests for UKS unrelaxed density matrix parsing."""
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2"],
+)
+def test_unrelaxed_dm_structure(fixture_name: str, request) -> None:
+    """Each unrelaxed DM should have correct structure."""
+    data = request.getfixturevalue(fixture_name)
+    unrel_dms = data.tddft.unrelaxed_density_matrices
+    assert unrel_dms is not None
 
-    def test_unrelaxed_dm_exists(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Unrelaxed density matrices should exist in UKS TDDFT results."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.tddft is not None
-        assert isinstance(parsed_qchem_62_h2o_uks_tddft_data.tddft, TddftResults)
-        assert parsed_qchem_62_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices is not None
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices) > 0
+    for dm in unrel_dms:
+        assert isinstance(dm, UnrelaxedDensityMatrix)
+        assert isinstance(dm.state_number, int)
+        assert dm.state_number > 0
+        assert isinstance(dm.multiplicity, str)
+        assert isinstance(dm.nos_spin_traced, NaturalOrbitals)
+        assert isinstance(dm.exciton_total, ExcitonAnalysis)
 
-    def test_uks_has_alpha_beta_nos(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """UKS should have alpha/beta NOs."""
-        unrel_dms = parsed_qchem_62_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
-        assert unrel_dms is not None
 
-        for dm in unrel_dms:
-            assert dm.nos_alpha is not None, "UKS should have alpha NOs"
-            assert dm.nos_beta is not None, "UKS should have beta NOs"
-            assert isinstance(dm.nos_alpha, NaturalOrbitals)
-            assert isinstance(dm.nos_beta, NaturalOrbitals)
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2"],
+)
+def test_nos_structure(fixture_name: str, request) -> None:
+    """NaturalOrbitals should have correct structure."""
+    data = request.getfixturevalue(fixture_name)
+    unrel_dms = data.tddft.unrelaxed_density_matrices
+    assert unrel_dms is not None
+    dm = unrel_dms[0]
+    nos = dm.nos_spin_traced
 
-    def test_uks_has_alpha_beta_exciton(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """UKS should have alpha/beta exciton analysis."""
-        unrel_dms = parsed_qchem_62_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
-        assert unrel_dms is not None
+    assert isinstance(nos.frontier_occupations, (list, tuple))
+    assert len(nos.frontier_occupations) == 2
+    assert isinstance(nos.num_electrons, float)
+    assert isinstance(nos.num_unpaired, (float, type(None)))
+    assert isinstance(nos.pr_no, (float, type(None)))
 
-        for dm in unrel_dms:
-            assert dm.exciton_alpha is not None, "UKS should have alpha exciton"
-            assert dm.exciton_beta is not None, "UKS should have beta exciton"
-            assert isinstance(dm.exciton_alpha, ExcitonAnalysis)
-            assert isinstance(dm.exciton_beta, ExcitonAnalysis)
 
-    def test_mulliken_has_spins(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """UKS Mulliken should have spin densities."""
-        unrel_dms = parsed_qchem_62_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
-        assert unrel_dms is not None
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2"],
+)
+def test_exciton_structure(fixture_name: str, request) -> None:
+    """ExcitonAnalysis should have correct structure."""
+    data = request.getfixturevalue(fixture_name)
+    unrel_dms = data.tddft.unrelaxed_density_matrices
+    assert unrel_dms is not None
+    dm = unrel_dms[0]
+    exciton = dm.exciton_total
 
-        for dm in unrel_dms:
-            assert dm.mulliken.spins is not None, "UKS should have spin densities"
-            assert len(dm.mulliken.spins) > 0
+    assert isinstance(exciton.r_h_ang, tuple)
+    assert len(exciton.r_h_ang) == 3
+    assert isinstance(exciton.r_e_ang, tuple)
+    assert len(exciton.r_e_ang) == 3
+    assert isinstance(exciton.separation_ang, float)
+    assert isinstance(exciton.hole_size_ang, float)
+    assert isinstance(exciton.electron_size_ang, float)
+
+
+@pytest.mark.contract
+def test_rks_has_no_alpha_beta_nos(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
+    """RKS should not have alpha/beta NOs."""
+    unrel_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.unrelaxed_density_matrices
+    assert unrel_dms is not None
+
+    for dm in unrel_dms:
+        assert dm.nos_alpha is None, "RKS should not have alpha NOs"
+        assert dm.nos_beta is None, "RKS should not have beta NOs"
+
+
+@pytest.mark.contract
+def test_rks_has_no_alpha_beta_exciton(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
+    """RKS should not have alpha/beta exciton analysis."""
+    unrel_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.unrelaxed_density_matrices
+    assert unrel_dms is not None
+
+    for dm in unrel_dms:
+        assert dm.exciton_alpha is None, "RKS should not have alpha exciton"
+        assert dm.exciton_beta is None, "RKS should not have beta exciton"
+
+
+@pytest.mark.contract
+def test_uks_has_alpha_beta_nos(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
+    """UKS should have alpha/beta NOs."""
+    unrel_dms = parsed_qchem_62_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+    assert unrel_dms is not None
+
+    for dm in unrel_dms:
+        assert dm.nos_alpha is not None, "UKS should have alpha NOs"
+        assert dm.nos_beta is not None, "UKS should have beta NOs"
+        assert isinstance(dm.nos_alpha, NaturalOrbitals)
+        assert isinstance(dm.nos_beta, NaturalOrbitals)
+
+
+@pytest.mark.contract
+def test_uks_has_alpha_beta_exciton(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
+    """UKS should have alpha/beta exciton analysis."""
+    unrel_dms = parsed_qchem_62_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+    assert unrel_dms is not None
+
+    for dm in unrel_dms:
+        assert dm.exciton_alpha is not None, "UKS should have alpha exciton"
+        assert dm.exciton_beta is not None, "UKS should have beta exciton"
+        assert isinstance(dm.exciton_alpha, ExcitonAnalysis)
+        assert isinstance(dm.exciton_beta, ExcitonAnalysis)
+
+
+@pytest.mark.contract
+def test_mulliken_has_spins(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
+    """UKS Mulliken should have spin densities."""
+    unrel_dms = parsed_qchem_62_h2o_uks_tddft_data.tddft.unrelaxed_density_matrices
+    assert unrel_dms is not None
+
+    for dm in unrel_dms:
+        assert dm.mulliken.spins is not None, "UKS should have spin densities"
+        assert len(dm.mulliken.spins) > 0
 
 
 # =============================================================================
