@@ -109,16 +109,40 @@ def test_orbitals_parser_does_not_mutate_state_in_matches():
 
 
 @pytest.mark.contract
-def test_orbitals_set_has_correct_type(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_h2o_sp_or_tddft_data",
+    [
+        "parsed_qchem_54_h2o_sp_data",
+        "parsed_qchem_62_h2o_sp_data",
+        "parsed_qchem_54_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_rks_tddft_data",
+    ],
+    indirect=True,
+    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
+)
+def test_orbitals_set_has_correct_type(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify orbitals field is OrbitalsSet instance."""
-    assert parsed_qchem_62_h2o_sp_data.orbitals is not None
-    assert isinstance(parsed_qchem_62_h2o_sp_data.orbitals, OrbitalsSet)
+    assert parsed_qchem_h2o_sp_or_tddft_data.orbitals is not None
+    assert isinstance(parsed_qchem_h2o_sp_or_tddft_data.orbitals, OrbitalsSet)
 
 
 @pytest.mark.contract
-def test_orbitals_set_alpha_orbitals_is_sequence(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_h2o_sp_or_tddft_data",
+    [
+        "parsed_qchem_54_h2o_sp_data",
+        "parsed_qchem_62_h2o_sp_data",
+        "parsed_qchem_54_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_rks_tddft_data",
+    ],
+    indirect=True,
+    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
+)
+def test_orbitals_set_alpha_orbitals_is_sequence(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify alpha_orbitals is a sequence of Orbital objects."""
-    orbitals = parsed_qchem_62_h2o_sp_data.orbitals
+    orbitals = parsed_qchem_h2o_sp_or_tddft_data.orbitals
     assert orbitals is not None
     assert isinstance(orbitals.alpha_orbitals, (list, tuple))
     assert len(orbitals.alpha_orbitals) > 0
@@ -126,9 +150,21 @@ def test_orbitals_set_alpha_orbitals_is_sequence(parsed_qchem_62_h2o_sp_data: Ca
 
 
 @pytest.mark.contract
-def test_orbital_required_fields_present(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_h2o_sp_or_tddft_data",
+    [
+        "parsed_qchem_54_h2o_sp_data",
+        "parsed_qchem_62_h2o_sp_data",
+        "parsed_qchem_54_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_rks_tddft_data",
+    ],
+    indirect=True,
+    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
+)
+def test_orbital_required_fields_present(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify each Orbital has required fields with correct types."""
-    orbitals = parsed_qchem_62_h2o_sp_data.orbitals
+    orbitals = parsed_qchem_h2o_sp_or_tddft_data.orbitals
     assert orbitals is not None
 
     for orbital in orbitals.alpha_orbitals:
@@ -141,9 +177,21 @@ def test_orbital_required_fields_present(parsed_qchem_62_h2o_sp_data: Calculatio
 
 
 @pytest.mark.contract
-def test_orbitals_homo_lumo_indices_set(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_h2o_sp_or_tddft_data",
+    [
+        "parsed_qchem_54_h2o_sp_data",
+        "parsed_qchem_62_h2o_sp_data",
+        "parsed_qchem_54_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_rks_tddft_data",
+    ],
+    indirect=True,
+    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
+)
+def test_orbitals_homo_lumo_indices_set(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify HOMO/LUMO indices are set and valid."""
-    orbitals = parsed_qchem_62_h2o_sp_data.orbitals
+    orbitals = parsed_qchem_h2o_sp_or_tddft_data.orbitals
     assert orbitals is not None
 
     # Alpha HOMO and LUMO should always be present
@@ -265,6 +313,7 @@ def test_uks_orbital_count(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult
     orbitals = parsed_qchem_62_h2o_uks_tddft_data.orbitals
     assert orbitals is not None
     assert len(orbitals.alpha_orbitals) == EXPECTED_UKS_TOTAL_ORBITALS
+    assert orbitals.beta_orbitals is not None
     assert len(orbitals.beta_orbitals) == EXPECTED_UKS_TOTAL_ORBITALS  # Should match
 
 

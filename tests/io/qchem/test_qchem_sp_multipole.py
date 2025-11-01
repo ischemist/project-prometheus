@@ -9,9 +9,15 @@ class TestQChemMultipole:
     """Tests for Cartesian multipole moments parsing from QChem output."""
 
     @pytest.mark.contract
-    def test_qchem_multipole_present(self, parsed_qchem_62_h2o_sp_data: CalculationResult) -> None:
+    @pytest.mark.parametrize(
+        "parsed_qchem_h2o_sp_data",
+        ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
+        indirect=True,
+        ids=["sp-5.4", "sp-6.2"],
+    )
+    def test_qchem_multipole_present(self, parsed_qchem_h2o_sp_data: CalculationResult) -> None:
         """
-        Verify that Cartesian multipole moments are correctly parsed from QChem 6.2 H2O SP output.
+        Verify that Cartesian multipole moments are correctly parsed from QChem H2O SP output.
 
         Expected values from ex-multipole.md:
         - Charge: -0.0000
@@ -25,13 +31,13 @@ class TestQChemMultipole:
                         XZZZ=3.6825, YZZZ=2.4530, ZZZZ=-5.3042
         """
         # Assert that multipole results were parsed
-        assert parsed_qchem_62_h2o_sp_data.multipole is not None, "Multipole results not found"
+        assert parsed_qchem_h2o_sp_data.multipole is not None, "Multipole results not found"
 
-        multipole = parsed_qchem_62_h2o_sp_data.multipole
+        multipole = parsed_qchem_h2o_sp_data.multipole
 
         # Test charge
         assert multipole.charge is not None, "Charge not found"
-        assert abs(multipole.charge - (-0.0000)) < 1e-4, f"Charge mismatch: expected -0.0000, got {multipole.charge}"
+        assert abs(multipole.charge) < 1e-4, f"Charge mismatch: expected ~0, got {multipole.charge}"
 
         # Test dipole moment
         assert multipole.dipole is not None, "Dipole moment not found"
