@@ -10,11 +10,11 @@ class TestQChemMullikenCharges:
     """Tests for Mulliken atomic charges parsing from QChem output."""
 
     @pytest.mark.parametrize(
-        "parsed_qchem_h2o_sp_data",
+        "parsed_qchem_data",
         FIXTURE_SPECS["charges"],
         indirect=True,
     )
-    def test_qchem_mulliken_charges_present(self, parsed_qchem_h2o_sp_data: CalculationResult) -> None:
+    def test_qchem_mulliken_charges_present(self, parsed_qchem_data: CalculationResult) -> None:
         """
         Verify that Mulliken charges are correctly parsed from QChem H2O SP output.
 
@@ -24,11 +24,11 @@ class TestQChemMullikenCharges:
         - Atom 2 (H): 0.194263
         """
         # Assert that charges were parsed
-        assert len(parsed_qchem_h2o_sp_data.atomic_charges) >= 1, "No atomic charges found"
+        assert len(parsed_qchem_data.atomic_charges) >= 1, "No atomic charges found"
 
         # Find the Mulliken charges entry
         mulliken_charges = None
-        for charges in parsed_qchem_h2o_sp_data.atomic_charges:
+        for charges in parsed_qchem_data.atomic_charges:
             if charges.method == "Mulliken":
                 mulliken_charges = charges
                 break

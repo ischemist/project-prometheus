@@ -108,101 +108,101 @@ def test_geometry_parser_ignores_non_geometry_lines():
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
+    "parsed_qchem_data",
     FIXTURE_SPECS["geometry"],
     indirect=True,
 )
-def test_input_geometry_is_tuple_of_atoms(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+def test_input_geometry_is_tuple_of_atoms(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify input_geometry is a tuple of Atom objects.
     """
-    assert isinstance(parsed_qchem_h2o_sp_or_tddft_data.input_geometry, tuple)
-    assert len(parsed_qchem_h2o_sp_or_tddft_data.input_geometry) > 0
-    assert all(isinstance(atom, Atom) for atom in parsed_qchem_h2o_sp_or_tddft_data.input_geometry)
+    assert isinstance(parsed_qchem_data.input_geometry, tuple)
+    assert len(parsed_qchem_data.input_geometry) > 0
+    assert all(isinstance(atom, Atom) for atom in parsed_qchem_data.input_geometry)
 
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
+    "parsed_qchem_data",
     FIXTURE_SPECS["geometry"],
     indirect=True,
 )
-def test_final_geometry_is_tuple_of_atoms(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+def test_final_geometry_is_tuple_of_atoms(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify final_geometry is a tuple of Atom objects.
     """
-    assert isinstance(parsed_qchem_h2o_sp_or_tddft_data.final_geometry, tuple)
-    assert len(parsed_qchem_h2o_sp_or_tddft_data.final_geometry) > 0
-    assert all(isinstance(atom, Atom) for atom in parsed_qchem_h2o_sp_or_tddft_data.final_geometry)
+    assert isinstance(parsed_qchem_data.final_geometry, tuple)
+    assert len(parsed_qchem_data.final_geometry) > 0
+    assert all(isinstance(atom, Atom) for atom in parsed_qchem_data.final_geometry)
 
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
+    "parsed_qchem_data",
     FIXTURE_SPECS["geometry"],
     indirect=True,
 )
-def test_input_geometry_has_three_atoms(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+def test_input_geometry_has_three_atoms(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify input_geometry has exactly 3 atoms for H2O.
     """
-    assert len(parsed_qchem_h2o_sp_or_tddft_data.input_geometry) == 3
+    assert len(parsed_qchem_data.input_geometry) == 3
 
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
+    "parsed_qchem_data",
     FIXTURE_SPECS["geometry"],
     indirect=True,
 )
-def test_final_geometry_has_three_atoms(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+def test_final_geometry_has_three_atoms(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify final_geometry has exactly 3 atoms for H2O.
     """
-    assert parsed_qchem_h2o_sp_or_tddft_data.final_geometry is not None
-    assert len(parsed_qchem_h2o_sp_or_tddft_data.final_geometry) == 3
+    assert parsed_qchem_data.final_geometry is not None
+    assert len(parsed_qchem_data.final_geometry) == 3
 
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
+    "parsed_qchem_data",
     FIXTURE_SPECS["geometry"],
     indirect=True,
 )
-def test_input_geometry_atom_symbols(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+def test_input_geometry_atom_symbols(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify input_geometry has correct atom symbols (H, O, H).
     """
-    symbols = [atom.symbol for atom in parsed_qchem_h2o_sp_or_tddft_data.input_geometry]
+    symbols = [atom.symbol for atom in parsed_qchem_data.input_geometry]
     assert symbols == ["H", "O", "H"]
 
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
+    "parsed_qchem_data",
     FIXTURE_SPECS["geometry"],
     indirect=True,
 )
-def test_final_geometry_atom_symbols(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+def test_final_geometry_atom_symbols(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify final_geometry has correct atom symbols (H, O, H).
     """
-    assert parsed_qchem_h2o_sp_or_tddft_data.final_geometry is not None
-    symbols = [atom.symbol for atom in parsed_qchem_h2o_sp_or_tddft_data.final_geometry]
+    assert parsed_qchem_data.final_geometry is not None
+    symbols = [atom.symbol for atom in parsed_qchem_data.final_geometry]
     assert symbols == ["H", "O", "H"]
 
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
+    "parsed_qchem_data",
     FIXTURE_SPECS["geometry"],
     indirect=True,
 )
-def test_input_geometry_coordinates_are_floats(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+def test_input_geometry_coordinates_are_floats(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify all input coordinates are floats.
     """
-    for atom in parsed_qchem_h2o_sp_or_tddft_data.input_geometry:
+    for atom in parsed_qchem_data.input_geometry:
         assert isinstance(atom.x, float)
         assert isinstance(atom.y, float)
         assert isinstance(atom.z, float)
@@ -210,16 +210,16 @@ def test_input_geometry_coordinates_are_floats(parsed_qchem_h2o_sp_or_tddft_data
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
+    "parsed_qchem_data",
     FIXTURE_SPECS["geometry"],
     indirect=True,
 )
-def test_final_geometry_coordinates_are_floats(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+def test_final_geometry_coordinates_are_floats(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify all final coordinates are floats.
     """
-    assert parsed_qchem_h2o_sp_or_tddft_data.final_geometry is not None
-    for atom in parsed_qchem_h2o_sp_or_tddft_data.final_geometry:
+    assert parsed_qchem_data.final_geometry is not None
+    for atom in parsed_qchem_data.final_geometry:
         assert isinstance(atom.x, float)
         assert isinstance(atom.y, float)
         assert isinstance(atom.z, float)

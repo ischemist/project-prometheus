@@ -131,31 +131,31 @@ def test_scf_parser_does_not_mutate_state_in_matches():
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
+    "parsed_qchem_data",
     FIXTURE_SPECS["scf"],
     indirect=True,
 )
-def test_scf_results_has_correct_type(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+def test_scf_results_has_correct_type(parsed_qchem_data: CalculationResult):
     """Contract test: verify scf field is ScfResults instance."""
-    assert parsed_qchem_h2o_sp_or_tddft_data.scf is not None
-    assert isinstance(parsed_qchem_h2o_sp_or_tddft_data.scf, ScfResults)
+    assert parsed_qchem_data.scf is not None
+    assert isinstance(parsed_qchem_data.scf, ScfResults)
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("parsed_qchem_h2o_sp_or_tddft_data", FIXTURE_SPECS["scf"], indirect=True)
-def test_scf_results_iterations_is_tuple(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["scf"], indirect=True)
+def test_scf_results_iterations_is_tuple(parsed_qchem_data: CalculationResult):
     """Contract test: verify iterations field is a tuple of ScfIteration objects."""
-    assert parsed_qchem_h2o_sp_or_tddft_data.scf is not None
-    assert isinstance(parsed_qchem_h2o_sp_or_tddft_data.scf.iterations, tuple)
-    assert len(parsed_qchem_h2o_sp_or_tddft_data.scf.iterations) > 0
-    assert all(isinstance(it, ScfIteration) for it in parsed_qchem_h2o_sp_or_tddft_data.scf.iterations)
+    assert parsed_qchem_data.scf is not None
+    assert isinstance(parsed_qchem_data.scf.iterations, tuple)
+    assert len(parsed_qchem_data.scf.iterations) > 0
+    assert all(isinstance(it, ScfIteration) for it in parsed_qchem_data.scf.iterations)
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("parsed_qchem_h2o_sp_or_tddft_data", FIXTURE_SPECS["scf"], indirect=True)
-def test_scf_results_required_fields_present(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["scf"], indirect=True)
+def test_scf_results_required_fields_present(parsed_qchem_data: CalculationResult):
     """Contract test: verify all required ScfResults fields are present with correct types."""
-    scf = parsed_qchem_h2o_sp_or_tddft_data.scf
+    scf = parsed_qchem_data.scf
     assert scf is not None
 
     # Check required fields
@@ -166,10 +166,10 @@ def test_scf_results_required_fields_present(parsed_qchem_h2o_sp_or_tddft_data: 
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("parsed_qchem_h2o_sp_or_tddft_data", FIXTURE_SPECS["scf"], indirect=True)
-def test_scf_iteration_required_fields(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["scf"], indirect=True)
+def test_scf_iteration_required_fields(parsed_qchem_data: CalculationResult):
     """Contract test: verify each ScfIteration has required fields."""
-    scf = parsed_qchem_h2o_sp_or_tddft_data.scf
+    scf = parsed_qchem_data.scf
     assert scf is not None
 
     for iteration in scf.iterations:
@@ -180,10 +180,10 @@ def test_scf_iteration_required_fields(parsed_qchem_h2o_sp_or_tddft_data: Calcul
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("parsed_qchem_h2o_sp_or_tddft_data", FIXTURE_SPECS["scf"], indirect=True)
-def test_scf_n_iterations_matches_length(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["scf"], indirect=True)
+def test_scf_n_iterations_matches_length(parsed_qchem_data: CalculationResult):
     """Contract test: verify n_iterations field matches actual iteration count."""
-    scf = parsed_qchem_h2o_sp_or_tddft_data.scf
+    scf = parsed_qchem_data.scf
     assert scf is not None
     assert scf.n_iterations == len(scf.iterations)
 

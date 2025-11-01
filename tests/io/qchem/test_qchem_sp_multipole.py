@@ -11,11 +11,11 @@ class TestQChemMultipole:
 
     @pytest.mark.contract
     @pytest.mark.parametrize(
-        "parsed_qchem_h2o_sp_data",
+        "parsed_qchem_data",
         FIXTURE_SPECS["multipole"],
         indirect=True,
     )
-    def test_qchem_multipole_present(self, parsed_qchem_h2o_sp_data: CalculationResult) -> None:
+    def test_qchem_multipole_present(self, parsed_qchem_data: CalculationResult) -> None:
         """
         Verify that Cartesian multipole moments are correctly parsed from QChem H2O SP output.
 
@@ -31,9 +31,9 @@ class TestQChemMultipole:
                         XZZZ=3.6825, YZZZ=2.4530, ZZZZ=-5.3042
         """
         # Assert that multipole results were parsed
-        assert parsed_qchem_h2o_sp_data.multipole is not None, "Multipole results not found"
+        assert parsed_qchem_data.multipole is not None, "Multipole results not found"
 
-        multipole = parsed_qchem_h2o_sp_data.multipole
+        multipole = parsed_qchem_data.multipole
 
         # Test charge
         assert multipole.charge is not None, "Charge not found"

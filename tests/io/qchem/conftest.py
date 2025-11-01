@@ -113,82 +113,19 @@ def parsed_qchem_62_h2o_rks_tddft_data(testing_data_path: Path) -> CalculationRe
     return parse_qchem_output((testing_data_path / "qchem" / "h2o" / "6.2-rks-tddft.out").read_text())
 
 
-@pytest.fixture(scope="session")
-def parsed_qchem_54_h2o_mom_sp_data(testing_data_path: Path) -> CalculationResult:
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / "5.4-mom-sp-smd.out").read_text())
-
-
-@pytest.fixture(scope="session")
-def parsed_qchem_62_h2o_mom_sp_data(testing_data_path: Path) -> CalculationResult:
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / "6.2-mom-sp-smd.out").read_text())
-
-
-@pytest.fixture(scope="session")
-def parsed_qchem_54_h2o_mom_xas_data(testing_data_path: Path) -> CalculationResult:
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / "5.4-mom-xas-smd.out").read_text())
-
-
-@pytest.fixture(scope="session")
-def parsed_qchem_62_h2o_mom_xas_data(testing_data_path: Path) -> CalculationResult:
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / "6.2-mom-xas-smd.out").read_text())
-
-
 # =============================================================================
-# INDIRECT FIXTURES: For parametrization
+# INDIRECT FIXTURE: Universal parametrization
 # =============================================================================
 
 
 @pytest.fixture
-def parsed_qchem_h2o_sp_data(request: pytest.FixtureRequest, testing_data_path: Path) -> CalculationResult:
-    """Parametrizable fixture for SP calculations (5.4 and 6.2)."""
-    fixture_name = request.param
-    mapping = {
-        "parsed_qchem_54_h2o_sp_data": "5.4-sp-smd.out",
-        "parsed_qchem_62_h2o_sp_data": "6.2-sp-smd.out",
-    }
-    filename = mapping[fixture_name]
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / filename).read_text())
+def parsed_qchem_data(request: pytest.FixtureRequest) -> CalculationResult:
+    """
+    Universal parametrizable fixture that delegates to session-scoped fixtures.
 
-
-@pytest.fixture
-def parsed_qchem_h2o_tddft_data(request: pytest.FixtureRequest, testing_data_path: Path) -> CalculationResult:
-    """Parametrizable fixture for TDDFT calculations."""
-    fixture_name = request.param
-    # Map fixture names to file names
-    mapping = {
-        "parsed_qchem_54_h2o_uks_tddft_data": "5.4-uks-tddft.out",
-        "parsed_qchem_62_h2o_uks_tddft_data": "6.2-uks-tddft.out",
-        "parsed_qchem_62_h2o_rks_tddft_data": "6.2-rks-tddft.out",
-    }
-    filename = mapping[fixture_name]
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / filename).read_text())
-
-
-@pytest.fixture
-def parsed_qchem_h2o_sp_or_tddft_data(request: pytest.FixtureRequest, testing_data_path: Path) -> CalculationResult:
-    """Parametrizable fixture for both SP and TDDFT calculations."""
-    fixture_name = request.param
-    mapping = {
-        "parsed_qchem_54_h2o_sp_data": "5.4-sp-smd.out",
-        "parsed_qchem_62_h2o_sp_data": "6.2-sp-smd.out",
-        "parsed_qchem_54_h2o_uks_tddft_data": "5.4-uks-tddft.out",
-        "parsed_qchem_62_h2o_uks_tddft_data": "6.2-uks-tddft.out",
-        "parsed_qchem_62_h2o_rks_tddft_data": "6.2-rks-tddft.out",
-    }
-    filename = mapping[fixture_name]
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / filename).read_text())
-
-
-@pytest.fixture
-def timing_fixture(request: pytest.FixtureRequest, testing_data_path: Path) -> CalculationResult:
-    """Parametrizable fixture for all timing-related tests."""
-    fixture_name = request.param
-    mapping = {
-        "parsed_qchem_54_h2o_sp_data": "5.4-sp-smd.out",
-        "parsed_qchem_62_h2o_sp_data": "6.2-sp-smd.out",
-        "parsed_qchem_54_h2o_uks_tddft_data": "5.4-uks-tddft.out",
-        "parsed_qchem_62_h2o_uks_tddft_data": "6.2-uks-tddft.out",
-        "parsed_qchem_62_h2o_rks_tddft_data": "6.2-rks-tddft.out",
-    }
-    filename = mapping[fixture_name]
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / filename).read_text())
+    Use with FIXTURE_SPECS to parametrize tests:
+        @pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["block_name"], indirect=True)
+        def test_something(parsed_qchem_data):
+            ...
+    """
+    return request.getfixturevalue(request.param)
