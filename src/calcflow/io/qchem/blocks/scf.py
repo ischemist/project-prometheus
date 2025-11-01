@@ -17,6 +17,10 @@ SCF_ITER_HEADER_PAT = re.compile(r"^\s*Cycle\s+Energy\s+DIIS error")
 SCF_ITER_PAT = re.compile(r"^\s*(\d{1,3})\s+(-?\d+\.\d+)\s+([\d\.eE+-]+)")
 SCF_CONVERGENCE_PAT = re.compile(r"Convergence criterion met")
 SMD_SUMMARY_START_PAT = re.compile(r"^\s*Summary of SMD free energies:")
+# MOM (Maximum Overlap Method) patterns
+MOM_ACTIVE_PAT = re.compile(r"^\s*Maximum Overlap Method Active")
+MOM_METHOD_PAT = re.compile(r"^\s*(?:IMOM|MOM) method")
+MOM_OVERLAP_PAT = re.compile(r"^\s*MOM overlap:\s+([\d.]+)\s+/\s+([\d.]+)")
 # Heuristic end-of-block markers
 END_OF_BLOCK_PATS = [
     re.compile(r"^\s*Orbital Energies \(a\.u\.\)"),
@@ -39,6 +43,12 @@ class ScfParser:
         in_smd_summary = False
         in_iter_block = False  # Track whether we've seen the iteration header
         scf_energy_from_iter_block: float | None = None
+
+        # MOM (Maximum Overlap Method) buffering
+        # MOM status lines appear before iteration lines, so we buffer them
+        mom_active: bool | None = None
+        mom_overlap_current: float | None = None
+        mom_overlap_target: float | None = None
 
         # Temp storage for version-parsed fields before model creation
         smd_data: dict[str, float] = {}
@@ -64,14 +74,52 @@ class ScfParser:
 
             # --- 4. Parse Iteration Data (only after seeing header) ---
             if in_iter_block:
+                # --- 4a. Check for MOM status lines (appear before iteration lines) ---
+                if MOM_ACTIVE_PAT.search(line):
+                    mom_active = True
+                    continue
+
+                if MOM_METHOD_PAT.search(line):
+                    # IMOM or MOM method line, just note it's active
+                    continue
+
+                mom_overlap_match = MOM_OVERLAP_PAT.search(line)
+                if mom_overlap_match:
+                    try:
+                        # MOM overlap appears twice (for alpha/beta), take the first value
+                        if mom_overlap_current is None:
+                            mom_overlap_current = float(mom_overlap_match.group(1))
+                            mom_overlap_target = float(mom_overlap_match.group(2))
+                    except (ValueError, IndexError):
+                        state.parsing_warnings.append(f"Could not parse MOM overlap line: {line.strip()}")
+                    continue
+
+                # --- 4b. Parse iteration line with buffered MOM data ---
                 iter_match = SCF_ITER_PAT.search(line)
                 if iter_match:
                     try:
                         iteration = int(iter_match.group(1))
                         energy = float(iter_match.group(2))
                         diis_error = float(iter_match.group(3))
-                        iterations.append(ScfIteration(iteration=iteration, energy=energy, diis_error=diis_error))
+
+                        # Create iteration with MOM data if available
+                        iterations.append(
+                            ScfIteration(
+                                iteration=iteration,
+                                energy=energy,
+                                diis_error=diis_error,
+                                mom_active=mom_active,
+                                mom_overlap_current=mom_overlap_current,
+                                mom_overlap_target=mom_overlap_target,
+                            )
+                        )
                         scf_energy_from_iter_block = energy
+
+                        # Clear MOM buffer for next iteration
+                        mom_active = None
+                        mom_overlap_current = None
+                        mom_overlap_target = None
+
                         if SCF_CONVERGENCE_PAT.search(line):
                             converged = True
                     except (ValueError, IndexError):
@@ -84,8 +132,10 @@ class ScfParser:
                     # Empty line
                     continue
                 else:
-                    # End of iteration block
-                    in_iter_block = False
+                    # End of iteration block (only if not a known pattern)
+                    # Check if this is actually the end or just an unrecognized line
+                    if not (MOM_ACTIVE_PAT.search(line) or MOM_METHOD_PAT.search(line) or MOM_OVERLAP_PAT.search(line)):
+                        in_iter_block = False
 
             # --- 5. Process Version-Dependent Patterns ---
             self._process_versioned_patterns(line, state, in_smd_summary, smd_data, final_energy_data)

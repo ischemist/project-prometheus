@@ -67,8 +67,16 @@ def core_parse(output_text: str, parser_registry: Sequence[BlockParser]) -> Calc
     # --- Finalization ---
     # Finalize termination status if it wasn't explicitly set by a parser
     if state.termination_status == "UNKNOWN":
-        logger.warning("Termination status was not explicitly found. Assuming ERROR.")
-        state.termination_status = "ERROR"
+        # Use timing as a fallback heuristic: if timing was successfully parsed,
+        # the job likely completed normally (timing is typically the last thing in output)
+        if state.timing is not None and (
+            state.timing.total_wall_time_seconds is not None or state.timing.total_cpu_time_seconds is not None
+        ):
+            logger.debug("Timing block found; inferring NORMAL termination.")
+            state.termination_status = "NORMAL"
+        else:
+            logger.warning("Termination status was not explicitly found. Assuming ERROR.")
+            state.termination_status = "ERROR"
 
     # Finalize energy if not explicitly set by a dedicated parser
     if state.final_energy is None and state.scf is not None:

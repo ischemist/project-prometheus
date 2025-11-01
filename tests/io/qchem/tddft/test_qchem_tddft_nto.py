@@ -242,10 +242,7 @@ def test_nto_parser_does_not_mutate_state_in_matches():
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_nto"])
 def test_nto_analyses_has_correct_type(fixture_name: str, request):
     """Contract test: verify nto_analyses field is sequence of NTOStateAnalysis."""
     data = request.getfixturevalue(fixture_name)
@@ -257,7 +254,7 @@ def test_nto_analyses_has_correct_type(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_nto"])
 def test_nto_state_analysis_has_required_fields(fixture_name: str, request):
     """Contract test: verify each NTOStateAnalysis has required fields."""
     data = request.getfixturevalue(fixture_name)
@@ -275,7 +272,7 @@ def test_nto_state_analysis_has_required_fields(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_nto"])
 def test_nto_contribution_structure(fixture_name: str, request):
     """Contract test: verify NTOContribution structure in NTO states."""
     data = request.getfixturevalue(fixture_name)
@@ -308,7 +305,7 @@ def test_rks_all_contributions_single_spin(parsed_qchem_62_h2o_rks_tddft_data: C
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_unrel_dm"])
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_nto_uks"])
 def test_uks_contributions_have_alpha_and_beta(fixture_name: str, request):
     """Contract test: verify UKS contributions have both alpha and beta spins."""
     data = request.getfixturevalue(fixture_name)

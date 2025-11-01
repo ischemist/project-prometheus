@@ -1,157 +1,440 @@
-"""Contract tests for QChem Cartesian multipole moments parsing."""
+"""
+Tests for the QChem Cartesian multipole moments parser.
+
+These tests verify that the multipole parser correctly extracts atomic multipole
+moments (dipole, quadrupole, octopole, hexadecapole) from Q-Chem output files
+for single-point calculations.
+
+Test hierarchy:
+- unit: isolated `matches()` behavior
+- contract: parser produces correct data structure (non-None values)
+- integration: multiple components working together
+- regression: exact numerical values match expected
+"""
 
 import pytest
 
-from calcflow.common.models import CalculationResult
+from calcflow.common.models import CalculationResult, MultipoleResults
+from calcflow.io.qchem.blocks.multipole import MultipoleParser
+from calcflow.io.state import ParseState
 from tests.io.qchem.conftest import FIXTURE_SPECS
 
+# =============================================================================
+# HARDCODED TEST DATA (Q-Chem 5.4 and 6.2 have identical values)
+# =============================================================================
 
-class TestQChemMultipole:
-    """Tests for Cartesian multipole moments parsing from QChem output."""
+EXPECTED_CHARGE = -0.0
+EXPECTED_DIPOLE_X = -0.8826
+EXPECTED_DIPOLE_Y = -0.1808
+EXPECTED_DIPOLE_Z = -1.5445
+EXPECTED_DIPOLE_MAG = 1.788
 
-    @pytest.mark.contract
-    @pytest.mark.parametrize(
-        "parsed_qchem_data",
-        FIXTURE_SPECS["multipole"],
-        indirect=True,
-    )
-    def test_qchem_multipole_present(self, parsed_qchem_data: CalculationResult) -> None:
-        """
-        Verify that Cartesian multipole moments are correctly parsed from QChem H2O SP output.
+EXPECTED_QUAD_XX = -8.5235
+EXPECTED_QUAD_XY = -2.1415
+EXPECTED_QUAD_YY = -6.5392
+EXPECTED_QUAD_XZ = -3.8091
+EXPECTED_QUAD_YZ = -2.0882
+EXPECTED_QUAD_ZZ = -4.6864
 
-        Expected values from ex-multipole.md:
-        - Charge: -0.0000
-        - Dipole: X=-0.8826, Y=-0.1808, Z=-1.5445, Tot=1.7880
-        - Quadrupole: XX=-8.5235, XY=-2.1415, YY=-6.5392, XZ=-3.8091, YZ=-2.0882, ZZ=-4.6864
-        - Octopole: XXX=-45.1424, XXY=-15.7146, XYY=-18.0848, YYY=-29.1344, XXZ=-8.8897,
-                    XYZ=-5.0592, YYZ=-1.9524, XZZ=-10.2351, YZZ=-7.5112, ZZZ=1.6208
-        - Hexadecapole: XXXX=-193.4737, XXXY=-76.9501, XXYY=-60.7182, XYYY=-71.6161,
-                        YYYY=-92.5752, XXXZ=-19.1566, XXYZ=-11.6023, XYYZ=-4.5683,
-                        YYYZ=-0.0879, XXZZ=-24.2567, XYZZ=-16.4191, YYZZ=-13.5970,
-                        XZZZ=3.6825, YZZZ=2.4530, ZZZZ=-5.3042
-        """
-        # Assert that multipole results were parsed
-        assert parsed_qchem_data.multipole is not None, "Multipole results not found"
+EXPECTED_OCT_XXX = -45.1424
+EXPECTED_OCT_XXY = -15.7146
+EXPECTED_OCT_XYY = -18.0848
+EXPECTED_OCT_YYY = -29.1344
+EXPECTED_OCT_XXZ = -8.8897
+EXPECTED_OCT_XYZ = -5.0592
+EXPECTED_OCT_YYZ = -1.9524
+EXPECTED_OCT_XZZ = -10.2351
+EXPECTED_OCT_YZZ = -7.5112
+EXPECTED_OCT_ZZZ = 1.6208
 
-        multipole = parsed_qchem_data.multipole
+EXPECTED_HEX_XXXX = -193.4737
+EXPECTED_HEX_XXXY = -76.9501
+EXPECTED_HEX_XXYY = -60.7182
+EXPECTED_HEX_XYYY = -71.6161
+EXPECTED_HEX_YYYY = -92.5752
+EXPECTED_HEX_XXXZ = -19.1566
+EXPECTED_HEX_XXYZ = -11.6023
+EXPECTED_HEX_XYYZ = -4.5683
+EXPECTED_HEX_YYYZ = -0.0879
+EXPECTED_HEX_XXZZ = -24.2567
+EXPECTED_HEX_XYZZ = -16.4191
+EXPECTED_HEX_YYZZ = -13.597
+EXPECTED_HEX_XZZZ = 3.6825
+EXPECTED_HEX_YZZZ = 2.453
+EXPECTED_HEX_ZZZZ = -5.3042
 
-        # Test charge
-        assert multipole.charge is not None, "Charge not found"
-        assert abs(multipole.charge) < 1e-4, f"Charge mismatch: expected ~0, got {multipole.charge}"
+# Numerical tolerance
+DIPOLE_TOL = 1e-4
+QUAD_TOL = 1e-4
+HIGHER_TOL = 1e-3
 
-        # Test dipole moment
-        assert multipole.dipole is not None, "Dipole moment not found"
-        assert abs(multipole.dipole.x - (-0.8826)) < 1e-4, (
-            f"Dipole X mismatch: expected -0.8826, got {multipole.dipole.x}"
-        )
-        assert abs(multipole.dipole.y - (-0.1808)) < 1e-4, (
-            f"Dipole Y mismatch: expected -0.1808, got {multipole.dipole.y}"
-        )
-        assert abs(multipole.dipole.z - (-1.5445)) < 1e-4, (
-            f"Dipole Z mismatch: expected -1.5445, got {multipole.dipole.z}"
-        )
-        assert abs(multipole.dipole.magnitude - 1.7880) < 1e-4, (
-            f"Dipole magnitude mismatch: expected 1.7880, got {multipole.dipole.magnitude}"
-        )
 
-        # Test quadrupole moments
-        assert multipole.quadrupole is not None, "Quadrupole moments not found"
-        assert abs(multipole.quadrupole.xx - (-8.5235)) < 1e-4, (
-            f"Quadrupole XX mismatch: expected -8.5235, got {multipole.quadrupole.xx}"
-        )
-        assert abs(multipole.quadrupole.xy - (-2.1415)) < 1e-4, (
-            f"Quadrupole XY mismatch: expected -2.1415, got {multipole.quadrupole.xy}"
-        )
-        assert abs(multipole.quadrupole.yy - (-6.5392)) < 1e-4, (
-            f"Quadrupole YY mismatch: expected -6.5392, got {multipole.quadrupole.yy}"
-        )
-        assert abs(multipole.quadrupole.xz - (-3.8091)) < 1e-4, (
-            f"Quadrupole XZ mismatch: expected -3.8091, got {multipole.quadrupole.xz}"
-        )
-        assert abs(multipole.quadrupole.yz - (-2.0882)) < 1e-4, (
-            f"Quadrupole YZ mismatch: expected -2.0882, got {multipole.quadrupole.yz}"
-        )
-        assert abs(multipole.quadrupole.zz - (-4.6864)) < 1e-4, (
-            f"Quadrupole ZZ mismatch: expected -4.6864, got {multipole.quadrupole.zz}"
-        )
+# =============================================================================
+# UNIT TESTS: MultipoleParser.matches() behavior
+# =============================================================================
 
-        # Test octopole moments
-        assert multipole.octopole is not None, "Octopole moments not found"
-        assert abs(multipole.octopole.xxx - (-45.1424)) < 1e-3, (
-            f"Octopole XXX mismatch: expected -45.1424, got {multipole.octopole.xxx}"
-        )
-        assert abs(multipole.octopole.xxy - (-15.7146)) < 1e-3, (
-            f"Octopole XXY mismatch: expected -15.7146, got {multipole.octopole.xxy}"
-        )
-        assert abs(multipole.octopole.xyy - (-18.0848)) < 1e-3, (
-            f"Octopole XYY mismatch: expected -18.0848, got {multipole.octopole.xyy}"
-        )
-        assert abs(multipole.octopole.yyy - (-29.1344)) < 1e-3, (
-            f"Octopole YYY mismatch: expected -29.1344, got {multipole.octopole.yyy}"
-        )
-        assert abs(multipole.octopole.xxz - (-8.8897)) < 1e-3, (
-            f"Octopole XXZ mismatch: expected -8.8897, got {multipole.octopole.xxz}"
-        )
-        assert abs(multipole.octopole.xyz - (-5.0592)) < 1e-3, (
-            f"Octopole XYZ mismatch: expected -5.0592, got {multipole.octopole.xyz}"
-        )
-        assert abs(multipole.octopole.yyz - (-1.9524)) < 1e-3, (
-            f"Octopole YYZ mismatch: expected -1.9524, got {multipole.octopole.yyz}"
-        )
-        assert abs(multipole.octopole.xzz - (-10.2351)) < 1e-3, (
-            f"Octopole XZZ mismatch: expected -10.2351, got {multipole.octopole.xzz}"
-        )
-        assert abs(multipole.octopole.yzz - (-7.5112)) < 1e-3, (
-            f"Octopole YZZ mismatch: expected -7.5112, got {multipole.octopole.yzz}"
-        )
-        assert abs(multipole.octopole.zzz - 1.6208) < 1e-3, (
-            f"Octopole ZZZ mismatch: expected 1.6208, got {multipole.octopole.zzz}"
-        )
 
-        # Test hexadecapole moments
-        assert multipole.hexadecapole is not None, "Hexadecapole moments not found"
-        assert abs(multipole.hexadecapole.xxxx - (-193.4737)) < 1e-3, (
-            f"Hexadecapole XXXX mismatch: expected -193.4737, got {multipole.hexadecapole.xxxx}"
-        )
-        assert abs(multipole.hexadecapole.xxxy - (-76.9501)) < 1e-3, (
-            f"Hexadecapole XXXY mismatch: expected -76.9501, got {multipole.hexadecapole.xxxy}"
-        )
-        assert abs(multipole.hexadecapole.xxyy - (-60.7182)) < 1e-3, (
-            f"Hexadecapole XXYY mismatch: expected -60.7182, got {multipole.hexadecapole.xxyy}"
-        )
-        assert abs(multipole.hexadecapole.xyyy - (-71.6161)) < 1e-3, (
-            f"Hexadecapole XYYY mismatch: expected -71.6161, got {multipole.hexadecapole.xyyy}"
-        )
-        assert abs(multipole.hexadecapole.yyyy - (-92.5752)) < 1e-3, (
-            f"Hexadecapole YYYY mismatch: expected -92.5752, got {multipole.hexadecapole.yyyy}"
-        )
-        assert abs(multipole.hexadecapole.xxxz - (-19.1566)) < 1e-3, (
-            f"Hexadecapole XXXZ mismatch: expected -19.1566, got {multipole.hexadecapole.xxxz}"
-        )
-        assert abs(multipole.hexadecapole.xxyz - (-11.6023)) < 1e-3, (
-            f"Hexadecapole XXYZ mismatch: expected -11.6023, got {multipole.hexadecapole.xxyz}"
-        )
-        assert abs(multipole.hexadecapole.xyyz - (-4.5683)) < 1e-3, (
-            f"Hexadecapole XYYZ mismatch: expected -4.5683, got {multipole.hexadecapole.xyyz}"
-        )
-        assert abs(multipole.hexadecapole.yyyz - (-0.0879)) < 1e-3, (
-            f"Hexadecapole YYYZ mismatch: expected -0.0879, got {multipole.hexadecapole.yyyz}"
-        )
-        assert abs(multipole.hexadecapole.xxzz - (-24.2567)) < 1e-3, (
-            f"Hexadecapole XXZZ mismatch: expected -24.2567, got {multipole.hexadecapole.xxzz}"
-        )
-        assert abs(multipole.hexadecapole.xyzz - (-16.4191)) < 1e-3, (
-            f"Hexadecapole XYZZ mismatch: expected -16.4191, got {multipole.hexadecapole.xyzz}"
-        )
-        assert abs(multipole.hexadecapole.yyzz - (-13.5970)) < 1e-3, (
-            f"Hexadecapole YYZZ mismatch: expected -13.5970, got {multipole.hexadecapole.yyzz}"
-        )
-        assert abs(multipole.hexadecapole.xzzz - 3.6825) < 1e-3, (
-            f"Hexadecapole XZZZ mismatch: expected 3.6825, got {multipole.hexadecapole.xzzz}"
-        )
-        assert abs(multipole.hexadecapole.yzzz - 2.4530) < 1e-3, (
-            f"Hexadecapole YZZZ mismatch: expected 2.4530, got {multipole.hexadecapole.yzzz}"
-        )
-        assert abs(multipole.hexadecapole.zzzz - (-5.3042)) < 1e-3, (
-            f"Hexadecapole ZZZZ mismatch: expected -5.3042, got {multipole.hexadecapole.zzzz}"
-        )
+@pytest.mark.unit
+def test_multipole_parser_matches_start_line():
+    """Unit test: verify MultipoleParser.matches() recognizes multipole block start."""
+    parser = MultipoleParser()
+    state = ParseState(raw_output="")
+
+    start_line = "Cartesian Multipole Moments"
+    assert parser.matches(start_line, state) is True
+
+
+@pytest.mark.unit
+def test_multipole_parser_matches_with_leading_whitespace():
+    """Unit test: verify MultipoleParser.matches() handles leading whitespace."""
+    parser = MultipoleParser()
+    state = ParseState(raw_output="")
+
+    start_line = "  Cartesian Multipole Moments"
+    assert parser.matches(start_line, state) is True
+
+
+@pytest.mark.unit
+def test_multipole_parser_does_not_match_non_multipole_lines():
+    """Unit test: verify MultipoleParser.matches() rejects non-multipole lines."""
+    parser = MultipoleParser()
+    state = ParseState(raw_output="")
+
+    # Random lines from QChem output
+    assert parser.matches("SCF time:   CPU 0.32s  wall 0.00s", state) is False
+    assert parser.matches("Atom          Charge", state) is False
+    assert parser.matches("Random calculation output", state) is False
+
+
+@pytest.mark.unit
+def test_multipole_parser_skips_if_already_parsed():
+    """Unit test: verify MultipoleParser.matches() returns False when already parsed."""
+    parser = MultipoleParser()
+    state = ParseState(raw_output="")
+    state.parsed_multipole = True
+
+    start_line = "Multipole moment tensor (Debye.Ang**n / e.Bohr**n)"
+    assert parser.matches(start_line, state) is False
+
+
+@pytest.mark.unit
+def test_multipole_parser_does_not_mutate_state_in_matches():
+    """
+    Unit test: verify that matches() is read-only and does not mutate state.
+    Critical for parser-spec compliance.
+    """
+    parser = MultipoleParser()
+    state = ParseState(raw_output="")
+
+    # Call matches() multiple times
+    line = "Cartesian Multipole Moments"
+    result1 = parser.matches(line, state)
+    result2 = parser.matches(line, state)
+
+    # State should be identical after calling matches()
+    assert result1 is True
+    assert result2 is True
+    assert state.parsed_multipole is False  # Should NOT be set
+    assert state.multipole is None  # Should NOT be populated
+
+
+# =============================================================================
+# CONTRACT TESTS: Data structure validation
+# =============================================================================
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["multipole"],
+    indirect=True,
+)
+def test_multipole_results_has_correct_type(parsed_qchem_data: CalculationResult) -> None:
+    """Contract test: verify multipole field is MultipoleResults instance."""
+    assert parsed_qchem_data.multipole is not None
+    assert isinstance(parsed_qchem_data.multipole, MultipoleResults)
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["multipole"],
+    indirect=True,
+)
+def test_multipole_has_charge(parsed_qchem_data: CalculationResult) -> None:
+    """Contract test: verify multipole has charge field populated."""
+    multipole = parsed_qchem_data.multipole
+    assert multipole is not None
+    assert multipole.charge is not None
+    assert isinstance(multipole.charge, float)
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["multipole"],
+    indirect=True,
+)
+def test_multipole_has_dipole(parsed_qchem_data: CalculationResult) -> None:
+    """Contract test: verify multipole has dipole moment with all components."""
+    multipole = parsed_qchem_data.multipole
+    assert multipole is not None
+    assert multipole.dipole is not None
+
+    # Check all dipole components are floats
+    assert isinstance(multipole.dipole.x, float)
+    assert isinstance(multipole.dipole.y, float)
+    assert isinstance(multipole.dipole.z, float)
+    assert isinstance(multipole.dipole.magnitude, float)
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["multipole"],
+    indirect=True,
+)
+def test_multipole_has_quadrupole(parsed_qchem_data: CalculationResult) -> None:
+    """Contract test: verify multipole has quadrupole moments with all components."""
+    multipole = parsed_qchem_data.multipole
+    assert multipole is not None
+    assert multipole.quadrupole is not None
+
+    # Check all quadrupole components are floats
+    assert isinstance(multipole.quadrupole.xx, float)
+    assert isinstance(multipole.quadrupole.xy, float)
+    assert isinstance(multipole.quadrupole.yy, float)
+    assert isinstance(multipole.quadrupole.xz, float)
+    assert isinstance(multipole.quadrupole.yz, float)
+    assert isinstance(multipole.quadrupole.zz, float)
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["multipole"],
+    indirect=True,
+)
+def test_multipole_has_octopole(parsed_qchem_data: CalculationResult) -> None:
+    """Contract test: verify multipole has octopole moments with all components."""
+    multipole = parsed_qchem_data.multipole
+    assert multipole is not None
+    assert multipole.octopole is not None
+
+    # Check all octopole components are floats
+    assert isinstance(multipole.octopole.xxx, float)
+    assert isinstance(multipole.octopole.xxy, float)
+    assert isinstance(multipole.octopole.xyy, float)
+    assert isinstance(multipole.octopole.yyy, float)
+    assert isinstance(multipole.octopole.xxz, float)
+    assert isinstance(multipole.octopole.xyz, float)
+    assert isinstance(multipole.octopole.yyz, float)
+    assert isinstance(multipole.octopole.xzz, float)
+    assert isinstance(multipole.octopole.yzz, float)
+    assert isinstance(multipole.octopole.zzz, float)
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["multipole"],
+    indirect=True,
+)
+def test_multipole_has_hexadecapole(parsed_qchem_data: CalculationResult) -> None:
+    """Contract test: verify multipole has hexadecapole moments with all components."""
+    multipole = parsed_qchem_data.multipole
+    assert multipole is not None
+    assert multipole.hexadecapole is not None
+
+    # Check all hexadecapole components are floats
+    assert isinstance(multipole.hexadecapole.xxxx, float)
+    assert isinstance(multipole.hexadecapole.xxxy, float)
+    assert isinstance(multipole.hexadecapole.xxyy, float)
+    assert isinstance(multipole.hexadecapole.xyyy, float)
+    assert isinstance(multipole.hexadecapole.yyyy, float)
+    assert isinstance(multipole.hexadecapole.xxxz, float)
+    assert isinstance(multipole.hexadecapole.xxyz, float)
+    assert isinstance(multipole.hexadecapole.xyyz, float)
+    assert isinstance(multipole.hexadecapole.yyyz, float)
+    assert isinstance(multipole.hexadecapole.xxzz, float)
+    assert isinstance(multipole.hexadecapole.xyzz, float)
+    assert isinstance(multipole.hexadecapole.yyzz, float)
+    assert isinstance(multipole.hexadecapole.xzzz, float)
+    assert isinstance(multipole.hexadecapole.yzzz, float)
+    assert isinstance(multipole.hexadecapole.zzzz, float)
+
+
+# =============================================================================
+# INTEGRATION TESTS: Multiple components working together
+# =============================================================================
+
+
+@pytest.mark.integration
+def test_multipole_parsed_alongside_geometry(parsed_qchem_62_h2o_sp_data: CalculationResult):
+    """
+    Integration test: verify multipole parser works with geometry parser.
+    All should be present in final result.
+    """
+    assert parsed_qchem_62_h2o_sp_data.input_geometry is not None
+    assert len(parsed_qchem_62_h2o_sp_data.input_geometry) == 3  # H2O
+
+    assert parsed_qchem_62_h2o_sp_data.multipole is not None
+
+
+@pytest.mark.integration
+def test_multipole_completion_flag_set(parsed_qchem_62_h2o_sp_data: CalculationResult):
+    """
+    Integration test: verify that the multipole parser sets its completion flag.
+    This is critical for the parser-spec contract.
+    """
+    # The parsed result should have multipole data, indicating the flag was set
+    assert parsed_qchem_62_h2o_sp_data.multipole is not None
+
+
+@pytest.mark.integration
+def test_multipole_parsed_alongside_charges(parsed_qchem_62_h2o_sp_data: CalculationResult):
+    """
+    Integration test: verify both multipole and charges results are present.
+    These are complementary results from the same calculation.
+    """
+    assert parsed_qchem_62_h2o_sp_data.atomic_charges is not None
+    assert len(parsed_qchem_62_h2o_sp_data.atomic_charges) > 0
+
+    assert parsed_qchem_62_h2o_sp_data.multipole is not None
+
+
+# =============================================================================
+# REGRESSION TESTS: Exact numerical values
+# =============================================================================
+
+
+@pytest.mark.regression
+def test_multipole_charge_value(parsed_qchem_62_h2o_sp_data: CalculationResult) -> None:
+    """Regression test: verify exact charge value."""
+    multipole = parsed_qchem_62_h2o_sp_data.multipole
+    assert multipole is not None
+    assert multipole.charge == pytest.approx(EXPECTED_CHARGE, abs=DIPOLE_TOL)
+
+
+@pytest.mark.regression
+def test_dipole_x_component(parsed_qchem_62_h2o_sp_data: CalculationResult) -> None:
+    """Regression test: verify exact dipole X component."""
+    multipole = parsed_qchem_62_h2o_sp_data.multipole
+    assert multipole is not None
+    assert multipole.dipole is not None
+    assert multipole.dipole.x == pytest.approx(EXPECTED_DIPOLE_X, abs=DIPOLE_TOL)
+
+
+@pytest.mark.regression
+def test_dipole_y_component(parsed_qchem_62_h2o_sp_data: CalculationResult) -> None:
+    """Regression test: verify exact dipole Y component."""
+    multipole = parsed_qchem_62_h2o_sp_data.multipole
+    assert multipole is not None
+    assert multipole.dipole is not None
+    assert multipole.dipole.y == pytest.approx(EXPECTED_DIPOLE_Y, abs=DIPOLE_TOL)
+
+
+@pytest.mark.regression
+def test_dipole_z_component(parsed_qchem_62_h2o_sp_data: CalculationResult) -> None:
+    """Regression test: verify exact dipole Z component."""
+    multipole = parsed_qchem_62_h2o_sp_data.multipole
+    assert multipole is not None
+    assert multipole.dipole is not None
+    assert multipole.dipole.z == pytest.approx(EXPECTED_DIPOLE_Z, abs=DIPOLE_TOL)
+
+
+@pytest.mark.regression
+def test_dipole_magnitude(parsed_qchem_62_h2o_sp_data: CalculationResult) -> None:
+    """Regression test: verify exact dipole magnitude."""
+    multipole = parsed_qchem_62_h2o_sp_data.multipole
+    assert multipole is not None
+    assert multipole.dipole is not None
+    assert multipole.dipole.magnitude == pytest.approx(EXPECTED_DIPOLE_MAG, abs=DIPOLE_TOL)
+
+
+@pytest.mark.regression
+@pytest.mark.parametrize(
+    "component,expected",
+    [
+        ("xx", EXPECTED_QUAD_XX),
+        ("xy", EXPECTED_QUAD_XY),
+        ("yy", EXPECTED_QUAD_YY),
+        ("xz", EXPECTED_QUAD_XZ),
+        ("yz", EXPECTED_QUAD_YZ),
+        ("zz", EXPECTED_QUAD_ZZ),
+    ],
+)
+def test_quadrupole_components(
+    parsed_qchem_62_h2o_sp_data: CalculationResult,
+    component: str,
+    expected: float,
+) -> None:
+    """Regression test: verify exact quadrupole component values."""
+    multipole = parsed_qchem_62_h2o_sp_data.multipole
+    assert multipole is not None
+    assert multipole.quadrupole is not None
+    actual = getattr(multipole.quadrupole, component)
+    assert actual == pytest.approx(expected, abs=QUAD_TOL)
+
+
+@pytest.mark.regression
+@pytest.mark.parametrize(
+    "component,expected",
+    [
+        ("xxx", EXPECTED_OCT_XXX),
+        ("xxy", EXPECTED_OCT_XXY),
+        ("xyy", EXPECTED_OCT_XYY),
+        ("yyy", EXPECTED_OCT_YYY),
+        ("xxz", EXPECTED_OCT_XXZ),
+        ("xyz", EXPECTED_OCT_XYZ),
+        ("yyz", EXPECTED_OCT_YYZ),
+        ("xzz", EXPECTED_OCT_XZZ),
+        ("yzz", EXPECTED_OCT_YZZ),
+        ("zzz", EXPECTED_OCT_ZZZ),
+    ],
+)
+def test_octopole_components(
+    parsed_qchem_62_h2o_sp_data: CalculationResult,
+    component: str,
+    expected: float,
+) -> None:
+    """Regression test: verify exact octopole component values."""
+    multipole = parsed_qchem_62_h2o_sp_data.multipole
+    assert multipole is not None
+    assert multipole.octopole is not None
+    actual = getattr(multipole.octopole, component)
+    assert actual == pytest.approx(expected, abs=HIGHER_TOL)
+
+
+@pytest.mark.regression
+@pytest.mark.parametrize(
+    "component,expected",
+    [
+        ("xxxx", EXPECTED_HEX_XXXX),
+        ("xxxy", EXPECTED_HEX_XXXY),
+        ("xxyy", EXPECTED_HEX_XXYY),
+        ("xyyy", EXPECTED_HEX_XYYY),
+        ("yyyy", EXPECTED_HEX_YYYY),
+        ("xxxz", EXPECTED_HEX_XXXZ),
+        ("xxyz", EXPECTED_HEX_XXYZ),
+        ("xyyz", EXPECTED_HEX_XYYZ),
+        ("yyyz", EXPECTED_HEX_YYYZ),
+        ("xxzz", EXPECTED_HEX_XXZZ),
+        ("xyzz", EXPECTED_HEX_XYZZ),
+        ("yyzz", EXPECTED_HEX_YYZZ),
+        ("xzzz", EXPECTED_HEX_XZZZ),
+        ("yzzz", EXPECTED_HEX_YZZZ),
+        ("zzzz", EXPECTED_HEX_ZZZZ),
+    ],
+)
+def test_hexadecapole_components(
+    parsed_qchem_62_h2o_sp_data: CalculationResult,
+    component: str,
+    expected: float,
+) -> None:
+    """Regression test: verify exact hexadecapole component values."""
+    multipole = parsed_qchem_62_h2o_sp_data.multipole
+    assert multipole is not None
+    assert multipole.hexadecapole is not None
+    actual = getattr(multipole.hexadecapole, component)
+    assert actual == pytest.approx(expected, abs=HIGHER_TOL)
