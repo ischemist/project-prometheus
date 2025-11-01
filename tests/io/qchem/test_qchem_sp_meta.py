@@ -63,7 +63,7 @@ def test_metadata_parser_stops_after_version():
 
 
 @pytest.mark.unit
-def test_metadata_parser_sets_software_name():
+def test_metadata_parser_sets_software_name_and_version():
     """
     Unit test: verify MetadataParser.parse() sets both software_name and software_version.
     """
