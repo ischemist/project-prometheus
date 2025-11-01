@@ -22,7 +22,7 @@ import pytest
 from calcflow.common.models import CalculationResult, Orbital, OrbitalsSet
 from calcflow.io.qchem.blocks.orbitals import OrbitalsParser
 from calcflow.io.state import ParseState
-from tests.io.qchem.conftest import FIXTURES_SP_AND_TDDFT
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # HARDCODED TEST DATA
@@ -112,7 +112,7 @@ def test_orbitals_parser_does_not_mutate_state_in_matches():
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    FIXTURES_SP_AND_TDDFT,
+    FIXTURE_SPECS["orbitals"],
     indirect=True,
 )
 def test_orbitals_set_has_correct_type(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
@@ -124,7 +124,7 @@ def test_orbitals_set_has_correct_type(parsed_qchem_h2o_sp_or_tddft_data: Calcul
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    FIXTURES_SP_AND_TDDFT,
+    FIXTURE_SPECS["orbitals"],
     indirect=True,
 )
 def test_orbitals_set_alpha_orbitals_is_sequence(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
@@ -139,7 +139,7 @@ def test_orbitals_set_alpha_orbitals_is_sequence(parsed_qchem_h2o_sp_or_tddft_da
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    FIXTURES_SP_AND_TDDFT,
+    FIXTURE_SPECS["orbitals"],
     indirect=True,
 )
 def test_orbital_required_fields_present(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
@@ -159,7 +159,7 @@ def test_orbital_required_fields_present(parsed_qchem_h2o_sp_or_tddft_data: Calc
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    FIXTURES_SP_AND_TDDFT,
+    FIXTURE_SPECS["orbitals"],
     indirect=True,
 )
 def test_orbitals_homo_lumo_indices_set(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):

@@ -16,10 +16,7 @@ TIME_TOL = 0.001  # seconds
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_data",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    indirect=True,
-    ids=["sp-5.4", "sp-6.2"],
+    "parsed_qchem_h2o_sp_data", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"], indirect=True
 )
 def test_timing_structure_exists(parsed_qchem_h2o_sp_data: CalculationResult):
     """
@@ -31,10 +28,7 @@ def test_timing_structure_exists(parsed_qchem_h2o_sp_data: CalculationResult):
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_data",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    indirect=True,
-    ids=["sp-5.4", "sp-6.2"],
+    "parsed_qchem_h2o_sp_data", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"], indirect=True
 )
 def test_wall_time_type(parsed_qchem_h2o_sp_data: CalculationResult):
     """
@@ -47,10 +41,7 @@ def test_wall_time_type(parsed_qchem_h2o_sp_data: CalculationResult):
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_data",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    indirect=True,
-    ids=["sp-5.4", "sp-6.2"],
+    "parsed_qchem_h2o_sp_data", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"], indirect=True
 )
 def test_cpu_time_type(parsed_qchem_h2o_sp_data: CalculationResult):
     """
@@ -69,7 +60,6 @@ def test_cpu_time_type(parsed_qchem_h2o_sp_data: CalculationResult):
         ("parsed_qchem_62_h2o_sp_data", 0.96, 0.41),
     ],
     indirect=["parsed_qchem_h2o_sp_data"],
-    ids=["sp-5.4", "sp-6.2"],
 )
 def test_sp_time_values(
     parsed_qchem_h2o_sp_data: CalculationResult, expected_wall_time: float, expected_cpu_time: float
@@ -106,10 +96,7 @@ def test_tddft_time_values(
 
 @pytest.mark.regression
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_data",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    indirect=True,
-    ids=["sp-5.4", "sp-6.2"],
+    "parsed_qchem_h2o_sp_data", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"], indirect=True
 )
 def test_module_times_is_none(parsed_qchem_h2o_sp_data: CalculationResult):
     """
@@ -122,10 +109,7 @@ def test_module_times_is_none(parsed_qchem_h2o_sp_data: CalculationResult):
 
 @pytest.mark.integration
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_data",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    indirect=True,
-    ids=["sp-5.4", "sp-6.2"],
+    "parsed_qchem_h2o_sp_data", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"], indirect=True
 )
 def test_timing_fields_populated(parsed_qchem_h2o_sp_data: CalculationResult):
     """

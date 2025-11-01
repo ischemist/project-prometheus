@@ -20,6 +20,7 @@ Format notes:
 import pytest
 
 from calcflow.common.models import CalculationResult, GroundStateReference, TddftResults
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # HARDCODED TEST DATA (from gs-ref.md and actual QChem output)
@@ -60,11 +61,7 @@ EXPECTED_54_UKS_DIPOLE_COMPONENTS = (-0.995831, -0.203503, -1.740304)
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_gs_ref"])
 def test_gs_ref_exists(fixture_name: str, request):
     """Ground state reference should exist in TDDFT results."""
     data = request.getfixturevalue(fixture_name)
@@ -82,7 +79,6 @@ def test_gs_ref_exists(fixture_name: str, request):
         ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_FRONTIER_NOS),
         ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_54_UKS_FRONTIER_NOS),
     ],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
 )
 def test_frontier_nos(fixture_name: str, expected_nos, request):
     """Frontier NO occupations should be parsed correctly."""
@@ -92,11 +88,7 @@ def test_frontier_nos(fixture_name: str, expected_nos, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_gs_ref"])
 def test_num_electrons(fixture_name: str, request):
     """Total electron count should be parsed correctly."""
     data = request.getfixturevalue(fixture_name)
@@ -105,11 +97,7 @@ def test_num_electrons(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_gs_ref"])
 def test_num_unpaired_electrons(fixture_name: str, request):
     """Number of unpaired electrons should be parsed correctly."""
     data = request.getfixturevalue(fixture_name)
@@ -134,7 +122,6 @@ def test_mulliken_charges_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationRes
         ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_MULLIKEN_CHARGES),
         ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_54_UKS_MULLIKEN_CHARGES),
     ],
-    ids=["uks-6.2", "uks-5.4"],
 )
 def test_mulliken_charges_uks(fixture_name: str, expected_charges, request) -> None:
     """Mulliken charges should be parsed correctly for UKS."""
@@ -160,7 +147,6 @@ def test_mulliken_spins_none_for_rks(parsed_qchem_62_h2o_rks_tddft_data: Calcula
         ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_MULLIKEN_SPINS),
         ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_54_UKS_MULLIKEN_SPINS),
     ],
-    ids=["uks-6.2", "uks-5.4"],
 )
 def test_mulliken_spins_uks(fixture_name: str, expected_spins, request) -> None:
     """Mulliken spins should be parsed correctly for UKS."""
@@ -187,7 +173,6 @@ def test_dipole_moment_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult
         ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_DIPOLE_MOMENT),
         ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_54_UKS_DIPOLE_MOMENT),
     ],
-    ids=["uks-6.2", "uks-5.4"],
 )
 def test_dipole_moment_uks(fixture_name: str, expected_moment: float, request) -> None:
     """Total dipole moment should be parsed correctly for UKS."""
@@ -211,7 +196,6 @@ def test_dipole_components_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationRe
         ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_DIPOLE_COMPONENTS),
         ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_54_UKS_DIPOLE_COMPONENTS),
     ],
-    ids=["uks-6.2", "uks-5.4"],
 )
 def test_dipole_components_uks(fixture_name: str, expected_components, request) -> None:
     """Dipole moment Cartesian components should be parsed correctly for UKS."""

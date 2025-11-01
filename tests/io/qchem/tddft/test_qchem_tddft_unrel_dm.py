@@ -184,11 +184,7 @@ def test_unrelaxed_dm_parser_exists():
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2"],
-)
+@pytest.mark.parametrize("fixture_name", ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data"])
 def test_unrelaxed_dm_exists(fixture_name: str, request) -> None:
     """Unrelaxed density matrices should exist in TDDFT results."""
     data = request.getfixturevalue(fixture_name)
@@ -199,11 +195,7 @@ def test_unrelaxed_dm_exists(fixture_name: str, request) -> None:
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2"],
-)
+@pytest.mark.parametrize("fixture_name", ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data"])
 def test_unrelaxed_dm_structure(fixture_name: str, request) -> None:
     """Each unrelaxed DM should have correct structure."""
     data = request.getfixturevalue(fixture_name)
@@ -220,11 +212,7 @@ def test_unrelaxed_dm_structure(fixture_name: str, request) -> None:
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2"],
-)
+@pytest.mark.parametrize("fixture_name", ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data"])
 def test_nos_structure(fixture_name: str, request) -> None:
     """NaturalOrbitals should have correct structure."""
     data = request.getfixturevalue(fixture_name)
@@ -241,11 +229,7 @@ def test_nos_structure(fixture_name: str, request) -> None:
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2"],
-)
+@pytest.mark.parametrize("fixture_name", ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data"])
 def test_exciton_structure(fixture_name: str, request) -> None:
     """ExcitonAnalysis should have correct structure."""
     data = request.getfixturevalue(fixture_name)

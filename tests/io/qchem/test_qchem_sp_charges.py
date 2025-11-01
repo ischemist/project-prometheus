@@ -3,7 +3,7 @@
 import pytest
 
 from calcflow.common.models import CalculationResult
-from tests.io.qchem.conftest import FIXTURES_SP_ONLY
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 
 class TestQChemMullikenCharges:
@@ -11,7 +11,7 @@ class TestQChemMullikenCharges:
 
     @pytest.mark.parametrize(
         "parsed_qchem_h2o_sp_data",
-        FIXTURES_SP_ONLY,
+        FIXTURE_SPECS["charges"],
         indirect=True,
     )
     def test_qchem_mulliken_charges_present(self, parsed_qchem_h2o_sp_data: CalculationResult) -> None:

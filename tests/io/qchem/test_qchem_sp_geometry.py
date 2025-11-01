@@ -11,6 +11,7 @@ import pytest
 from calcflow.common.models import Atom, CalculationResult
 from calcflow.io.qchem.blocks.geometry import GeometryParser
 from calcflow.io.state import ParseState
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # Tolerance for coordinate precision (7 decimal places)
 COORD_TOL = 1e-7
@@ -108,15 +109,8 @@ def test_geometry_parser_ignores_non_geometry_lines():
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURE_SPECS["geometry"],
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_input_geometry_is_tuple_of_atoms(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """
@@ -130,15 +124,8 @@ def test_input_geometry_is_tuple_of_atoms(parsed_qchem_h2o_sp_or_tddft_data: Cal
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURE_SPECS["geometry"],
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_final_geometry_is_tuple_of_atoms(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """
@@ -152,15 +139,8 @@ def test_final_geometry_is_tuple_of_atoms(parsed_qchem_h2o_sp_or_tddft_data: Cal
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURE_SPECS["geometry"],
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_input_geometry_has_three_atoms(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """
@@ -172,15 +152,8 @@ def test_input_geometry_has_three_atoms(parsed_qchem_h2o_sp_or_tddft_data: Calcu
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURE_SPECS["geometry"],
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_final_geometry_has_three_atoms(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """
@@ -193,15 +166,8 @@ def test_final_geometry_has_three_atoms(parsed_qchem_h2o_sp_or_tddft_data: Calcu
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURE_SPECS["geometry"],
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_input_geometry_atom_symbols(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """
@@ -214,15 +180,8 @@ def test_input_geometry_atom_symbols(parsed_qchem_h2o_sp_or_tddft_data: Calculat
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURE_SPECS["geometry"],
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_final_geometry_atom_symbols(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """
@@ -236,15 +195,8 @@ def test_final_geometry_atom_symbols(parsed_qchem_h2o_sp_or_tddft_data: Calculat
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURE_SPECS["geometry"],
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_input_geometry_coordinates_are_floats(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """
@@ -259,15 +211,8 @@ def test_input_geometry_coordinates_are_floats(parsed_qchem_h2o_sp_or_tddft_data
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURE_SPECS["geometry"],
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_final_geometry_coordinates_are_floats(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """

@@ -22,6 +22,7 @@ import pytest
 from calcflow.common.models import CalculationResult, ScfIteration, ScfResults, SmdResults
 from calcflow.io.qchem.blocks.scf import ScfParser
 from calcflow.io.state import ParseState
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # HARDCODED TEST DATA (Q-Chem 5.4 and 6.2 have identical SCF values)
@@ -131,15 +132,8 @@ def test_scf_parser_does_not_mutate_state_in_matches():
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURE_SPECS["scf"],
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_scf_results_has_correct_type(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify scf field is ScfResults instance."""
@@ -148,18 +142,7 @@ def test_scf_results_has_correct_type(parsed_qchem_h2o_sp_or_tddft_data: Calcula
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
-    indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
-)
+@pytest.mark.parametrize("parsed_qchem_h2o_sp_or_tddft_data", FIXTURE_SPECS["scf"], indirect=True)
 def test_scf_results_iterations_is_tuple(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify iterations field is a tuple of ScfIteration objects."""
     assert parsed_qchem_h2o_sp_or_tddft_data.scf is not None
@@ -169,18 +152,7 @@ def test_scf_results_iterations_is_tuple(parsed_qchem_h2o_sp_or_tddft_data: Calc
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
-    indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
-)
+@pytest.mark.parametrize("parsed_qchem_h2o_sp_or_tddft_data", FIXTURE_SPECS["scf"], indirect=True)
 def test_scf_results_required_fields_present(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify all required ScfResults fields are present with correct types."""
     scf = parsed_qchem_h2o_sp_or_tddft_data.scf
@@ -194,18 +166,7 @@ def test_scf_results_required_fields_present(parsed_qchem_h2o_sp_or_tddft_data: 
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
-    indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
-)
+@pytest.mark.parametrize("parsed_qchem_h2o_sp_or_tddft_data", FIXTURE_SPECS["scf"], indirect=True)
 def test_scf_iteration_required_fields(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify each ScfIteration has required fields."""
     scf = parsed_qchem_h2o_sp_or_tddft_data.scf
@@ -219,18 +180,7 @@ def test_scf_iteration_required_fields(parsed_qchem_h2o_sp_or_tddft_data: Calcul
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
-    indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
-)
+@pytest.mark.parametrize("parsed_qchem_h2o_sp_or_tddft_data", FIXTURE_SPECS["scf"], indirect=True)
 def test_scf_n_iterations_matches_length(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify n_iterations field matches actual iteration count."""
     scf = parsed_qchem_h2o_sp_or_tddft_data.scf
@@ -479,11 +429,7 @@ def test_last_iteration_convergence_marker(parsed_qchem_62_h2o_sp_data: Calculat
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_scf_results_present_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Contract test: verify SCF results are present in both Q-Chem 5.4 and 6.2 formats.
@@ -497,11 +443,7 @@ def test_scf_results_present_both_versions(parsed_data_fixture: str, request: py
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_scf_converged_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Regression test: verify SCF converged status is identical in both versions.
@@ -512,11 +454,7 @@ def test_scf_converged_both_versions(parsed_data_fixture: str, request: pytest.F
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_scf_number_of_iterations_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Regression test: verify exact number of SCF iterations in both versions.
@@ -528,11 +466,7 @@ def test_scf_number_of_iterations_both_versions(parsed_data_fixture: str, reques
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_scf_final_energy_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Regression test: verify exact final SCF energy in both versions.
@@ -603,11 +537,7 @@ def test_scf_iteration_values_both_versions(
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_smd_results_present_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Regression test: verify SMD results are present in both versions.
@@ -628,11 +558,7 @@ def test_smd_results_present_both_versions(parsed_data_fixture: str, request: py
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_smd_values_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Regression test: verify exact SMD values in both versions.
@@ -655,11 +581,7 @@ def test_smd_values_both_versions(parsed_data_fixture: str, request: pytest.Fixt
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_final_energy_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Regression test: verify final energy is set correctly in both versions.

@@ -23,6 +23,7 @@ import pytest
 from calcflow.common.models import CalculationResult, NTOStateAnalysis
 from calcflow.io.qchem.blocks.tddft.nto import NTOParser
 from calcflow.io.state import ParseState
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # HARDCODED TEST DATA (from ex-nto.md)
@@ -244,7 +245,6 @@ def test_nto_parser_does_not_mutate_state_in_matches():
 @pytest.mark.parametrize(
     "fixture_name",
     ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
 )
 def test_nto_analyses_has_correct_type(fixture_name: str, request):
     """Contract test: verify nto_analyses field is sequence of NTOStateAnalysis."""
@@ -257,11 +257,7 @@ def test_nto_analyses_has_correct_type(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
 def test_nto_state_analysis_has_required_fields(fixture_name: str, request):
     """Contract test: verify each NTOStateAnalysis has required fields."""
     data = request.getfixturevalue(fixture_name)
@@ -279,11 +275,7 @@ def test_nto_state_analysis_has_required_fields(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
 def test_nto_contribution_structure(fixture_name: str, request):
     """Contract test: verify NTOContribution structure in NTO states."""
     data = request.getfixturevalue(fixture_name)
@@ -316,11 +308,7 @@ def test_rks_all_contributions_single_spin(parsed_qchem_62_h2o_rks_tddft_data: C
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_unrel_dm"])
 def test_uks_contributions_have_alpha_and_beta(fixture_name: str, request):
     """Contract test: verify UKS contributions have both alpha and beta spins."""
     data = request.getfixturevalue(fixture_name)
@@ -341,11 +329,7 @@ def test_uks_contributions_have_alpha_and_beta(fixture_name: str, request):
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
 def test_nto_parsed_alongside_tddft(fixture_name: str, request):
     """Integration test: verify NTO and TDDFT both parsed together."""
     data = request.getfixturevalue(fixture_name)
@@ -355,11 +339,7 @@ def test_nto_parsed_alongside_tddft(fixture_name: str, request):
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
 def test_nto_state_numbers_match_tddft(fixture_name: str, request):
     """Integration test: verify NTO state numbers match TDDFT state numbers."""
     data = request.getfixturevalue(fixture_name)
@@ -594,7 +574,6 @@ def test_uks_nto_state_9_multiple_alpha_beta(parsed_qchem_62_h2o_uks_tddft_data:
         ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_NUM_NTO_STATES),
         ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_UKS_54_NUM_NTO_STATES),
     ],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
 )
 def test_nto_state_count(fixture_name: str, expected_count: int, request):
     """Regression test: verify exact number of NTO states parsed."""

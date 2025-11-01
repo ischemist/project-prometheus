@@ -23,6 +23,7 @@ from calcflow.common.models import (
     TddftResults,
     TransitionDensityMatrix,
 )
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # HARDCODED TEST DATA (from ex-tran-dm.md)
@@ -231,11 +232,7 @@ def test_trans_dm_parser_exists():
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_trans_dm"])
 def test_trans_dm_exists(fixture_name: str, request):
     """Contract test: transition density matrices should exist in TDDFT results."""
     data = request.getfixturevalue(fixture_name)
@@ -246,11 +243,7 @@ def test_trans_dm_exists(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_trans_dm"])
 def test_trans_dm_structure(fixture_name: str, request):
     """Contract test: each transition DM should have correct structure."""
     data = request.getfixturevalue(fixture_name)
@@ -277,11 +270,7 @@ def test_rks_has_no_alpha_beta_exciton(parsed_qchem_62_h2o_rks_tddft_data: Calcu
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_unrel_dm"])
 def test_uks_has_alpha_beta_exciton(fixture_name: str, request):
     """Contract test: UKS should have alpha/beta exciton analysis."""
     data = request.getfixturevalue(fixture_name)
@@ -311,11 +300,7 @@ def test_mulliken_structure_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationR
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_trans_dm"])
 def test_exciton_has_transition_fields(fixture_name: str, request):
     """Contract test: exciton should have transition-specific fields."""
     data = request.getfixturevalue(fixture_name)
@@ -332,11 +317,7 @@ def test_exciton_has_transition_fields(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_unrel_dm"])
 def test_uks_mulliken_optional_but_exciton_present(fixture_name: str, request):
     """Contract test: UKS may have None mulliken, but exciton analysis is always present."""
     data = request.getfixturevalue(fixture_name)

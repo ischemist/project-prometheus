@@ -25,7 +25,7 @@ Test organization by blocks:
 import pytest
 
 from calcflow.common.models import CalculationResult, OrbitalsSet, ScfResults
-from tests.io.qchem.conftest import FIXTURES_TDDFT, FIXTURES_UKS_TDDFT
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # HARDCODED TEST DATA from TDDFT extracts
@@ -92,7 +92,7 @@ class TestTDDFTGeometryBlock:
     """Tests for geometry block parsing in TDDFT outputs."""
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_geometry_parsed_in_tddft(self, fixture_name: str, request):
         """Contract test: verify geometry is parsed from TDDFT output (all variants)."""
         data = request.getfixturevalue(fixture_name)
@@ -101,14 +101,14 @@ class TestTDDFTGeometryBlock:
         assert len(data.input_geometry) > 0
 
     @pytest.mark.regression
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_geometry_has_three_atoms(self, fixture_name: str, request):
         """Regression test: verify exactly 3 atoms in H2O geometry (all variants)."""
         data = request.getfixturevalue(fixture_name)
         assert len(data.input_geometry) == EXPECTED_GEOMETRY_ATOMS
 
     @pytest.mark.regression
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_geometry_atom_symbols(self, fixture_name: str, request):
         """Regression test: verify atom symbols are H, O, H (all variants)."""
         data = request.getfixturevalue(fixture_name)
@@ -116,7 +116,7 @@ class TestTDDFTGeometryBlock:
         assert symbols == EXPECTED_GEOMETRY_SYMBOLS
 
     @pytest.mark.regression
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     @pytest.mark.parametrize(
         "atom_idx,expected_x,expected_y,expected_z",
         [
@@ -174,7 +174,7 @@ class TestTDDFTSCFBlock:
     """Tests for SCF block parsing in TDDFT outputs."""
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_scf_parsed_in_tddft(self, fixture_name: str, request):
         """Contract test: verify SCF block is parsed from TDDFT output (all variants)."""
         data = request.getfixturevalue(fixture_name)
@@ -182,7 +182,7 @@ class TestTDDFTSCFBlock:
         assert isinstance(data.scf, ScfResults)
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_scf_has_iterations(self, fixture_name: str, request):
         """Contract test: verify SCF has iterations data (all variants)."""
         data = request.getfixturevalue(fixture_name)
@@ -264,7 +264,7 @@ class TestTDDFTOrbitalsBlock:
     """Tests for orbitals block parsing in TDDFT outputs."""
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_orbitals_parsed_in_tddft(self, fixture_name: str, request):
         """Contract test: verify orbitals block is parsed from TDDFT output (all variants)."""
         data = request.getfixturevalue(fixture_name)
@@ -272,7 +272,7 @@ class TestTDDFTOrbitalsBlock:
         assert isinstance(data.orbitals, OrbitalsSet)
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_alpha_orbitals_present_in_tddft(self, fixture_name: str, request):
         """Contract test: verify alpha orbitals are parsed (all variants)."""
         data = request.getfixturevalue(fixture_name)
@@ -281,7 +281,7 @@ class TestTDDFTOrbitalsBlock:
         assert len(data.orbitals.alpha_orbitals) > 0
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("fixture_name", FIXTURES_UKS_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["beta_orbitals"])
     def test_uks_has_beta_orbitals(self, fixture_name: str, request):
         """Contract test: verify UKS TDDFT has beta orbitals."""
         data = request.getfixturevalue(fixture_name)
@@ -409,14 +409,14 @@ class TestTDDFTMultipoleBlock:
     """Tests for multipole moments block parsing in TDDFT outputs."""
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_multipole_parsed_in_tddft(self, fixture_name: str, request):
         """Contract test: verify multipole block is parsed from TDDFT output (all variants)."""
         data = request.getfixturevalue(fixture_name)
         assert data.multipole is not None
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_multipole_has_dipole(self, fixture_name: str, request):
         """Contract test: verify multipole has dipole moment (all variants)."""
         data = request.getfixturevalue(fixture_name)
@@ -424,7 +424,7 @@ class TestTDDFTMultipoleBlock:
         assert data.multipole.dipole is not None
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_multipole_has_quadrupole(self, fixture_name: str, request):
         """Contract test: verify multipole has quadrupole moments (all variants)."""
         data = request.getfixturevalue(fixture_name)
@@ -432,7 +432,7 @@ class TestTDDFTMultipoleBlock:
         assert data.multipole.quadrupole is not None
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_multipole_has_octopole(self, fixture_name: str, request):
         """Contract test: verify multipole has octopole moments (all variants)."""
         data = request.getfixturevalue(fixture_name)
@@ -440,7 +440,7 @@ class TestTDDFTMultipoleBlock:
         assert data.multipole.octopole is not None
 
     @pytest.mark.contract
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_multipole_has_hexadecapole(self, fixture_name: str, request):
         """Contract test: verify multipole has hexadecapole moments (all variants)."""
         data = request.getfixturevalue(fixture_name)
@@ -586,7 +586,7 @@ class TestTDDFTBlockIntegration:
     """Integration tests verifying multiple blocks work together in TDDFT output."""
 
     @pytest.mark.integration
-    @pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_all_blocks_present_in_tddft(self, fixture_name: str, request):
         """Integration test: verify all major blocks are parsed in TDDFT (all variants)."""
         data = request.getfixturevalue(fixture_name)
