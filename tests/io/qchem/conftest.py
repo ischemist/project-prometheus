@@ -153,7 +153,6 @@ FIXTURE_SPECS = {
         "parsed_qchem_54_h2o_mom_xas_job2",
         "parsed_qchem_62_h2o_mom_xas_job2",
     ],
-    # RKS-specific blocks
     "tddft_nto": [
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",
@@ -161,8 +160,12 @@ FIXTURE_SPECS = {
         "parsed_qchem_54_h2o_mom_xas_job2",
         "parsed_qchem_62_h2o_mom_xas_job2",
     ],
+    "tddft_nto_uks": [
+        "parsed_qchem_54_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_uks_tddft_data",
+    ],
     # MOM SCF block (present in MOM-enabled jobs)
-    "mom-scf": [
+    "mom_scf": [
         "parsed_qchem_54_h2o_mom_sp_job2",
         "parsed_qchem_62_h2o_mom_sp_job2",
         "parsed_qchem_54_h2o_mom_xas_job2",

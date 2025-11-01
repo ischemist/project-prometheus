@@ -242,58 +242,14 @@ def test_charges_parsed_alongside_scf(parsed_qchem_62_h2o_sp_data: CalculationRe
 
 
 @pytest.mark.regression
-def test_mulliken_charge_atom_0_h(parsed_qchem_62_h2o_sp_data: CalculationResult) -> None:
-    """Regression test: verify exact charge value for H atom 0."""
-    mulliken_charges = None
-    for charges in parsed_qchem_62_h2o_sp_data.atomic_charges:
-        if charges.method == "Mulliken":
-            mulliken_charges = charges
-            break
-
-    assert mulliken_charges is not None
-    assert mulliken_charges.charges[0] == pytest.approx(EXPECTED_MULLIKEN_CHARGES[0], abs=CHARGE_TOL)
-
-
-@pytest.mark.regression
-def test_mulliken_charge_atom_1_o(parsed_qchem_62_h2o_sp_data: CalculationResult) -> None:
-    """Regression test: verify exact charge value for O atom 1."""
-    mulliken_charges = None
-    for charges in parsed_qchem_62_h2o_sp_data.atomic_charges:
-        if charges.method == "Mulliken":
-            mulliken_charges = charges
-            break
-
-    assert mulliken_charges is not None
-    assert mulliken_charges.charges[1] == pytest.approx(EXPECTED_MULLIKEN_CHARGES[1], abs=CHARGE_TOL)
-
-
-@pytest.mark.regression
-def test_mulliken_charge_atom_2_h(parsed_qchem_62_h2o_sp_data: CalculationResult) -> None:
-    """Regression test: verify exact charge value for H atom 2."""
-    mulliken_charges = None
-    for charges in parsed_qchem_62_h2o_sp_data.atomic_charges:
-        if charges.method == "Mulliken":
-            mulliken_charges = charges
-            break
-
-    assert mulliken_charges is not None
-    assert mulliken_charges.charges[2] == pytest.approx(EXPECTED_MULLIKEN_CHARGES[2], abs=CHARGE_TOL)
-
-
-@pytest.mark.regression
 @pytest.mark.parametrize(
-    "atom_idx,expected_charge",
-    [
-        (0, 0.193937),  # H
-        (1, -0.388200),  # O
-        (2, 0.194263),  # H
-    ],
-    ids=["atom-0-h", "atom-1-o", "atom-2-h"],
+    "atom_idx",
+    list(EXPECTED_MULLIKEN_CHARGES),
+    ids=[f"atom-{k}" for k in EXPECTED_MULLIKEN_CHARGES],
 )
 def test_mulliken_charge_values(
     parsed_qchem_62_h2o_sp_data: CalculationResult,
     atom_idx: int,
-    expected_charge: float,
 ) -> None:
     """Regression test: verify exact charge values for all atoms."""
     mulliken_charges = None
@@ -303,7 +259,7 @@ def test_mulliken_charge_values(
             break
 
     assert mulliken_charges is not None
-    assert mulliken_charges.charges[atom_idx] == pytest.approx(expected_charge, abs=CHARGE_TOL)
+    assert mulliken_charges.charges[atom_idx] == pytest.approx(EXPECTED_MULLIKEN_CHARGES[atom_idx], abs=CHARGE_TOL)
 
 
 @pytest.mark.regression
@@ -317,4 +273,4 @@ def test_mulliken_charges_sum_approximately_zero(parsed_qchem_62_h2o_sp_data: Ca
 
     assert mulliken_charges is not None
     total_charge = sum(mulliken_charges.charges.values())
-    assert abs(total_charge) == pytest.approx(0.0, abs=CHARGE_TOL)
+    assert total_charge == pytest.approx(EXPECTED_CHARGE_SUM, abs=CHARGE_TOL)
