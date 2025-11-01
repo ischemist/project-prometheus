@@ -52,7 +52,7 @@ JOB2_FIXTURE_FILES = {
 # FIXTURE SPECIFICATIONS: Organized by parsed block
 # =============================================================================
 # Maps block names to fixtures that contain that block.
-# Tests should parametrize using FIXTURE_SPECS[block_name].
+# Contract (and ONLY contract) tests should parametrize using FIXTURE_SPECS[block_name].
 
 FIXTURE_SPECS = {
     # Blocks present in all fixtures (both SP and TDDFT)
@@ -134,6 +134,13 @@ FIXTURE_SPECS = {
     # RKS-specific blocks
     "tddft_nto": [
         "parsed_qchem_62_h2o_rks_tddft_data",
+    ],
+    # MOM SCF block (present in MOM-enabled jobs)
+    "mom-scf": [
+        "parsed_qchem_54_h2o_mom_sp_job2",
+        "parsed_qchem_62_h2o_mom_sp_job2",
+        "parsed_qchem_54_h2o_mom_xas_job2",
+        "parsed_qchem_62_h2o_mom_xas_job2",
     ],
     # Timing block (present in all fixtures)
     "timing": [

@@ -12,7 +12,7 @@ MOM Characteristics:
 - Uses "Maximum Overlap Method Active" and "IMOM method" markers
 - Still produces standard SCF iteration output
 
-Test Data Source: ex-mom-sp.md
+Test Data Source: qchem/h2o/6.2-mom-sp-smd.out
 - Job 1: Regular SCF (baseline for comparison)
 - Job 2: MOM-enabled SCF (MOM-specific parsing)
 
@@ -26,9 +26,10 @@ Expected Values (Job 2, MOM iterations):
 import pytest
 
 from calcflow.common.models import CalculationResult, ScfResults
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================
-# TEST DATA: Hardcoded expected values from ex-mom-sp.md, Job 2 (MOM)
+# TEST DATA: Hardcoded expected values from qchem/h2o/6.2-mom-sp-smd.out, Job 2 (MOM)
 # =============================================================================
 
 # Job 2: MOM-enabled SCF iterations with hardcoded values from ex-mom-sp.md
@@ -123,22 +124,24 @@ MOM_OVERLAP_TOL = 0.01
 
 
 @pytest.mark.contract
-def test_mom_iteration_has_mom_active_field(parsed_qchem_62_h2o_mom_sp_job2: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["mom-scf"], indirect=True)
+def test_mom_iteration_has_mom_active_field(parsed_qchem_data: CalculationResult):
     """Contract test: MOM iterations should have mom_active field present."""
-    assert parsed_qchem_62_h2o_mom_sp_job2.scf is not None
+    assert parsed_qchem_data.scf is not None
 
-    for iteration in parsed_qchem_62_h2o_mom_sp_job2.scf.iterations:
+    for iteration in parsed_qchem_data.scf.iterations:
         # For non-MOM iterations, mom_active should be None or False
         # For MOM iterations, mom_active should be True
         assert iteration.mom_active is None or isinstance(iteration.mom_active, bool)
 
 
 @pytest.mark.contract
-def test_mom_iteration_has_overlap_fields(parsed_qchem_62_h2o_mom_sp_job2: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["mom-scf"], indirect=True)
+def test_mom_iteration_has_overlap_fields(parsed_qchem_data: CalculationResult):
     """Contract test: MOM iterations should have overlap fields present."""
-    assert parsed_qchem_62_h2o_mom_sp_job2.scf is not None
+    assert parsed_qchem_data.scf is not None
 
-    for iteration in parsed_qchem_62_h2o_mom_sp_job2.scf.iterations:
+    for iteration in parsed_qchem_data.scf.iterations:
         if iteration.mom_active:
             # If mom_active is True, overlap fields should be present
             assert iteration.mom_overlap_current is not None
@@ -148,22 +151,24 @@ def test_mom_iteration_has_overlap_fields(parsed_qchem_62_h2o_mom_sp_job2: Calcu
 
 
 @pytest.mark.contract
-def test_mom_overlap_values_are_floats(parsed_qchem_62_h2o_mom_sp_job2: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["mom-scf"], indirect=True)
+def test_mom_overlap_values_are_floats(parsed_qchem_data: CalculationResult):
     """Contract test: MOM overlap values should be numeric."""
-    assert parsed_qchem_62_h2o_mom_sp_job2.scf is not None
+    assert parsed_qchem_data.scf is not None
 
-    for iteration in parsed_qchem_62_h2o_mom_sp_job2.scf.iterations:
+    for iteration in parsed_qchem_data.scf.iterations:
         if iteration.mom_active:
             assert isinstance(iteration.mom_overlap_current, float)
             assert iteration.mom_overlap_current > 0
 
 
 @pytest.mark.contract
-def test_mom_overlap_target_is_reasonable(parsed_qchem_62_h2o_mom_sp_job2: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["mom-scf"], indirect=True)
+def test_mom_overlap_target_is_reasonable(parsed_qchem_data: CalculationResult):
     """Contract test: MOM overlap target should be a reasonable electron count."""
-    assert parsed_qchem_62_h2o_mom_sp_job2.scf is not None
+    assert parsed_qchem_data.scf is not None
 
-    for iteration in parsed_qchem_62_h2o_mom_sp_job2.scf.iterations:
+    for iteration in parsed_qchem_data.scf.iterations:
         if iteration.mom_active and iteration.mom_overlap_target is not None:
             # Target should be positive and typically small (number of electrons)
             assert iteration.mom_overlap_target > 0
@@ -171,11 +176,12 @@ def test_mom_overlap_target_is_reasonable(parsed_qchem_62_h2o_mom_sp_job2: Calcu
 
 
 @pytest.mark.contract
-def test_mom_overlap_current_vs_target_consistency(parsed_qchem_62_h2o_mom_sp_job2: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["mom-scf"], indirect=True)
+def test_mom_overlap_current_vs_target_consistency(parsed_qchem_data: CalculationResult):
     """Contract test: MOM overlap current should not exceed target by much."""
-    assert parsed_qchem_62_h2o_mom_sp_job2.scf is not None
+    assert parsed_qchem_data.scf is not None
 
-    for iteration in parsed_qchem_62_h2o_mom_sp_job2.scf.iterations:
+    for iteration in parsed_qchem_data.scf.iterations:
         if iteration.mom_active:
             # Current overlap should be close to or slightly less than target
             target = iteration.mom_overlap_target or 5.0
@@ -200,24 +206,27 @@ def test_non_mom_iterations_have_none_fields(parsed_qchem_54_h2o_sp_data: Calcul
 
 
 @pytest.mark.contract
-def test_mom_scf_has_correct_type(parsed_qchem_62_h2o_mom_sp_job2: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["mom-scf"], indirect=True)
+def test_mom_scf_has_correct_type(parsed_qchem_data: CalculationResult):
     """Contract test: MOM job should have ScfResults instance."""
-    assert parsed_qchem_62_h2o_mom_sp_job2.scf is not None
-    assert isinstance(parsed_qchem_62_h2o_mom_sp_job2.scf, ScfResults)
+    assert parsed_qchem_data.scf is not None
+    assert isinstance(parsed_qchem_data.scf, ScfResults)
 
 
 @pytest.mark.contract
-def test_mom_scf_iterations_is_tuple(parsed_qchem_62_h2o_mom_sp_job2: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["mom-scf"], indirect=True)
+def test_mom_scf_iterations_is_tuple(parsed_qchem_data: CalculationResult):
     """Contract test: MOM iterations field should be a tuple."""
-    assert parsed_qchem_62_h2o_mom_sp_job2.scf is not None
-    assert isinstance(parsed_qchem_62_h2o_mom_sp_job2.scf.iterations, tuple)
-    assert len(parsed_qchem_62_h2o_mom_sp_job2.scf.iterations) > 0
+    assert parsed_qchem_data.scf is not None
+    assert isinstance(parsed_qchem_data.scf.iterations, tuple)
+    assert len(parsed_qchem_data.scf.iterations) > 0
 
 
 @pytest.mark.contract
-def test_mom_scf_has_required_fields(parsed_qchem_62_h2o_mom_sp_job2: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["mom-scf"], indirect=True)
+def test_mom_scf_has_required_fields(parsed_qchem_data: CalculationResult):
     """Contract test: MOM SCF results should have all required fields."""
-    scf = parsed_qchem_62_h2o_mom_sp_job2.scf
+    scf = parsed_qchem_data.scf
     assert scf is not None
 
     assert isinstance(scf.converged, bool)
@@ -227,9 +236,10 @@ def test_mom_scf_has_required_fields(parsed_qchem_62_h2o_mom_sp_job2: Calculatio
 
 
 @pytest.mark.contract
-def test_mom_scf_n_iterations_matches_length(parsed_qchem_62_h2o_mom_sp_job2: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["mom-scf"], indirect=True)
+def test_mom_scf_n_iterations_matches_length(parsed_qchem_data: CalculationResult):
     """Contract test: n_iterations should match actual iteration count."""
-    scf = parsed_qchem_62_h2o_mom_sp_job2.scf
+    scf = parsed_qchem_data.scf
     assert scf is not None
     assert scf.n_iterations == len(scf.iterations)
 
@@ -240,11 +250,12 @@ def test_mom_scf_n_iterations_matches_length(parsed_qchem_62_h2o_mom_sp_job2: Ca
 
 
 @pytest.mark.contract
-def test_mom_job_has_mom_active_iterations(parsed_qchem_62_h2o_mom_sp_job2: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["mom-scf"], indirect=True)
+def test_mom_job_has_mom_active_iterations(parsed_qchem_data: CalculationResult):
     """Contract test: MOM job should have at least some iterations with mom_active=True."""
-    assert parsed_qchem_62_h2o_mom_sp_job2.scf is not None
+    assert parsed_qchem_data.scf is not None
 
-    mom_active_count = sum(1 for it in parsed_qchem_62_h2o_mom_sp_job2.scf.iterations if it.mom_active)
+    mom_active_count = sum(1 for it in parsed_qchem_data.scf.iterations if it.mom_active)
     assert mom_active_count > 0, "MOM job should have at least one MOM-active iteration"
 
 
@@ -454,22 +465,20 @@ def test_mom_scf_works_with_smd(parsed_qchem_62_h2o_mom_sp_job2: CalculationResu
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_mom_sp_job2", "parsed_qchem_62_h2o_mom_sp_job2"])
-def test_mom_scf_present_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["mom-scf"], indirect=True)
+def test_mom_scf_present_both_versions(parsed_qchem_data: CalculationResult):
     """Contract test: MOM SCF should be present in both Q-Chem 5.4 and 6.2."""
-    parsed_data = request.getfixturevalue(parsed_data_fixture)
-    assert parsed_data.scf is not None
-    assert isinstance(parsed_data.scf, ScfResults)
+    assert parsed_qchem_data.scf is not None
+    assert isinstance(parsed_qchem_data.scf, ScfResults)
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_mom_sp_job2", "parsed_qchem_62_h2o_mom_sp_job2"])
-def test_mom_overlap_fields_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["mom-scf"], indirect=True)
+def test_mom_overlap_fields_both_versions(parsed_qchem_data: CalculationResult):
     """Contract test: MOM overlap fields should be present in both versions."""
-    parsed_data = request.getfixturevalue(parsed_data_fixture)
-    assert parsed_data.scf is not None
+    assert parsed_qchem_data.scf is not None
 
-    mom_iters = [it for it in parsed_data.scf.iterations if it.mom_active]
+    mom_iters = [it for it in parsed_qchem_data.scf.iterations if it.mom_active]
     assert len(mom_iters) > 0
 
     for iteration in mom_iters:
