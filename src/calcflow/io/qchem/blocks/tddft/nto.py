@@ -193,9 +193,9 @@ class NTOParser:
 
         # --- Update ParseState ---
         # Integrate into existing TddftResults or create new one
-        existing_tddft = state.tddft.model_dump() if state.tddft else {}
+        existing_tddft = state.tddft.to_dict() if state.tddft else {}
         existing_tddft["nto_analyses"] = nto_states
-        state.tddft = TddftResults.model_validate(existing_tddft)
+        state.tddft = TddftResults.from_dict(existing_tddft)
         state.parsed_nto = True
 
         logger.debug(f"Parsed {len(nto_states)} NTO states.")

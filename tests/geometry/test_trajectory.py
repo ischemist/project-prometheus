@@ -2,9 +2,8 @@ import logging
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError as PydanticValidationError
 
-from calcflow.common.exceptions import ParsingError
+from calcflow.common.exceptions import ParsingError, ValidationError
 from calcflow.geometry.static import Atom, Geometry
 from calcflow.geometry.trajectory import Trajectory
 from calcflow.utils import logger
@@ -41,7 +40,7 @@ def test_trajectory_model_validation(frame1: Geometry, frame2: Geometry, frame_d
     Trajectory(frames=(frame1, frame2))  # consistent multiple frames
 
     # Invalid case
-    with pytest.raises(PydanticValidationError, match="inconsistent number of atoms"):
+    with pytest.raises(ValidationError, match="inconsistent number of atoms"):
         Trajectory(frames=(frame1, frame_different_natoms))
 
 
@@ -107,5 +106,5 @@ def test_trajectory_from_xyz_file_invalid(tmp_path: Path, bad_content: str, erro
     """Tests loading from various invalid trajectory files."""
     file_path = tmp_path / "invalid.xyz"
     file_path.write_text(bad_content)
-    with pytest.raises((PydanticValidationError, ParsingError), match=error_match):
+    with pytest.raises((ValidationError, ParsingError), match=error_match):
         Trajectory.from_xyz_file(file_path)

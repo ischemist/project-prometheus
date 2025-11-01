@@ -2,9 +2,8 @@ import logging
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError as PydanticValidationError
 
-from calcflow.common.exceptions import ParsingError
+from calcflow.common.exceptions import ParsingError, ValidationError
 from calcflow.geometry.static import Atom, Geometry, _parse_energy_from_comment
 from calcflow.utils import logger
 
@@ -53,17 +52,17 @@ def test_parse_energy_from_comment(comment: str, expected_energy: float | None):
 @pytest.mark.contract
 def test_atom_model_validation():
     """Tests the validation logic within the Atom model."""
-    # Valid symbol
-    atom = Atom(symbol="h", x=0, y=0, z=0)
-    assert atom.symbol == "H"  # Check capitalization
+    # Valid symbol (must be capitalized)
+    atom = Atom(symbol="H", x=0, y=0, z=0)
+    assert atom.symbol == "H"
+
+    # Invalid capitalization
+    with pytest.raises(ValidationError, match="element symbol 'h' must be capitalized"):
+        Atom(symbol="h", x=0, y=0, z=0)
 
     # Invalid symbol
-    with pytest.raises(PydanticValidationError, match="unknown element symbol: 'Xx'"):
+    with pytest.raises(ValidationError, match="unknown element symbol: 'Xx'"):
         Atom(symbol="Xx", x=0, y=0, z=0)
-
-    # Invalid coordinate type (implicitly tested by Pydantic)
-    with pytest.raises(PydanticValidationError):
-        Atom(symbol="H", x="a", y=0, z=0)
 
 
 @pytest.mark.contract
@@ -89,7 +88,7 @@ def test_geometry_cached_properties(h2o_geometry: Geometry):
 @pytest.mark.contract
 def test_geometry_total_nuclear_charge_unknown_element(h2o_atoms: tuple[Atom, ...]):
     """tests that creating an atom with an unknown symbol fails."""
-    with pytest.raises(PydanticValidationError, match="1 validation error for Atom"):
+    with pytest.raises(ValidationError, match="unknown element symbol: 'Xx'"):
         Atom(symbol="Xx", x=0, y=0, z=0)
 
 

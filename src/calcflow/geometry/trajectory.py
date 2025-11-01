@@ -1,10 +1,9 @@
 from collections.abc import Iterator
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TextIO
 
-from pydantic import BaseModel, model_validator
-
-from calcflow.common.exceptions import ParsingError
+from calcflow.common.exceptions import ParsingError, ValidationError
 from calcflow.geometry.static import Geometry
 
 
@@ -22,22 +21,21 @@ def _iter_xyz_frames(f: TextIO, source: Path | str) -> Iterator[Geometry]:
             raise ParsingError(f"error parsing frame in '{source}': {e}") from e
 
 
-class Trajectory(BaseModel, frozen=True):
+@dataclass(frozen=True)
+class Trajectory:
     """
-    an immutable, pydantic-based representation of a trajectory.
+    an immutable, dataclass-based representation of a trajectory.
     validates that all frames have a consistent number of atoms on creation.
     """
 
     frames: tuple[Geometry, ...]
 
-    @model_validator(mode="after")
-    def check_consistent_atom_count(self) -> "Trajectory":
+    def __post_init__(self):
         if not self.frames:
-            return self
+            return
         first_frame_atoms = self.frames[0].num_atoms
         if not all(frame.num_atoms == first_frame_atoms for frame in self.frames):
-            raise ValueError("inconsistent number of atoms across trajectory frames.")
-        return self
+            raise ValidationError("inconsistent number of atoms across trajectory frames.")
 
     @classmethod
     def from_xyz_file(cls, file: Path | str) -> "Trajectory":

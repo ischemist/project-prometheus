@@ -18,8 +18,6 @@ from collections.abc import Iterator as LineIterator
 from itertools import chain
 from typing import Any, ClassVar
 
-from pydantic import ValidationError
-
 from calcflow.common.models import (
     AtomicCharges,
     ExcitonAnalysis,
@@ -99,9 +97,9 @@ class TransitionDensityMatrixParser(BlockParser):
             logger.warning(msg)
             return
 
-        existing_tddft = state.tddft.model_dump() if state.tddft else {}
+        existing_tddft = state.tddft.to_dict() if state.tddft else {}
         existing_tddft["transition_density_matrices"] = all_analyses
-        state.tddft = TddftResults.model_validate(existing_tddft)
+        state.tddft = TddftResults.from_dict(existing_tddft)
         logger.debug("Finished parsing 'Transition Density Matrix Analysis'.")
 
     def _parse_single_state_block(
@@ -179,10 +177,10 @@ class TransitionDensityMatrixParser(BlockParser):
                         break
 
         try:
-            model = TransitionDensityMatrix.model_validate(data)
+            model = TransitionDensityMatrix.from_dict(data)
             return model, line_buffer
-        except ValidationError as e:
-            logger.error(f"Pydantic validation failed for state {state_number}: {e}", exc_info=True)
+        except Exception as e:
+            logger.error(f"Model creation failed for state {state_number}: {e}", exc_info=True)
             return None, line_buffer
 
     def _parse_key_value_line(self, line: str, key: str) -> float | None:
@@ -256,7 +254,7 @@ class TransitionDensityMatrixParser(BlockParser):
             except (ValueError, IndexError) as e:
                 logger.warning(f"Could not parse Mulliken line: {line.strip()} ({e})")
 
-        return (AtomicCharges.model_validate(data) if data["trans_charges"] else None), line_buffer
+        return (AtomicCharges.from_dict(data) if data["trans_charges"] else None), line_buffer
 
     def _parse_ct_numbers_section(self, iterator: LineIterator) -> tuple[dict[str, Any], str | None]:
         """
@@ -428,7 +426,7 @@ class TransitionDensityMatrixParser(BlockParser):
                 or self.STATE_HEADER_PAT.match(line)
             ):
                 exciton_data.update(trans_metrics)
-                return trans_metrics, ExcitonAnalysis.model_validate(exciton_data), line
+                return trans_metrics, ExcitonAnalysis.from_dict(exciton_data), line
 
             if not stripped:  # A blank line terminates the current sub-block
                 break
@@ -500,4 +498,4 @@ class TransitionDensityMatrixParser(BlockParser):
                 expecting_com_components = True
 
         exciton_data.update(trans_metrics)
-        return trans_metrics, ExcitonAnalysis.model_validate(exciton_data), None
+        return trans_metrics, ExcitonAnalysis.from_dict(exciton_data), None

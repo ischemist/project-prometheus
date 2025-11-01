@@ -21,6 +21,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal, TypeVar, Union, get_args, get_origin
 
+from calcflow.common.exceptions import ValidationError
 from calcflow.constants.ptable import ELEMENT_DATA
 
 # =============================================================================
@@ -105,9 +106,9 @@ class Atom(FrozenModel):
         # On frozen dataclasses, __post_init__ can't modify fields.
         # It can only validate. Parsers are responsible for capitalization.
         if self.symbol.upper() not in ELEMENT_DATA:
-            raise ValueError(f"unknown element symbol: '{self.symbol}'")
+            raise ValidationError(f"unknown element symbol: '{self.symbol}'")
         if self.symbol != self.symbol.capitalize():
-            raise ValueError(f"element symbol '{self.symbol}' must be capitalized.")
+            raise ValidationError(f"element symbol '{self.symbol}' must be capitalized.")
 
 
 @dataclass(frozen=True)
