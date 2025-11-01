@@ -1,3 +1,3 @@
-from calcflow.io.orca.parser import parse_orca_sp
+from calcflow.io.orca.parser import parse_orca_output
 
-__all__ = ["parse_orca_sp"]
+__all__ = ["parse_orca_output"]

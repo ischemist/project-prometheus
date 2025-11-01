@@ -130,6 +130,17 @@ class AtomicCharges(BaseModel):
 
     method: str  # e.g., "Mulliken", "Loewdin", "Hirshfeld"
     charges: Mapping[int, float]  # Atom index (0-based) to charge
+    spins: Mapping[int, float] | None = None  # Atom index to spin density (UKS only)
+    # For excited state difference density analysis (TDDFT unrelaxed DM)
+    hole_populations: Mapping[int, float] | None = None  # h+ values (RKS)
+    electron_populations: Mapping[int, float] | None = None  # e- values (RKS)
+    hole_populations_alpha: Mapping[int, float] | None = None  # h+ alpha (UKS)
+    hole_populations_beta: Mapping[int, float] | None = None  # h+ beta (UKS)
+    electron_populations_alpha: Mapping[int, float] | None = None  # e- alpha (UKS)
+    electron_populations_beta: Mapping[int, float] | None = None  # e- beta (UKS)
+    # For transition density matrix analysis
+    trans_charges: Mapping[int, float] | None = None  # "Trans. (e)" column
+    del_q: Mapping[int, float] | None = None  # "Del q" column
 
 
 class DipoleMoment(BaseModel):
@@ -272,6 +283,9 @@ class ExcitedState(BaseModel):
     total_energy_au: float
     oscillator_strength: float | None = None
     transitions: Sequence[OrbitalTransition] = Field(default_factory=list)
+    trans_mom_x: float | None = None  # Transition moment X component
+    trans_mom_y: float | None = None  # Transition moment Y component
+    trans_mom_z: float | None = None  # Transition moment Z component
 
 
 class NTOContribution(BaseModel):
@@ -297,6 +311,118 @@ class NTOStateAnalysis(BaseModel):
     omega_beta_percent: float | None = None
 
 
+class GroundStateReference(BaseModel):
+    """Ground state (reference) data from excited state analysis blocks."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    frontier_nos: Sequence[float]  # Occupation of frontier NOs
+    num_electrons: float  # Total electron count
+    num_unpaired_electrons: float | None = None  # n_u value (typically for RKS with unpaired analysis)
+    mulliken: AtomicCharges  # Per-atom charges (and optionally spins for UKS) in e
+    dipole_moment_debye: float  # Total dipole moment
+    dipole_components_debye: tuple[float, float, float]  # (X, Y, Z) in Debye
+
+
+class NaturalOrbitals(BaseModel):
+    """Natural orbital occupations for excited state density matrix analysis."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    frontier_occupations: Sequence[float]  # e.g., [0.9992, 1.0006]
+    num_electrons: float
+    num_unpaired: float | None = None  # n_u value
+    num_unpaired_nl: float | None = None  # n_u,nl value
+    pr_no: float | None = None  # NO participation ratio
+
+
+class ExcitonAnalysis(BaseModel):
+    """Exciton analysis from density matrix (hole/electron separation)."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    r_h_ang: tuple[float, float, float]  # <r_h> in Angstroms (X, Y, Z)
+    r_e_ang: tuple[float, float, float]  # <r_e> in Angstroms
+    separation_ang: float  # |<r_e - r_h>|
+    hole_size_ang: float
+    hole_size_components_ang: tuple[float, float, float] | None = None
+    electron_size_ang: float
+    electron_size_components_ang: tuple[float, float, float] | None = None
+    # Fields only present in transition density matrix:
+    rms_separation_ang: float | None = None
+    rms_separation_components_ang: tuple[float, float, float] | None = None
+    covariance: float | None = None
+    correlation_coef: float | None = None
+    center_of_mass_size_ang: float | None = None
+    center_of_mass_components_ang: tuple[float, float, float] | None = None
+    # Transition-specific properties (transition dipole moment, etc.)
+    trans_dipole_moment_debye: float | None = None  # Trans. dipole moment [D]
+    trans_dipole_moment_components_debye: tuple[float, float, float] | None = None  # Cartesian components [D]
+    trans_r2_au: float | None = None  # Transition <r^2> [a.u.]
+    trans_r2_components_au: tuple[float, float, float] | None = None  # Cartesian components [a.u.]
+
+
+class UnrelaxedDensityMatrix(BaseModel):
+    """Unrelaxed density matrix analysis for a single excited state."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    state_number: int
+    multiplicity: str | None = None  # "Singlet N" or "Excited State N"
+    # Natural Orbitals
+    nos_spin_traced: NaturalOrbitals  # Main one (or only one for RKS)
+    nos_alpha: NaturalOrbitals | None = None  # UKS only
+    nos_beta: NaturalOrbitals | None = None  # UKS only
+    # Mulliken (State/Difference DM)
+    mulliken: AtomicCharges  # Reuse existing model (charges + optional spins)
+    # Multipole moment of density matrix
+    molecular_charge: float
+    num_electrons: float
+    dipole_moment_debye: float
+    dipole_components_debye: tuple[float, float, float]
+    # Exciton analysis
+    exciton_total: ExcitonAnalysis
+    exciton_alpha: ExcitonAnalysis | None = None  # UKS only
+    exciton_beta: ExcitonAnalysis | None = None  # UKS only
+
+
+class TransitionDensityMatrix(BaseModel):
+    """Transition density matrix analysis for a single excited state."""
+
+    model_config = IMMUTABLE_MODEL_CONFIG
+
+    state_number: int
+    multiplicity: str | None = None  # "Singlet N" or "Excited State N"
+    # Mulliken Population Analysis (Transition DM)
+    # Note: QChem 5.4 doesn't include this section in transition DM analysis
+    mulliken: AtomicCharges | None = None  # Reuse existing model
+    # CT numbers and transition metrics
+    sum_abs_trans_charges: float | None = None  # QTa
+    sum_squared_trans_charges: float | None = None  # QT2
+    omega: float | None = None
+    omega_alpha: float | None = None  # UKS only
+    omega_beta: float | None = None  # UKS only
+    two_alpha_beta: float | None = None  # 2<alpha|beta>
+    loc: float | None = None
+    loc_alpha: float | None = None  # UKS only
+    loc_beta: float | None = None  # UKS only
+    loca: float | None = None  # LOCa
+    loca_alpha: float | None = None  # UKS only
+    loca_beta: float | None = None  # UKS only
+    phe: float | None = None  # <Phe>
+    phe_alpha: float | None = None  # UKS only
+    phe_beta: float | None = None  # UKS only
+    # Transition-specific properties not in standard exciton analysis
+    trans_dipole_moment_debye: float | None = None  # Trans. dipole moment [D]
+    trans_r2_au: float | None = None  # Transition <r^2> [a.u.]
+    trans_dipole_components_debye: tuple[float, float, float] | None = None  # Cartesian components [D]
+    trans_r2_components_au: tuple[float, float, float] | None = None  # Cartesian components [a.u.]
+    # Exciton analysis (reuse existing model - already has all transition DM fields)
+    exciton_total: ExcitonAnalysis
+    exciton_alpha: ExcitonAnalysis | None = None  # UKS only
+    exciton_beta: ExcitonAnalysis | None = None  # UKS only
+
+
 class TddftResults(BaseModel):
     """Container for all TDDFT-related parsed data."""
 
@@ -308,6 +434,9 @@ class TddftResults(BaseModel):
 
     # More detailed, program-specific analyses can be added here as needed
     nto_analyses: Sequence[NTOStateAnalysis] | None = None
+    ground_state_ref: GroundStateReference | None = None
+    unrelaxed_density_matrices: Sequence[UnrelaxedDensityMatrix] | None = None
+    transition_density_matrices: Sequence[TransitionDensityMatrix] | None = None
     # Add ExcitedStateDetailedAnalysis if the unified model proves necessary
 
 

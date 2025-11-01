@@ -61,6 +61,11 @@ class ParseState(BaseModel):
     parsed_dispersion: bool = False
     parsed_multipole: bool = False
     parsed_timing: bool = False
+    parsed_tddft_tda: bool = False
+    parsed_tddft_full: bool = False
+    parsed_tddft_gs_ref: bool = False
+    parsed_tddft_unrelaxed_dm: bool = False
+    parsed_nto: bool = False
     # Add more as needed for other parsers...
 
     # --- Communication & Error Handling ---

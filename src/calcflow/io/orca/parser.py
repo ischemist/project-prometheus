@@ -29,9 +29,9 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
 ]
 
 
-def parse_orca_sp(output: str) -> CalculationResult:
+def parse_orca_output(output: str) -> CalculationResult:
     """
-    Parses the text output of an ORCA single-point calculation.
+    Parses the text output of an ORCA calculation.
 
     Args:
         output: The string content of the ORCA output file.
