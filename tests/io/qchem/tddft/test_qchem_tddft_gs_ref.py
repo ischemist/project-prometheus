@@ -60,109 +60,165 @@ EXPECTED_54_UKS_DIPOLE_COMPONENTS = (-0.995831, -0.203503, -1.740304)
 
 
 @pytest.mark.contract
-class TestRksGroundStateReference:
-    """Contract tests for RKS ground state reference parsing."""
-
-    def test_gs_ref_exists(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Ground state reference should exist in TDDFT results."""
-        assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
-        assert isinstance(parsed_qchem_62_h2o_rks_tddft_data.tddft, TddftResults)
-        assert parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref is not None
-        assert isinstance(parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref, GroundStateReference)
-
-    def test_frontier_nos(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Frontier NO occupations should be parsed correctly."""
-        gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
-        assert list(gs_ref.frontier_nos) == EXPECTED_RKS_FRONTIER_NOS
-
-    def test_num_electrons(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Total electron count should be parsed correctly."""
-        gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
-        assert gs_ref.num_electrons == EXPECTED_RKS_NUM_ELECTRONS
-
-    def test_num_unpaired_electrons(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Number of unpaired electrons should be parsed correctly."""
-        gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
-        assert gs_ref.num_unpaired_electrons == EXPECTED_RKS_NUM_UNPAIRED
-
-    def test_mulliken_charges(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Mulliken charges should be parsed correctly for all atoms."""
-        gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
-        assert len(gs_ref.mulliken.charges) == 3
-        for atom_idx, expected_charge in EXPECTED_RKS_MULLIKEN_CHARGES.items():
-            actual_charge = gs_ref.mulliken.charges[atom_idx]
-            assert abs(actual_charge - expected_charge) < 1e-5
-
-    def test_mulliken_spins_none_for_rks(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Mulliken spins should be None for RKS."""
-        gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
-        assert gs_ref.mulliken.spins is None
-
-    def test_dipole_moment(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Total dipole moment should be parsed correctly."""
-        gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
-        assert abs(gs_ref.dipole_moment_debye - EXPECTED_RKS_DIPOLE_MOMENT) < 1e-5
-
-    def test_dipole_components(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Dipole moment Cartesian components should be parsed correctly."""
-        gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
-        for actual, expected in zip(gs_ref.dipole_components_debye, EXPECTED_RKS_DIPOLE_COMPONENTS, strict=True):
-            assert abs(actual - expected) < 1e-5
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_gs_ref_exists(fixture_name: str, request):
+    """Ground state reference should exist in TDDFT results."""
+    data = request.getfixturevalue(fixture_name)
+    assert data.tddft is not None
+    assert isinstance(data.tddft, TddftResults)
+    assert data.tddft.ground_state_ref is not None
+    assert isinstance(data.tddft.ground_state_ref, GroundStateReference)
 
 
 @pytest.mark.contract
-class TestUksGroundStateReference:
-    """Contract tests for UKS ground state reference parsing."""
+@pytest.mark.parametrize(
+    "fixture_name,expected_nos",
+    [
+        ("parsed_qchem_62_h2o_rks_tddft_data", EXPECTED_RKS_FRONTIER_NOS),
+        ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_FRONTIER_NOS),
+        ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_54_UKS_FRONTIER_NOS),
+    ],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_frontier_nos(fixture_name: str, expected_nos, request):
+    """Frontier NO occupations should be parsed correctly."""
+    data = request.getfixturevalue(fixture_name)
+    gs_ref = data.tddft.ground_state_ref
+    assert list(gs_ref.frontier_nos) == expected_nos
 
-    def test_gs_ref_exists(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Ground state reference should exist in TDDFT results."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.tddft is not None
-        assert isinstance(parsed_qchem_62_h2o_uks_tddft_data.tddft, TddftResults)
-        assert parsed_qchem_62_h2o_uks_tddft_data.tddft.ground_state_ref is not None
-        assert isinstance(parsed_qchem_62_h2o_uks_tddft_data.tddft.ground_state_ref, GroundStateReference)
 
-    def test_frontier_nos(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Frontier NO occupations (spin-traced) should be parsed correctly."""
-        gs_ref = parsed_qchem_62_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert list(gs_ref.frontier_nos) == EXPECTED_UKS_FRONTIER_NOS
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_num_electrons(fixture_name: str, request):
+    """Total electron count should be parsed correctly."""
+    data = request.getfixturevalue(fixture_name)
+    gs_ref = data.tddft.ground_state_ref
+    assert gs_ref.num_electrons == 10.0
 
-    def test_num_electrons(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Total electron count should be parsed correctly."""
-        gs_ref = parsed_qchem_62_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert gs_ref.num_electrons == EXPECTED_UKS_NUM_ELECTRONS
 
-    def test_num_unpaired_electrons(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Number of unpaired electrons should be parsed correctly."""
-        gs_ref = parsed_qchem_62_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert gs_ref.num_unpaired_electrons == EXPECTED_UKS_NUM_UNPAIRED
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_num_unpaired_electrons(fixture_name: str, request):
+    """Number of unpaired electrons should be parsed correctly."""
+    data = request.getfixturevalue(fixture_name)
+    gs_ref = data.tddft.ground_state_ref
+    assert gs_ref.num_unpaired_electrons == 0.0
 
-    def test_mulliken_charges(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Mulliken charges should be parsed correctly for all atoms."""
-        gs_ref = parsed_qchem_62_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert len(gs_ref.mulliken.charges) == 3
-        for atom_idx, expected_charge in EXPECTED_UKS_MULLIKEN_CHARGES.items():
-            actual_charge = gs_ref.mulliken.charges[atom_idx]
-            assert abs(actual_charge - expected_charge) < 1e-5
 
-    def test_mulliken_spins(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Mulliken spins should be parsed correctly for UKS."""
-        gs_ref = parsed_qchem_62_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert gs_ref.mulliken.spins is not None
-        assert len(gs_ref.mulliken.spins) == 3
-        for atom_idx, expected_spin in EXPECTED_UKS_MULLIKEN_SPINS.items():
-            actual_spin = gs_ref.mulliken.spins[atom_idx]
-            assert abs(actual_spin - expected_spin) < 1e-5
+@pytest.mark.contract
+def test_mulliken_charges_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
+    """Mulliken charges should be parsed correctly for RKS."""
+    gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
+    assert len(gs_ref.mulliken.charges) == 3
+    for atom_idx, expected_charge in EXPECTED_RKS_MULLIKEN_CHARGES.items():
+        actual_charge = gs_ref.mulliken.charges[atom_idx]
+        assert abs(actual_charge - expected_charge) < 1e-5
 
-    def test_dipole_moment(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Total dipole moment should be parsed correctly."""
-        gs_ref = parsed_qchem_62_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert abs(gs_ref.dipole_moment_debye - EXPECTED_UKS_DIPOLE_MOMENT) < 1e-5
 
-    def test_dipole_components(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Dipole moment Cartesian components should be parsed correctly."""
-        gs_ref = parsed_qchem_62_h2o_uks_tddft_data.tddft.ground_state_ref
-        for actual, expected in zip(gs_ref.dipole_components_debye, EXPECTED_UKS_DIPOLE_COMPONENTS, strict=True):
-            assert abs(actual - expected) < 1e-5
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "fixture_name,expected_charges",
+    [
+        ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_MULLIKEN_CHARGES),
+        ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_54_UKS_MULLIKEN_CHARGES),
+    ],
+    ids=["uks-6.2", "uks-5.4"],
+)
+def test_mulliken_charges_uks(fixture_name: str, expected_charges, request) -> None:
+    """Mulliken charges should be parsed correctly for UKS."""
+    data = request.getfixturevalue(fixture_name)
+    gs_ref = data.tddft.ground_state_ref
+    assert len(gs_ref.mulliken.charges) == 3
+    for atom_idx, expected_charge in expected_charges.items():
+        actual_charge = gs_ref.mulliken.charges[atom_idx]
+        assert abs(actual_charge - expected_charge) < 1e-5
+
+
+@pytest.mark.contract
+def test_mulliken_spins_none_for_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
+    """Mulliken spins should be None for RKS."""
+    gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
+    assert gs_ref.mulliken.spins is None
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "fixture_name,expected_spins",
+    [
+        ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_MULLIKEN_SPINS),
+        ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_54_UKS_MULLIKEN_SPINS),
+    ],
+    ids=["uks-6.2", "uks-5.4"],
+)
+def test_mulliken_spins_uks(fixture_name: str, expected_spins, request) -> None:
+    """Mulliken spins should be parsed correctly for UKS."""
+    data = request.getfixturevalue(fixture_name)
+    gs_ref = data.tddft.ground_state_ref
+    assert gs_ref.mulliken.spins is not None
+    assert len(gs_ref.mulliken.spins) == 3
+    for atom_idx, expected_spin in expected_spins.items():
+        actual_spin = gs_ref.mulliken.spins[atom_idx]
+        assert abs(actual_spin - expected_spin) < 1e-5
+
+
+@pytest.mark.contract
+def test_dipole_moment_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
+    """Total dipole moment should be parsed correctly for RKS."""
+    gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
+    assert abs(gs_ref.dipole_moment_debye - EXPECTED_RKS_DIPOLE_MOMENT) < 1e-5
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "fixture_name,expected_moment",
+    [
+        ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_DIPOLE_MOMENT),
+        ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_54_UKS_DIPOLE_MOMENT),
+    ],
+    ids=["uks-6.2", "uks-5.4"],
+)
+def test_dipole_moment_uks(fixture_name: str, expected_moment: float, request) -> None:
+    """Total dipole moment should be parsed correctly for UKS."""
+    data = request.getfixturevalue(fixture_name)
+    gs_ref = data.tddft.ground_state_ref
+    assert abs(gs_ref.dipole_moment_debye - expected_moment) < 1e-5
+
+
+@pytest.mark.contract
+def test_dipole_components_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
+    """Dipole moment Cartesian components should be parsed correctly for RKS."""
+    gs_ref = parsed_qchem_62_h2o_rks_tddft_data.tddft.ground_state_ref
+    for actual, expected in zip(gs_ref.dipole_components_debye, EXPECTED_RKS_DIPOLE_COMPONENTS, strict=True):
+        assert abs(actual - expected) < 1e-5
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize(
+    "fixture_name,expected_components",
+    [
+        ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_DIPOLE_COMPONENTS),
+        ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_54_UKS_DIPOLE_COMPONENTS),
+    ],
+    ids=["uks-6.2", "uks-5.4"],
+)
+def test_dipole_components_uks(fixture_name: str, expected_components, request) -> None:
+    """Dipole moment Cartesian components should be parsed correctly for UKS."""
+    data = request.getfixturevalue(fixture_name)
+    gs_ref = data.tddft.ground_state_ref
+    for actual, expected in zip(gs_ref.dipole_components_debye, expected_components, strict=True):
+        assert abs(actual - expected) < 1e-5
 
 
 # =============================================================================
@@ -171,60 +227,10 @@ class TestUksGroundStateReference:
 
 
 @pytest.mark.regression
-class Test54UksGroundStateReference:
-    """Regression tests for QChem 5.4 UKS ground state reference parsing.
+def test_54_uks_dipole_moment_minor_difference(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
+    """Regression test: 5.4 dipole moment differs slightly from 6.2 (2.015378 vs 2.015379).
 
-    5.4 differs from 6.2 primarily in:
-    - Mulliken section header: "Mulliken Population Analysis" vs "Mulliken Population Analysis (State DM)"
-    - Minor numerical differences in dipole moment (2.015378 vs 2.015379)
+    This verifies we handle version-specific numerical differences correctly.
     """
-
-    def test_gs_ref_exists(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Ground state reference should exist in 5.4 TDDFT results."""
-        assert parsed_qchem_54_h2o_uks_tddft_data.tddft is not None
-        assert isinstance(parsed_qchem_54_h2o_uks_tddft_data.tddft, TddftResults)
-        assert parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref is not None
-        assert isinstance(parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref, GroundStateReference)
-
-    def test_frontier_nos(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Frontier NO occupations (spin-traced) should be parsed correctly from 5.4."""
-        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert list(gs_ref.frontier_nos) == EXPECTED_54_UKS_FRONTIER_NOS
-
-    def test_num_electrons(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Total electron count should be parsed correctly from 5.4."""
-        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert gs_ref.num_electrons == EXPECTED_54_UKS_NUM_ELECTRONS
-
-    def test_num_unpaired_electrons(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Number of unpaired electrons should be parsed correctly from 5.4."""
-        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert gs_ref.num_unpaired_electrons == EXPECTED_54_UKS_NUM_UNPAIRED
-
-    def test_mulliken_charges(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Mulliken charges should be parsed correctly from 5.4 format (without State DM suffix)."""
-        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert len(gs_ref.mulliken.charges) == 3
-        for atom_idx, expected_charge in EXPECTED_54_UKS_MULLIKEN_CHARGES.items():
-            actual_charge = gs_ref.mulliken.charges[atom_idx]
-            assert abs(actual_charge - expected_charge) < 1e-5
-
-    def test_mulliken_spins(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Mulliken spins should be parsed correctly from 5.4 UKS calculation."""
-        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert gs_ref.mulliken.spins is not None
-        assert len(gs_ref.mulliken.spins) == 3
-        for atom_idx, expected_spin in EXPECTED_54_UKS_MULLIKEN_SPINS.items():
-            actual_spin = gs_ref.mulliken.spins[atom_idx]
-            assert abs(actual_spin - expected_spin) < 1e-5
-
-    def test_dipole_moment(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Total dipole moment should match 5.4 value (minor difference from 6.2)."""
-        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
-        assert abs(gs_ref.dipole_moment_debye - EXPECTED_54_UKS_DIPOLE_MOMENT) < 1e-5
-
-    def test_dipole_components(self, parsed_qchem_54_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Dipole moment Cartesian components should be parsed correctly from 5.4."""
-        gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
-        for actual, expected in zip(gs_ref.dipole_components_debye, EXPECTED_54_UKS_DIPOLE_COMPONENTS, strict=True):
-            assert abs(actual - expected) < 1e-5
+    gs_ref = parsed_qchem_54_h2o_uks_tddft_data.tddft.ground_state_ref
+    assert abs(gs_ref.dipole_moment_debye - EXPECTED_54_UKS_DIPOLE_MOMENT) < 1e-5
