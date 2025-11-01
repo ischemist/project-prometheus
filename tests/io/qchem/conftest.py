@@ -6,9 +6,23 @@ from calcflow.common.models import CalculationResult
 from calcflow.io.qchem import parse_qchem_output
 
 # =============================================================================
+# FIXTURE FILES: Single source of truth
+# =============================================================================
+# Maps fixture names to their corresponding output file paths.
+# Adding a new test fixture only requires adding one entry here.
+
+FIXTURE_FILES = {
+    "parsed_qchem_54_h2o_sp_data": "qchem/h2o/5.4-sp-smd.out",
+    "parsed_qchem_62_h2o_sp_data": "qchem/h2o/6.2-sp-smd.out",
+    "parsed_qchem_54_h2o_uks_tddft_data": "qchem/h2o/5.4-uks-tddft.out",
+    "parsed_qchem_62_h2o_uks_tddft_data": "qchem/h2o/6.2-uks-tddft.out",
+    "parsed_qchem_62_h2o_rks_tddft_data": "qchem/h2o/6.2-rks-tddft.out",
+}
+
+# =============================================================================
 # FIXTURE SPECIFICATIONS: Organized by parsed block
 # =============================================================================
-# Single source of truth: maps block names to fixtures that contain that block.
+# Maps block names to fixtures that contain that block.
 # Tests should parametrize using FIXTURE_SPECS[block_name].
 
 FIXTURE_SPECS = {
@@ -84,33 +98,33 @@ FIXTURE_SPECS = {
 
 
 # =============================================================================
-# CONCRETE FIXTURES: Actual parsed data
+# SESSION-LEVEL CACHE FOR PARSED RESULTS
+# =============================================================================
+
+_parsed_cache: dict[str, CalculationResult] = {}
+
+
+# =============================================================================
+# FIXTURE FACTORY: Dynamically create fixtures based on FIXTURE_FILES
 # =============================================================================
 
 
-@pytest.fixture(scope="session")
-def parsed_qchem_54_h2o_sp_data(testing_data_path: Path) -> CalculationResult:
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / "5.4-sp-smd.out").read_text())
+def _create_qchem_fixture(fixture_name: str):
+    """Factory function to create a session-scoped fixture for a given fixture name."""
+
+    @pytest.fixture(scope="session", name=fixture_name)
+    def _fixture(testing_data_path: Path) -> CalculationResult:
+        if fixture_name not in _parsed_cache:
+            file_path = testing_data_path / FIXTURE_FILES[fixture_name]
+            _parsed_cache[fixture_name] = parse_qchem_output(file_path.read_text())
+        return _parsed_cache[fixture_name]
+
+    return _fixture
 
 
-@pytest.fixture(scope="session")
-def parsed_qchem_62_h2o_sp_data(testing_data_path: Path) -> CalculationResult:
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / "6.2-sp-smd.out").read_text())
-
-
-@pytest.fixture(scope="session")
-def parsed_qchem_54_h2o_uks_tddft_data(testing_data_path: Path) -> CalculationResult:
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / "5.4-uks-tddft.out").read_text())
-
-
-@pytest.fixture(scope="session")
-def parsed_qchem_62_h2o_uks_tddft_data(testing_data_path: Path) -> CalculationResult:
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / "6.2-uks-tddft.out").read_text())
-
-
-@pytest.fixture(scope="session")
-def parsed_qchem_62_h2o_rks_tddft_data(testing_data_path: Path) -> CalculationResult:
-    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / "6.2-rks-tddft.out").read_text())
+# Dynamically create all fixtures from FIXTURE_FILES
+for fixture_name in FIXTURE_FILES:
+    globals()[fixture_name] = _create_qchem_fixture(fixture_name)
 
 
 # =============================================================================
