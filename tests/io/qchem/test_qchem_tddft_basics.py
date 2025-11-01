@@ -87,28 +87,51 @@ class TestTDDFTGeometryBlock:
     """Tests for geometry block parsing in TDDFT outputs."""
 
     @pytest.mark.contract
-    def test_geometry_parsed_in_uks_tddft(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Contract test: verify geometry is parsed from UKS TDDFT output."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.input_geometry is not None
-        assert isinstance(parsed_qchem_62_h2o_uks_tddft_data.input_geometry, tuple)
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.input_geometry) > 0
-
-    @pytest.mark.contract
-    def test_geometry_parsed_in_rks_tddft(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
-        """Contract test: verify geometry is parsed from RKS TDDFT output."""
-        assert parsed_qchem_62_h2o_rks_tddft_data.input_geometry is not None
-        assert isinstance(parsed_qchem_62_h2o_rks_tddft_data.input_geometry, tuple)
-        assert len(parsed_qchem_62_h2o_rks_tddft_data.input_geometry) > 0
-
-    @pytest.mark.regression
-    def test_geometry_has_three_atoms(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Regression test: verify exactly 3 atoms in H2O geometry."""
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.input_geometry) == EXPECTED_GEOMETRY_ATOMS
+    @pytest.mark.parametrize(
+        "fixture_name",
+        [
+            "parsed_qchem_54_h2o_uks_tddft_data",
+            "parsed_qchem_62_h2o_uks_tddft_data",
+            "parsed_qchem_62_h2o_rks_tddft_data",
+        ],
+        ids=["uks-5.4", "uks-6.2", "rks-6.2"],
+    )
+    def test_geometry_parsed_in_tddft(self, fixture_name: str, request):
+        """Contract test: verify geometry is parsed from TDDFT output (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert data.input_geometry is not None
+        assert isinstance(data.input_geometry, tuple)
+        assert len(data.input_geometry) > 0
 
     @pytest.mark.regression
-    def test_geometry_atom_symbols(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Regression test: verify atom symbols are H, O, H."""
-        symbols = [atom.symbol for atom in parsed_qchem_62_h2o_uks_tddft_data.input_geometry]
+    @pytest.mark.parametrize(
+        "fixture_name",
+        [
+            "parsed_qchem_54_h2o_uks_tddft_data",
+            "parsed_qchem_62_h2o_uks_tddft_data",
+            "parsed_qchem_62_h2o_rks_tddft_data",
+        ],
+        ids=["uks-5.4", "uks-6.2", "rks-6.2"],
+    )
+    def test_geometry_has_three_atoms(self, fixture_name: str, request):
+        """Regression test: verify exactly 3 atoms in H2O geometry (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert len(data.input_geometry) == EXPECTED_GEOMETRY_ATOMS
+
+    @pytest.mark.regression
+    @pytest.mark.parametrize(
+        "fixture_name",
+        [
+            "parsed_qchem_54_h2o_uks_tddft_data",
+            "parsed_qchem_62_h2o_uks_tddft_data",
+            "parsed_qchem_62_h2o_rks_tddft_data",
+        ],
+        ids=["uks-5.4", "uks-6.2", "rks-6.2"],
+    )
+    def test_geometry_atom_symbols(self, fixture_name: str, request):
+        """Regression test: verify atom symbols are H, O, H (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        symbols = [atom.symbol for atom in data.input_geometry]
         assert symbols == EXPECTED_GEOMETRY_SYMBOLS
 
     @pytest.mark.regression
