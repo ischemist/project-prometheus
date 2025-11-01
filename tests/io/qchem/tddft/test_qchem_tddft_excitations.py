@@ -192,16 +192,28 @@ def test_excitations_parser_does_not_mutate_state_in_matches():
 
 
 @pytest.mark.contract
-def test_tddft_results_has_correct_type(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
-    """Contract test: verify tddft field is TddftResults instance."""
-    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
-    assert isinstance(parsed_qchem_62_h2o_rks_tddft_data.tddft, TddftResults)
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_tddft_results_has_correct_type(fixture_name: str, request):
+    """Contract test: verify tddft field is TddftResults instance across all fixtures."""
+    data = request.getfixturevalue(fixture_name)
+    assert data.tddft is not None
+    assert isinstance(data.tddft, TddftResults)
 
 
 @pytest.mark.contract
-def test_tda_states_is_sequence(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_tda_states_is_sequence(fixture_name: str, request):
     """Contract test: verify tda_states is a sequence of ExcitedState objects."""
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+    data = request.getfixturevalue(fixture_name)
+    tddft = data.tddft
     assert tddft is not None
     assert tddft.tda_states is not None
     assert isinstance(tddft.tda_states, (list, tuple))
@@ -210,9 +222,15 @@ def test_tda_states_is_sequence(parsed_qchem_62_h2o_rks_tddft_data: CalculationR
 
 
 @pytest.mark.contract
-def test_tddft_states_is_sequence(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_tddft_states_is_sequence(fixture_name: str, request):
     """Contract test: verify tddft_states is a sequence of ExcitedState objects."""
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+    data = request.getfixturevalue(fixture_name)
+    tddft = data.tddft
     assert tddft is not None
     assert tddft.tddft_states is not None
     assert isinstance(tddft.tddft_states, (list, tuple))
@@ -221,9 +239,15 @@ def test_tddft_states_is_sequence(parsed_qchem_62_h2o_rks_tddft_data: Calculatio
 
 
 @pytest.mark.contract
-def test_excited_state_required_fields_present(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_excited_state_required_fields_present(fixture_name: str, request):
     """Contract test: verify each ExcitedState has required fields with correct types."""
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+    data = request.getfixturevalue(fixture_name)
+    tddft = data.tddft
     assert tddft is not None
     assert tddft.tda_states is not None
 
@@ -240,9 +264,15 @@ def test_excited_state_required_fields_present(parsed_qchem_62_h2o_rks_tddft_dat
 
 
 @pytest.mark.contract
-def test_excited_state_transition_moment_fields_present(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_excited_state_transition_moment_fields_present(fixture_name: str, request):
     """Contract test: verify ExcitedState has transition moment fields with correct types."""
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+    data = request.getfixturevalue(fixture_name)
+    tddft = data.tddft
     assert tddft is not None
     assert tddft.tda_states is not None
 
@@ -254,9 +284,15 @@ def test_excited_state_transition_moment_fields_present(parsed_qchem_62_h2o_rks_
 
 
 @pytest.mark.contract
-def test_orbital_transition_structure(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_orbital_transition_structure(fixture_name: str, request):
     """Contract test: verify OrbitalTransition structure in excited states."""
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+    data = request.getfixturevalue(fixture_name)
+    tddft = data.tddft
     assert tddft is not None
     assert tddft.tda_states is not None
 
@@ -289,9 +325,15 @@ def test_rks_transitions_have_no_spin_labels(parsed_qchem_62_h2o_rks_tddft_data:
 
 
 @pytest.mark.contract
-def test_uks_transitions_may_have_spin_labels(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["uks-6.2", "uks-5.4"],
+)
+def test_uks_transitions_may_have_spin_labels(fixture_name: str, request):
     """Contract test: verify UKS transitions may have spin labels (is_alpha_spin=True/False)."""
-    tddft = parsed_qchem_62_h2o_uks_tddft_data.tddft
+    data = request.getfixturevalue(fixture_name)
+    tddft = data.tddft
     assert tddft is not None
     assert tddft.tda_states is not None
 
@@ -312,29 +354,29 @@ def test_uks_transitions_may_have_spin_labels(parsed_qchem_62_h2o_uks_tddft_data
 
 
 @pytest.mark.integration
-def test_tddft_parsed_alongside_scf_and_orbitals_rks(
-    parsed_qchem_62_h2o_rks_tddft_data: CalculationResult,
-):
-    """Integration test: verify TDDFT, SCF, and orbitals all parsed for RKS."""
-    assert parsed_qchem_62_h2o_rks_tddft_data.scf is not None
-    assert parsed_qchem_62_h2o_rks_tddft_data.orbitals is not None
-    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_tddft_parsed_alongside_scf_and_orbitals(fixture_name: str, request):
+    """Integration test: verify TDDFT, SCF, and orbitals all parsed together."""
+    data = request.getfixturevalue(fixture_name)
+    assert data.scf is not None
+    assert data.orbitals is not None
+    assert data.tddft is not None
 
 
 @pytest.mark.integration
-def test_tddft_parsed_alongside_scf_and_orbitals_uks(
-    parsed_qchem_62_h2o_uks_tddft_data: CalculationResult,
-):
-    """Integration test: verify TDDFT, SCF, and orbitals all parsed for UKS."""
-    assert parsed_qchem_62_h2o_uks_tddft_data.scf is not None
-    assert parsed_qchem_62_h2o_uks_tddft_data.orbitals is not None
-    assert parsed_qchem_62_h2o_uks_tddft_data.tddft is not None
-
-
-@pytest.mark.integration
-def test_state_numbers_are_sequential(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_state_numbers_are_sequential(fixture_name: str, request):
     """Integration test: verify excited state numbers are 1-based and sequential."""
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+    data = request.getfixturevalue(fixture_name)
+    tddft = data.tddft
     assert tddft is not None
     assert tddft.tda_states is not None
 
@@ -343,9 +385,15 @@ def test_state_numbers_are_sequential(parsed_qchem_62_h2o_rks_tddft_data: Calcul
 
 
 @pytest.mark.integration
-def test_tda_and_tddft_both_present_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
-    """Integration test: verify both TDA and full TDDFT blocks parsed for RKS."""
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_tda_and_tddft_both_present(fixture_name: str, request):
+    """Integration test: verify both TDA and full TDDFT blocks parsed."""
+    data = request.getfixturevalue(fixture_name)
+    tddft = data.tddft
     assert tddft is not None
     assert tddft.tda_states is not None
     assert tddft.tddft_states is not None
@@ -353,22 +401,18 @@ def test_tda_and_tddft_both_present_rks(parsed_qchem_62_h2o_rks_tddft_data: Calc
 
 
 @pytest.mark.integration
-def test_tda_and_tddft_both_present_uks(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-    """Integration test: verify both TDA and full TDDFT blocks parsed for UKS."""
-    tddft = parsed_qchem_62_h2o_uks_tddft_data.tddft
-    assert tddft is not None
-    assert tddft.tda_states is not None
-    assert tddft.tddft_states is not None
-    assert len(tddft.tda_states) == len(tddft.tddft_states)
-
-
-@pytest.mark.integration
-def test_orbital_transitions_reference_valid_indices(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_orbital_transitions_reference_valid_indices(fixture_name: str, request):
     """
     Integration test: verify orbital transition indices are within valid range.
     Indices should be 0-based and refer to occupied/virtual orbitals.
     """
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+    data = request.getfixturevalue(fixture_name)
+    tddft = data.tddft
     assert tddft is not None
     assert tddft.tda_states is not None
 
@@ -389,27 +433,51 @@ def test_orbital_transitions_reference_valid_indices(parsed_qchem_62_h2o_rks_tdd
 
 
 @pytest.mark.regression
-def test_rks_tda_state_count(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
-    """Regression test: verify exact number of TDA states parsed for RKS."""
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+@pytest.mark.parametrize(
+    "fixture_name,expected_count",
+    [
+        ("parsed_qchem_62_h2o_rks_tddft_data", EXPECTED_RKS_NUM_TDA_STATES),
+        ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_NUM_TDA_STATES),
+        ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_UKS_54_NUM_TDA_STATES),
+    ],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_tda_state_count(fixture_name: str, expected_count: int, request):
+    """Regression test: verify exact number of TDA states parsed."""
+    data = request.getfixturevalue(fixture_name)
+    tddft = data.tddft
     assert tddft is not None
     assert tddft.tda_states is not None
-    assert len(tddft.tda_states) == EXPECTED_RKS_NUM_TDA_STATES
-
-
-@pytest.mark.regression
-def test_rks_tddft_state_count(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
-    """Regression test: verify exact number of TDDFT states parsed for RKS."""
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
-    assert tddft is not None
-    assert tddft.tddft_states is not None
-    assert len(tddft.tddft_states) == EXPECTED_RKS_NUM_TDDFT_STATES
+    assert len(tddft.tda_states) == expected_count
 
 
 @pytest.mark.regression
 @pytest.mark.parametrize(
-    "state_idx,expected_energy,expected_total_energy,expected_strength",
+    "fixture_name,expected_count",
     [
+        ("parsed_qchem_62_h2o_rks_tddft_data", EXPECTED_RKS_NUM_TDDFT_STATES),
+        ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_NUM_TDDFT_STATES),
+        ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_UKS_54_NUM_TDDFT_STATES),
+    ],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_tddft_state_count(fixture_name: str, expected_count: int, request):
+    """Regression test: verify exact number of TDDFT states parsed."""
+    data = request.getfixturevalue(fixture_name)
+    tddft = data.tddft
+    assert tddft is not None
+    assert tddft.tddft_states is not None
+    assert len(tddft.tddft_states) == expected_count
+
+
+@pytest.mark.regression
+def test_rks_tda_state_energies_exact(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+    """Regression test: verify exact TDA excitation and total energies for RKS."""
+    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tda_states is not None
+
+    test_cases = [
         (
             0,
             EXPECTED_RKS_TDA_STATE_1_EXCITATION_EV,
@@ -418,32 +486,24 @@ def test_rks_tddft_state_count(parsed_qchem_62_h2o_rks_tddft_data: CalculationRe
         ),
         (1, 9.2974, -76.09958062, 0.0000004744),
         (2, 9.8215, -76.08032096, 0.1112256100),
-    ],
-    ids=["tda-state-1", "tda-state-2", "tda-state-3"],
-)
-def test_rks_tda_state_energies_exact(
-    parsed_qchem_62_h2o_rks_tddft_data: CalculationResult,
-    state_idx: int,
-    expected_energy: float,
-    expected_total_energy: float,
-    expected_strength: float,
-):
-    """Regression test: verify exact TDA excitation and total energies for RKS."""
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
-    assert tddft is not None
-    assert tddft.tda_states is not None
-    assert len(tddft.tda_states) > state_idx
+    ]
 
-    state = tddft.tda_states[state_idx]
-    assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
-    assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
-    assert state.oscillator_strength == pytest.approx(expected_strength, abs=STRENGTH_TOL)
+    for state_idx, expected_energy, expected_total_energy, expected_strength in test_cases:
+        assert len(tddft.tda_states) > state_idx
+        state = tddft.tda_states[state_idx]
+        assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
+        assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
+        assert state.oscillator_strength == pytest.approx(expected_strength, abs=STRENGTH_TOL)
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "state_idx,expected_energy,expected_total_energy,expected_strength",
-    [
+def test_rks_tddft_state_energies_exact(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+    """Regression test: verify exact full TDDFT excitation and total energies for RKS."""
+    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tddft_states is not None
+
+    test_cases = [
         (
             0,
             EXPECTED_RKS_TDDFT_STATE_1_EXCITATION_EV,
@@ -452,26 +512,14 @@ def test_rks_tda_state_energies_exact(
         ),
         (1, 9.2908, -76.09982099, 0.0000004614),
         (2, 9.7830, -76.08173387, 0.1055651660),
-    ],
-    ids=["tddft-state-1", "tddft-state-2", "tddft-state-3"],
-)
-def test_rks_tddft_state_energies_exact(
-    parsed_qchem_62_h2o_rks_tddft_data: CalculationResult,
-    state_idx: int,
-    expected_energy: float,
-    expected_total_energy: float,
-    expected_strength: float,
-):
-    """Regression test: verify exact full TDDFT excitation and total energies for RKS."""
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
-    assert tddft is not None
-    assert tddft.tddft_states is not None
-    assert len(tddft.tddft_states) > state_idx
+    ]
 
-    state = tddft.tddft_states[state_idx]
-    assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
-    assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
-    assert state.oscillator_strength == pytest.approx(expected_strength, abs=STRENGTH_TOL)
+    for state_idx, expected_energy, expected_total_energy, expected_strength in test_cases:
+        assert len(tddft.tddft_states) > state_idx
+        state = tddft.tddft_states[state_idx]
+        assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
+        assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
+        assert state.oscillator_strength == pytest.approx(expected_strength, abs=STRENGTH_TOL)
 
 
 @pytest.mark.regression
@@ -563,57 +611,43 @@ def test_uks_tddft_state_count(parsed_qchem_62_h2o_uks_tddft_data: CalculationRe
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "state_idx,expected_energy,expected_total_energy",
-    [
-        (0, EXPECTED_UKS_TDA_STATE_1_EXCITATION_EV, EXPECTED_UKS_TDA_STATE_1_TOTAL_ENERGY_AU),
-        (1, 7.5954, -76.16212816),
-        (2, 9.0388, -76.10908349),
-    ],
-    ids=["uks-tda-state-1", "uks-tda-state-2", "uks-tda-state-3"],
-)
-def test_uks_tda_state_energies_exact(
-    parsed_qchem_62_h2o_uks_tddft_data: CalculationResult,
-    state_idx: int,
-    expected_energy: float,
-    expected_total_energy: float,
-):
-    """Regression test: verify exact TDA energies for UKS."""
+def test_uks_tda_state_energies_exact(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify exact TDA energies for QChem 6.2 UKS."""
     tddft = parsed_qchem_62_h2o_uks_tddft_data.tddft
     assert tddft is not None
     assert tddft.tda_states is not None
-    assert len(tddft.tda_states) > state_idx
 
-    state = tddft.tda_states[state_idx]
-    assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
-    assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
+    test_cases = [
+        (0, EXPECTED_UKS_TDA_STATE_1_EXCITATION_EV, EXPECTED_UKS_TDA_STATE_1_TOTAL_ENERGY_AU),
+        (1, 7.5954, -76.16212816),
+        (2, 9.0388, -76.10908349),
+    ]
+
+    for state_idx, expected_energy, expected_total_energy in test_cases:
+        assert len(tddft.tda_states) > state_idx
+        state = tddft.tda_states[state_idx]
+        assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
+        assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "state_idx,expected_energy,expected_total_energy",
-    [
-        (0, EXPECTED_UKS_TDDFT_STATE_1_EXCITATION_EV, EXPECTED_UKS_TDDFT_STATE_1_TOTAL_ENERGY_AU),
-        (1, 7.5725, -76.16297039),
-        (2, 9.0177, -76.10986010),
-    ],
-    ids=["uks-tddft-state-1", "uks-tddft-state-2", "uks-tddft-state-3"],
-)
-def test_uks_tddft_state_energies_exact(
-    parsed_qchem_62_h2o_uks_tddft_data: CalculationResult,
-    state_idx: int,
-    expected_energy: float,
-    expected_total_energy: float,
-):
-    """Regression test: verify exact full TDDFT energies for UKS."""
+def test_uks_tddft_state_energies_exact(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify exact full TDDFT energies for QChem 6.2 UKS."""
     tddft = parsed_qchem_62_h2o_uks_tddft_data.tddft
     assert tddft is not None
     assert tddft.tddft_states is not None
-    assert len(tddft.tddft_states) > state_idx
 
-    state = tddft.tddft_states[state_idx]
-    assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
-    assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
+    test_cases = [
+        (0, EXPECTED_UKS_TDDFT_STATE_1_EXCITATION_EV, EXPECTED_UKS_TDDFT_STATE_1_TOTAL_ENERGY_AU),
+        (1, 7.5725, -76.16297039),
+        (2, 9.0177, -76.10986010),
+    ]
+
+    for state_idx, expected_energy, expected_total_energy in test_cases:
+        assert len(tddft.tddft_states) > state_idx
+        state = tddft.tddft_states[state_idx]
+        assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
+        assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
 
 
 @pytest.mark.regression
@@ -656,27 +690,13 @@ def test_uks_tddft_state_7_multiple_transitions(parsed_qchem_62_h2o_uks_tddft_da
 
 
 @pytest.mark.regression
-def test_uks_54_tda_state_count(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
-    """Regression test: verify exact number of TDA states parsed for QChem 5.4 UKS."""
+def test_uks_54_tda_state_energies_exact(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify exact TDA energies for QChem 5.4 UKS."""
     tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
     assert tddft is not None
     assert tddft.tda_states is not None
-    assert len(tddft.tda_states) == EXPECTED_UKS_54_NUM_TDA_STATES
 
-
-@pytest.mark.regression
-def test_uks_54_tddft_state_count(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
-    """Regression test: verify exact number of TDDFT states parsed for QChem 5.4 UKS."""
-    tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
-    assert tddft is not None
-    assert tddft.tddft_states is not None
-    assert len(tddft.tddft_states) == EXPECTED_UKS_54_NUM_TDDFT_STATES
-
-
-@pytest.mark.regression
-@pytest.mark.parametrize(
-    "state_idx,expected_energy,expected_total_energy,expected_strength",
-    [
+    test_cases = [
         (
             0,
             EXPECTED_UKS_54_TDA_STATE_1_EXCITATION_EV,
@@ -690,32 +710,24 @@ def test_uks_54_tddft_state_count(parsed_qchem_54_h2o_uks_tddft_data: Calculatio
             EXPECTED_UKS_54_TDA_STATE_2_STRENGTH,
         ),
         (2, EXPECTED_UKS_54_TDA_STATE_3_EXCITATION_EV, EXPECTED_UKS_54_TDA_STATE_3_TOTAL_ENERGY_AU, 0.0),
-    ],
-    ids=["uks-54-tda-state-1", "uks-54-tda-state-2", "uks-54-tda-state-3"],
-)
-def test_uks_54_tda_state_energies_exact(
-    parsed_qchem_54_h2o_uks_tddft_data: CalculationResult,
-    state_idx: int,
-    expected_energy: float,
-    expected_total_energy: float,
-    expected_strength: float,
-):
-    """Regression test: verify exact TDA energies for QChem 5.4 UKS."""
-    tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
-    assert tddft is not None
-    assert tddft.tda_states is not None
-    assert len(tddft.tda_states) > state_idx
+    ]
 
-    state = tddft.tda_states[state_idx]
-    assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
-    assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
-    assert state.oscillator_strength == pytest.approx(expected_strength, abs=STRENGTH_TOL)
+    for state_idx, expected_energy, expected_total_energy, expected_strength in test_cases:
+        assert len(tddft.tda_states) > state_idx
+        state = tddft.tda_states[state_idx]
+        assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
+        assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
+        assert state.oscillator_strength == pytest.approx(expected_strength, abs=STRENGTH_TOL)
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "state_idx,expected_energy,expected_total_energy,expected_strength",
-    [
+def test_uks_54_tddft_state_energies_exact(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
+    """Regression test: verify exact full TDDFT energies for QChem 5.4 UKS."""
+    tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
+    assert tddft is not None
+    assert tddft.tddft_states is not None
+
+    test_cases = [
         (
             0,
             EXPECTED_UKS_54_TDDFT_STATE_1_EXCITATION_EV,
@@ -729,26 +741,14 @@ def test_uks_54_tda_state_energies_exact(
             EXPECTED_UKS_54_TDDFT_STATE_2_STRENGTH,
         ),
         (6, EXPECTED_UKS_54_TDDFT_STATE_7_EXCITATION_EV, -76.03833772, 0.0),
-    ],
-    ids=["uks-54-tddft-state-1", "uks-54-tddft-state-2", "uks-54-tddft-state-7"],
-)
-def test_uks_54_tddft_state_energies_exact(
-    parsed_qchem_54_h2o_uks_tddft_data: CalculationResult,
-    state_idx: int,
-    expected_energy: float,
-    expected_total_energy: float,
-    expected_strength: float,
-):
-    """Regression test: verify exact full TDDFT energies for QChem 5.4 UKS."""
-    tddft = parsed_qchem_54_h2o_uks_tddft_data.tddft
-    assert tddft is not None
-    assert tddft.tddft_states is not None
-    assert len(tddft.tddft_states) > state_idx
+    ]
 
-    state = tddft.tddft_states[state_idx]
-    assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
-    assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
-    assert state.oscillator_strength == pytest.approx(expected_strength, abs=STRENGTH_TOL)
+    for state_idx, expected_energy, expected_total_energy, expected_strength in test_cases:
+        assert len(tddft.tddft_states) > state_idx
+        state = tddft.tddft_states[state_idx]
+        assert state.excitation_energy_ev == pytest.approx(expected_energy, abs=ENERGY_TOL)
+        assert state.total_energy_au == pytest.approx(expected_total_energy, abs=ENERGY_TOL)
+        assert state.oscillator_strength == pytest.approx(expected_strength, abs=STRENGTH_TOL)
 
 
 @pytest.mark.regression
