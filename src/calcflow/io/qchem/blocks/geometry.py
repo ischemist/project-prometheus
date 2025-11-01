@@ -53,7 +53,12 @@ class GeometryParser:
         atoms: list[Atom] = []
 
         # First line after $molecule is charge/multiplicity, which we skip
-        _ = next(iterator, None)
+        # unless it's "read" (for multi-job files where Job 2+ inherit geometry from Job 1)
+        first_line = next(iterator, None)
+        if first_line and first_line.strip().lower() == "read":
+            logger.debug("Found '$molecule read' directive - skipping geometry parsing (inherited from previous job).")
+            state.parsed_geometry = True
+            return
 
         for line in iterator:
             if INPUT_GEOM_END_PAT.search(line):

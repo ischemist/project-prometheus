@@ -52,7 +52,7 @@ def parse_qchem_output(output: str) -> CalculationResult:
     return core_parse(output, PARSER_REGISTRY_SP)
 
 
-def parse_qchem_multi_job_output(output: str) -> Sequence[CalculationResult]:
+def parse_qchem_multi_job_output(output: str, num_jobs: int | None = None) -> Sequence[CalculationResult]:
     """
     Parses multi-job QChem output files (e.g., MOM, XAS calculations).
 
@@ -62,9 +62,11 @@ def parse_qchem_multi_job_output(output: str) -> Sequence[CalculationResult]:
 
     Args:
         output: The string content of the QChem multi-job output file.
+        num_jobs: Optional. If specified, only parse the first N jobs and ignore the rest.
+                  Useful for contract tests that only need the first job(s).
 
     Returns:
-        A list of CalculationResult objects, one per job, in sequential order.
+        A list of CalculationResult objects, one per job (or up to num_jobs if specified), in sequential order.
 
     Raises:
         ParsingError: If job markers are not found or job structure is invalid.
@@ -89,6 +91,14 @@ def parse_qchem_multi_job_output(output: str) -> Sequence[CalculationResult]:
         logger.warning(
             f"Expected {expected_job_count} jobs but found {len(matches)} job markers. Proceeding with found jobs."
         )
+
+    # Limit matches if num_jobs is specified
+    if num_jobs is not None:
+        if num_jobs < 1:
+            raise ParsingError(f"num_jobs must be at least 1, got {num_jobs}")
+        if num_jobs > len(matches):
+            logger.warning(f"num_jobs={num_jobs} but only {len(matches)} jobs found. Parsing all available jobs.")
+        matches = matches[:num_jobs]
 
     # Split output into job chunks
     job_chunks: list[str] = []

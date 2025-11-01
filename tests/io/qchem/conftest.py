@@ -53,8 +53,10 @@ FIXTURE_SPECS = {
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_rks_tddft_data",
-        # "parsed_qchem_54_h2o_mom_sp_job1",
-        # "parsed_qchem_62_h2o_mom_sp_job1",
+        "parsed_qchem_54_h2o_mom_sp_job1",
+        "parsed_qchem_62_h2o_mom_sp_job1",
+        "parsed_qchem_54_h2o_mom_xas_job1",
+        "parsed_qchem_62_h2o_mom_xas_job1",
     ],
     "scf": [
         "parsed_qchem_54_h2o_sp_data",
@@ -62,8 +64,10 @@ FIXTURE_SPECS = {
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_rks_tddft_data",
-        # "parsed_qchem_54_h2o_mom_sp_job1",
-        # "parsed_qchem_62_h2o_mom_sp_job1",
+        "parsed_qchem_54_h2o_mom_sp_job1",
+        "parsed_qchem_62_h2o_mom_sp_job1",
+        "parsed_qchem_54_h2o_mom_xas_job1",
+        "parsed_qchem_62_h2o_mom_xas_job1",
     ],
     "orbitals": [
         "parsed_qchem_54_h2o_sp_data",
@@ -71,8 +75,10 @@ FIXTURE_SPECS = {
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_rks_tddft_data",
-        # "parsed_qchem_54_h2o_mom_sp_job1",
-        # "parsed_qchem_62_h2o_mom_sp_job1",
+        "parsed_qchem_54_h2o_mom_sp_job1",
+        "parsed_qchem_62_h2o_mom_sp_job1",
+        "parsed_qchem_54_h2o_mom_xas_job1",
+        "parsed_qchem_62_h2o_mom_xas_job1",
     ],
     # Blocks present in SP calculations only
     "charges": [
@@ -165,14 +171,19 @@ def _create_multi_job_fixture(fixture_name: str):
 
 
 def _create_job1_fixture(fixture_name: str):
-    """Factory function to create a session-scoped fixture that extracts job1 from multi-job files."""
+    """Factory function to create a session-scoped fixture that extracts job1 from multi-job files.
+
+    Only parses the first job to avoid parsing errors in subsequent jobs that may not be
+    fully implemented yet.
+    """
 
     @pytest.fixture(scope="session", name=fixture_name)
     def _fixture(testing_data_path: Path) -> CalculationResult:
         if fixture_name not in _parsed_cache:
             file_path = testing_data_path / JOB1_FIXTURE_FILES[fixture_name]
-            jobs = parse_qchem_multi_job_output(file_path.read_text())
-            _parsed_cache[fixture_name] = jobs[0]  # Extract first job
+            # Only parse the first job, avoiding errors from job 2+ which may have incomplete parsers
+            jobs = parse_qchem_multi_job_output(file_path.read_text(), num_jobs=1)
+            _parsed_cache[fixture_name] = jobs[0]  # Extract first (and only) job
         return _parsed_cache[fixture_name]
 
     return _fixture
