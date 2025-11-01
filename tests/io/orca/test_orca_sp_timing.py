@@ -10,11 +10,13 @@ These tests verify that timing information is correctly parsed, including:
 import pytest
 
 from calcflow.common.models import CalculationResult, TimingResults
+from tests.io.orca.conftest import FIXTURE_SPECS
 
 TIME_TOL = 0.001  # seconds
 
 
 @pytest.mark.contract
+@pytest.mark.parametrize("parsed_orca_h2o_sp_data", FIXTURE_SPECS["timing"], indirect=True)
 def test_timing_structure_exists(parsed_orca_h2o_sp_data: CalculationResult):
     """
     Contract test: verify that timing field exists and is of correct type.
@@ -24,6 +26,7 @@ def test_timing_structure_exists(parsed_orca_h2o_sp_data: CalculationResult):
 
 
 @pytest.mark.contract
+@pytest.mark.parametrize("parsed_orca_h2o_sp_data", FIXTURE_SPECS["timing"], indirect=True)
 def test_total_wall_time_type(parsed_orca_h2o_sp_data: CalculationResult):
     """
     Contract test: verify total_wall_time_seconds is populated and is a float.
@@ -34,6 +37,7 @@ def test_total_wall_time_type(parsed_orca_h2o_sp_data: CalculationResult):
 
 
 @pytest.mark.contract
+@pytest.mark.parametrize("parsed_orca_h2o_sp_data", FIXTURE_SPECS["timing"], indirect=True)
 def test_module_times_type(parsed_orca_h2o_sp_data: CalculationResult):
     """
     Contract test: verify module_times is a Mapping[str, float] if populated.
@@ -47,6 +51,7 @@ def test_module_times_type(parsed_orca_h2o_sp_data: CalculationResult):
 
 
 @pytest.mark.regression
+@pytest.mark.parametrize("parsed_orca_h2o_sp_data", FIXTURE_SPECS["timing"], indirect=True)
 def test_total_wall_time_value(parsed_orca_h2o_sp_data: CalculationResult):
     """
     Regression test: verify total wall time has correct value.
@@ -59,6 +64,7 @@ def test_total_wall_time_value(parsed_orca_h2o_sp_data: CalculationResult):
 
 
 @pytest.mark.regression
+@pytest.mark.parametrize("parsed_orca_h2o_sp_data", FIXTURE_SPECS["timing"], indirect=True)
 def test_module_times_values(parsed_orca_h2o_sp_data: CalculationResult):
     """
     Regression test: verify module-specific timing values.
@@ -82,6 +88,7 @@ def test_module_times_values(parsed_orca_h2o_sp_data: CalculationResult):
 
 
 @pytest.mark.regression
+@pytest.mark.parametrize("parsed_orca_h2o_sp_data", FIXTURE_SPECS["timing"], indirect=True)
 def test_cpu_time_is_none(parsed_orca_h2o_sp_data: CalculationResult):
     """
     Regression test: verify that CPU time is None for ORCA (ORCA only reports wall time).
@@ -91,6 +98,7 @@ def test_cpu_time_is_none(parsed_orca_h2o_sp_data: CalculationResult):
 
 
 @pytest.mark.integration
+@pytest.mark.parametrize("parsed_orca_h2o_sp_data", FIXTURE_SPECS["timing"], indirect=True)
 def test_timing_fields_populated(parsed_orca_h2o_sp_data: CalculationResult):
     """
     Integration test: verify that timing-related fields are properly populated

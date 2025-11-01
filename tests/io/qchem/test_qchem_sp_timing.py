@@ -10,46 +10,53 @@ These tests verify that timing information is correctly parsed, including:
 import pytest
 
 from calcflow.common.models import CalculationResult, TimingResults
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 TIME_TOL = 0.001  # seconds
 
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_data", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"], indirect=True
+    "timing_fixture",
+    FIXTURE_SPECS["timing"],
+    indirect=True,
 )
-def test_timing_structure_exists(parsed_qchem_h2o_sp_data: CalculationResult):
+def test_timing_structure_exists(timing_fixture: CalculationResult):
     """
     Contract test: verify that timing field exists and is of correct type.
     """
-    assert parsed_qchem_h2o_sp_data.timing is not None
-    assert isinstance(parsed_qchem_h2o_sp_data.timing, TimingResults)
+    assert timing_fixture.timing is not None
+    assert isinstance(timing_fixture.timing, TimingResults)
 
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_data", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"], indirect=True
+    "timing_fixture",
+    FIXTURE_SPECS["timing"],
+    indirect=True,
 )
-def test_wall_time_type(parsed_qchem_h2o_sp_data: CalculationResult):
+def test_wall_time_type(timing_fixture: CalculationResult):
     """
     Contract test: verify total_wall_time_seconds is populated and is a float.
     """
-    assert parsed_qchem_h2o_sp_data.timing is not None
-    assert parsed_qchem_h2o_sp_data.timing.total_wall_time_seconds is not None
-    assert isinstance(parsed_qchem_h2o_sp_data.timing.total_wall_time_seconds, float)
+    assert timing_fixture.timing is not None
+    assert timing_fixture.timing.total_wall_time_seconds is not None
+    assert isinstance(timing_fixture.timing.total_wall_time_seconds, float)
 
 
 @pytest.mark.contract
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_data", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"], indirect=True
+    "timing_fixture",
+    FIXTURE_SPECS["timing"],
+    indirect=True,
 )
-def test_cpu_time_type(parsed_qchem_h2o_sp_data: CalculationResult):
+def test_cpu_time_type(timing_fixture: CalculationResult):
     """
     Contract test: verify total_cpu_time_seconds is populated and is a float.
     """
-    assert parsed_qchem_h2o_sp_data.timing is not None
-    assert parsed_qchem_h2o_sp_data.timing.total_cpu_time_seconds is not None
-    assert isinstance(parsed_qchem_h2o_sp_data.timing.total_cpu_time_seconds, float)
+    assert timing_fixture.timing is not None
+    assert timing_fixture.timing.total_cpu_time_seconds is not None
+    assert isinstance(timing_fixture.timing.total_cpu_time_seconds, float)
 
 
 @pytest.mark.regression
@@ -96,26 +103,30 @@ def test_tddft_time_values(
 
 @pytest.mark.regression
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_data", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"], indirect=True
+    "timing_fixture",
+    FIXTURE_SPECS["timing"],
+    indirect=True,
 )
-def test_module_times_is_none(parsed_qchem_h2o_sp_data: CalculationResult):
+def test_module_times_is_none(timing_fixture: CalculationResult):
     """
     Regression test: verify that module_times is None for QChem
     (QChem doesn't provide module-specific timing).
     """
-    assert parsed_qchem_h2o_sp_data.timing is not None
-    assert parsed_qchem_h2o_sp_data.timing.module_times is None
+    assert timing_fixture.timing is not None
+    assert timing_fixture.timing.module_times is None
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize(
-    "parsed_qchem_h2o_sp_data", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"], indirect=True
+    "timing_fixture",
+    FIXTURE_SPECS["timing"],
+    indirect=True,
 )
-def test_timing_fields_populated(parsed_qchem_h2o_sp_data: CalculationResult):
+def test_timing_fields_populated(timing_fixture: CalculationResult):
     """
     Integration test: verify that timing-related fields are properly populated
     in the final CalculationResult.
     """
-    assert parsed_qchem_h2o_sp_data.timing is not None
-    assert parsed_qchem_h2o_sp_data.timing.total_wall_time_seconds is not None
-    assert parsed_qchem_h2o_sp_data.timing.total_cpu_time_seconds is not None
+    assert timing_fixture.timing is not None
+    assert timing_fixture.timing.total_wall_time_seconds is not None
+    assert timing_fixture.timing.total_cpu_time_seconds is not None

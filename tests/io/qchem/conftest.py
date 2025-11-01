@@ -72,6 +72,14 @@ FIXTURE_SPECS = {
     "tddft_nto": [
         "parsed_qchem_62_h2o_rks_tddft_data",
     ],
+    # Timing block (present in all fixtures)
+    "timing": [
+        "parsed_qchem_54_h2o_sp_data",
+        "parsed_qchem_62_h2o_sp_data",
+        "parsed_qchem_54_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_rks_tddft_data",
+    ],
 }
 
 
@@ -159,6 +167,21 @@ def parsed_qchem_h2o_tddft_data(request: pytest.FixtureRequest, testing_data_pat
 @pytest.fixture
 def parsed_qchem_h2o_sp_or_tddft_data(request: pytest.FixtureRequest, testing_data_path: Path) -> CalculationResult:
     """Parametrizable fixture for both SP and TDDFT calculations."""
+    fixture_name = request.param
+    mapping = {
+        "parsed_qchem_54_h2o_sp_data": "5.4-sp-smd.out",
+        "parsed_qchem_62_h2o_sp_data": "6.2-sp-smd.out",
+        "parsed_qchem_54_h2o_uks_tddft_data": "5.4-uks-tddft.out",
+        "parsed_qchem_62_h2o_uks_tddft_data": "6.2-uks-tddft.out",
+        "parsed_qchem_62_h2o_rks_tddft_data": "6.2-rks-tddft.out",
+    }
+    filename = mapping[fixture_name]
+    return parse_qchem_output((testing_data_path / "qchem" / "h2o" / filename).read_text())
+
+
+@pytest.fixture
+def timing_fixture(request: pytest.FixtureRequest, testing_data_path: Path) -> CalculationResult:
+    """Parametrizable fixture for all timing-related tests."""
     fixture_name = request.param
     mapping = {
         "parsed_qchem_54_h2o_sp_data": "5.4-sp-smd.out",
