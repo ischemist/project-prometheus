@@ -39,6 +39,15 @@ JOB1_FIXTURE_FILES = {
     "parsed_qchem_62_h2o_mom_xas_job1": "qchem/h2o/6.2-mom-xas-smd.out",
 }
 
+# Job 2 fixtures - extracts job2 from multi-job files (the MOM-enabled job)
+# Returns CalculationResult (just the second job, which has MOM)
+JOB2_FIXTURE_FILES = {
+    "parsed_qchem_54_h2o_mom_sp_job2": "qchem/h2o/5.4-mom-sp-smd.out",
+    "parsed_qchem_62_h2o_mom_sp_job2": "qchem/h2o/6.2-mom-sp-smd.out",
+    "parsed_qchem_54_h2o_mom_xas_job2": "qchem/h2o/5.4-mom-xas-smd.out",
+    "parsed_qchem_62_h2o_mom_xas_job2": "qchem/h2o/6.2-mom-xas-smd.out",
+}
+
 # =============================================================================
 # FIXTURE SPECIFICATIONS: Organized by parsed block
 # =============================================================================
@@ -199,6 +208,24 @@ def _create_job1_fixture(fixture_name: str):
     return _fixture
 
 
+def _create_job2_fixture(fixture_name: str):
+    """Factory function to create a session-scoped fixture that extracts job2 from multi-job files.
+
+    Parses both jobs and returns the second one (which is typically MOM-enabled).
+    """
+
+    @pytest.fixture(scope="session", name=fixture_name)
+    def _fixture(testing_data_path: Path) -> CalculationResult:
+        if fixture_name not in _parsed_cache:
+            file_path = testing_data_path / JOB2_FIXTURE_FILES[fixture_name]
+            # Parse both jobs, extract the second one (MOM-enabled)
+            jobs = parse_qchem_multi_job_output(file_path.read_text(), num_jobs=2)
+            _parsed_cache[fixture_name] = jobs[1]  # Extract second job (index 1)
+        return _parsed_cache[fixture_name]
+
+    return _fixture
+
+
 # Dynamically create all fixtures from FIXTURE_FILES
 for fixture_name in FIXTURE_FILES:
     globals()[fixture_name] = _create_qchem_fixture(fixture_name)
@@ -208,6 +235,9 @@ for fixture_name in MULTI_JOB_FIXTURE_FILES:
 
 for fixture_name in JOB1_FIXTURE_FILES:
     globals()[fixture_name] = _create_job1_fixture(fixture_name)
+
+for fixture_name in JOB2_FIXTURE_FILES:
+    globals()[fixture_name] = _create_job2_fixture(fixture_name)
 
 
 # =============================================================================

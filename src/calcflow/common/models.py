@@ -468,7 +468,7 @@ class CalculationResult(BaseModel):
     metadata: CalculationMetadata
 
     # --- Geometry ---
-    input_geometry: Sequence[Atom]
+    input_geometry: Sequence[Atom] | None = None  # None for multi-job files where geometry is inherited
     final_geometry: Sequence[Atom] | None = None
 
     # --- Energies ---
