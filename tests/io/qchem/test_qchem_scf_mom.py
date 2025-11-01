@@ -17,7 +17,7 @@ Test Data Source: qchem/h2o/6.2-mom-sp-smd.out
 - Job 2: MOM-enabled SCF (MOM-specific parsing)
 
 Expected Values (Job 2, MOM iterations):
-- 7 total iterations
+- 8 total iterations
 - MOM overlap range: 5.0 to 4.98 (out of 5 electrons)
 - Final energy: -76.16997884 a.u.
 - Converged: True
@@ -295,7 +295,7 @@ def test_mom_job_final_total_energy(parsed_qchem_62_h2o_mom_sp_job2: Calculation
 
 @pytest.mark.regression
 def test_mom_job_num_iterations(parsed_qchem_62_h2o_mom_sp_job2: CalculationResult):
-    """Regression test: MOM job should have exactly 7 iterations."""
+    """Regression test: MOM job should have exactly 8 iterations."""
     assert parsed_qchem_62_h2o_mom_sp_job2.scf is not None
     assert parsed_qchem_62_h2o_mom_sp_job2.scf.n_iterations == JOB2_N_ITERATIONS
 

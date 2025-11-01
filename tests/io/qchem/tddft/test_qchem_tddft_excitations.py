@@ -327,7 +327,6 @@ def test_uks_transitions_may_have_spin_labels(fixture_name: str, request):
 
 
 @pytest.mark.integration
-@pytest.mark.integration
 @pytest.mark.parametrize(
     "parsed_qchem_data",
     [
