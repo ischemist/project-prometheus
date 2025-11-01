@@ -419,7 +419,7 @@ class TestUksTransitionDensityMatrixRegression:
 
         for atom_idx, expected in EXPECTED_UKS_STATE_1_TRANS_CHARGES.items():
             actual = dm.mulliken.trans_charges[atom_idx]
-            assert actual == pytest.approx(expected, abs=1e-5)
+            assert actual == pytest.approx(expected, abs=FLOAT_TOL)
 
     def test_state_1_ct_numbers(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
         """Verify exact CT numbers for UKS Excited State 1."""
