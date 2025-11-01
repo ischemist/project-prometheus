@@ -84,6 +84,10 @@ FIXTURE_SPECS = {
     "charges": [
         "parsed_qchem_54_h2o_sp_data",
         "parsed_qchem_62_h2o_sp_data",
+        "parsed_qchem_54_h2o_mom_sp_job1",
+        "parsed_qchem_62_h2o_mom_sp_job1",
+        "parsed_qchem_54_h2o_mom_xas_job1",
+        "parsed_qchem_62_h2o_mom_xas_job1",
     ],
     "multipole": [
         "parsed_qchem_54_h2o_sp_data",
