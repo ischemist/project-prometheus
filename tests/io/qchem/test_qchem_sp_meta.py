@@ -63,6 +63,23 @@ def test_metadata_parser_stops_after_version():
 
 
 @pytest.mark.unit
+def test_metadata_parser_sets_software_name():
+    """
+    Unit test: verify MetadataParser.parse() sets both software_name and software_version.
+    """
+
+    parser = MetadataParser()
+    state = ParseState(raw_output="")
+
+    version_line = " Q-Chem 6.2, Q-Chem, Inc., Pleasanton, CA (2024)"
+    parser.parse(iter([]), version_line, state)
+
+    assert state.metadata.software_name == "Q-Chem"
+    assert state.metadata.software_version == "6.2"
+    assert state.parsed_metadata is True
+
+
+@pytest.mark.unit
 def test_version_spec_normalization():
     """
     Unit test: verify that VersionSpec.version property normalizes versions correctly.

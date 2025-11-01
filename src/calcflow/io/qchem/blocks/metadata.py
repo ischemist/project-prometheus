@@ -32,7 +32,9 @@ class MetadataParser:
         if match:
             version_str = match.group(1).strip()
             normalized_version = VersionSpec.from_str(version_str).version
-            new_metadata = state.metadata.model_copy(update={"software_version": normalized_version})
+            new_metadata = state.metadata.model_copy(
+                update={"software_name": "Q-Chem", "software_version": normalized_version}
+            )
             state.metadata = new_metadata
             state.parsed_metadata = True
             logger.debug(f"Parsed Q-Chem version: {normalized_version}")

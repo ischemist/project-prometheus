@@ -9,6 +9,7 @@ from calcflow.common.exceptions import ParsingError
 from calcflow.common.models import CalculationResult
 from calcflow.io.core import BlockParser, core_parse
 from calcflow.io.qchem.blocks.charges import ChargesParser
+from calcflow.io.qchem.blocks.finalization import TerminationParser
 from calcflow.io.qchem.blocks.geometry import GeometryParser
 from calcflow.io.qchem.blocks.metadata import MetadataParser
 from calcflow.io.qchem.blocks.multipole import MultipoleParser
@@ -36,6 +37,7 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     UnrelaxedDensityMatrixParser(),
     TransitionDensityMatrixParser(),
     TimingParser(),
+    TerminationParser(),
 ]
 
 
