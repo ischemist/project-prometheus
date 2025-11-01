@@ -488,26 +488,3 @@ class CalculationResult(BaseModel):
     # --- Program Specific Data ---
     # A catch-all for data that is too program-specific to unify. Use sparingly.
     program_specific: Mapping[str, Any] = Field(default_factory=dict)
-
-
-class MomCalculationResult(BaseModel):
-    """
-    Holds the results of a two-step MOM calculation, containing two full
-    CalculationResult objects.
-    """
-
-    model_config = IMMUTABLE_MODEL_CONFIG
-
-    job1_initial_scf: CalculationResult
-    job2_mom_scf: CalculationResult
-    raw_output: str = Field(repr=False)
-
-
-class OptimizationResult(BaseModel):
-    """
-    The canonical, immutable result of a geometry optimization.
-    """
-
-    # TBD, but would likely contain a sequence of CalculationResult-like
-    # objects for each optimization cycle.
-    pass
