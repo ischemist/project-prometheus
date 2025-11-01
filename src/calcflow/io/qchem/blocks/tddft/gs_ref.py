@@ -31,7 +31,7 @@ NOS_SPIN_TRACED_PAT = re.compile(r"^\s+NOs \(spin-traced\)")
 
 # Occupation values pattern (captures floating point numbers from indented line)
 # Matches lines with leading spaces followed by numbers
-OCCUPATION_VAL_PAT = re.compile(r"^\s+([\d.-]+)(?:\s+([\d.-]+))?(?:\s+([\d.-]+))?")  # Up to 3 values per line
+OCCUPATION_VAL_PAT = re.compile(r"^\s+([\d.]+)(?:\s+([\d.]+))?(?:\s+([\d.]+))?")  # Up to 3 values per line
 
 # Electron count patterns
 NUM_ELECTRONS_PAT = re.compile(r"^\s+Number of electrons:\s+([\d.]+)")
