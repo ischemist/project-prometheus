@@ -116,24 +116,36 @@ FIXTURE_SPECS = {
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_rks_tddft_data",
+        "parsed_qchem_54_h2o_mom_xas_job2",
+        "parsed_qchem_62_h2o_mom_xas_job2",
     ],
     "tddft_trans_dm": [
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_rks_tddft_data",
+        "parsed_qchem_54_h2o_mom_xas_job2",
+        "parsed_qchem_62_h2o_mom_xas_job2",
     ],
     # UKS-specific blocks (unrestricted spin)
     "beta_orbitals": [
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",
+        "parsed_qchem_54_h2o_mom_xas_job2",
+        "parsed_qchem_62_h2o_mom_xas_job2",
     ],
     "tddft_unrel_dm": [
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",
+        "parsed_qchem_54_h2o_mom_xas_job2",
+        "parsed_qchem_62_h2o_mom_xas_job2",
     ],
     # RKS-specific blocks
     "tddft_nto": [
+        "parsed_qchem_54_h2o_uks_tddft_data",
+        "parsed_qchem_62_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_rks_tddft_data",
+        "parsed_qchem_54_h2o_mom_xas_job2",
+        "parsed_qchem_62_h2o_mom_xas_job2",
     ],
     # MOM SCF block (present in MOM-enabled jobs)
     "mom-scf": [
