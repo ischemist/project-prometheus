@@ -116,9 +116,8 @@ class GroundStateRefParser:
             # For UKS, only capture from spin-traced section
             # For RKS, capture the first one we see
             if FRONTIER_NOS_PAT.search(line):
-                # For UKS (identified by seen_nos_alpha), only capture from spin-traced section
-                # For RKS, capture the first one we see
-                if in_spin_traced_section or (not seen_nos_alpha and not gs_data["frontier_nos"]):
+                # Only capture if we haven't already and conditions are met
+                if not gs_data["frontier_nos"] and (in_spin_traced_section or (not seen_nos_alpha)):
                     seen_frontier_nos = True
                     # Next line(s) should contain occupation values
                 continue

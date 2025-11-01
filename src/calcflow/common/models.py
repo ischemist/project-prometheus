@@ -434,7 +434,7 @@ class TddftResults(BaseModel):
 
     # More detailed, program-specific analyses can be added here as needed
     nto_analyses: Sequence[NTOStateAnalysis] | None = None
-    ground_state_ref: "GroundStateReference | None" = None
+    ground_state_ref: GroundStateReference | None = None
     unrelaxed_density_matrices: Sequence[UnrelaxedDensityMatrix] | None = None
     transition_density_matrices: Sequence[TransitionDensityMatrix] | None = None
     # Add ExcitedStateDetailedAnalysis if the unified model proves necessary
@@ -482,7 +482,6 @@ class CalculationResult(BaseModel):
     multipole: MultipoleResults | None = None
     smd: SmdResults | None = None
     tddft: TddftResults | None = None
-    nto_analyses: Sequence[NTOStateAnalysis] | None = None
     dispersion: DispersionCorrection | None = None
     timing: TimingResults | None = None
 

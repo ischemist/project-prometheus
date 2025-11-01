@@ -233,7 +233,6 @@ def test_nto_parser_does_not_mutate_state_in_matches():
     assert result1 is True
     assert result2 is True
     assert state.parsed_nto is False  # Should NOT be set
-    assert state.nto_analyses is None  # Should NOT be populated
 
 
 # =============================================================================
@@ -244,16 +243,18 @@ def test_nto_parser_does_not_mutate_state_in_matches():
 @pytest.mark.contract
 def test_nto_analyses_has_correct_type(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
     """Contract test: verify nto_analyses field is sequence of NTOStateAnalysis."""
-    assert parsed_qchem_62_h2o_rks_tddft_data.nto_analyses is not None
-    assert isinstance(parsed_qchem_62_h2o_rks_tddft_data.nto_analyses, (list, tuple))
-    assert len(parsed_qchem_62_h2o_rks_tddft_data.nto_analyses) > 0
-    assert all(isinstance(state, NTOStateAnalysis) for state in parsed_qchem_62_h2o_rks_tddft_data.nto_analyses)
+    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
+    assert parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses is not None
+    assert isinstance(parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses, (list, tuple))
+    assert len(parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses) > 0
+    assert all(isinstance(state, NTOStateAnalysis) for state in parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses)
 
 
 @pytest.mark.contract
 def test_nto_state_analysis_has_required_fields(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
     """Contract test: verify each NTOStateAnalysis has required fields."""
-    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.nto_analyses
+    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
 
     for nto_state in nto_analyses:
@@ -268,7 +269,8 @@ def test_nto_state_analysis_has_required_fields(parsed_qchem_62_h2o_rks_tddft_da
 @pytest.mark.contract
 def test_nto_contribution_structure(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
     """Contract test: verify NTOContribution structure in NTO states."""
-    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.nto_analyses
+    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
 
     for nto_state in nto_analyses:
@@ -285,7 +287,8 @@ def test_nto_contribution_structure(parsed_qchem_62_h2o_rks_tddft_data: Calculat
 @pytest.mark.contract
 def test_rks_all_contributions_single_spin(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
     """Contract test: verify RKS contributions all have same spin (alpha=True)."""
-    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.nto_analyses
+    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
 
     for nto_state in nto_analyses:
@@ -297,7 +300,8 @@ def test_rks_all_contributions_single_spin(parsed_qchem_62_h2o_rks_tddft_data: C
 @pytest.mark.contract
 def test_uks_contributions_have_alpha_and_beta(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
     """Contract test: verify UKS contributions have both alpha and beta spins."""
-    nto_analyses = parsed_qchem_62_h2o_uks_tddft_data.nto_analyses
+    assert parsed_qchem_62_h2o_uks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_62_h2o_uks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
 
     # Check first state
@@ -317,7 +321,7 @@ def test_nto_parsed_alongside_tddft_rks(parsed_qchem_62_h2o_rks_tddft_data: Calc
     """Integration test: verify NTO and TDDFT both parsed for RKS."""
     assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
     assert parsed_qchem_62_h2o_rks_tddft_data.tddft.tddft_states is not None
-    assert parsed_qchem_62_h2o_rks_tddft_data.nto_analyses is not None
+    assert parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses is not None
 
 
 @pytest.mark.integration
@@ -325,16 +329,15 @@ def test_nto_parsed_alongside_tddft_uks(parsed_qchem_62_h2o_uks_tddft_data: Calc
     """Integration test: verify NTO and TDDFT both parsed for UKS."""
     assert parsed_qchem_62_h2o_uks_tddft_data.tddft is not None
     assert parsed_qchem_62_h2o_uks_tddft_data.tddft.tddft_states is not None
-    assert parsed_qchem_62_h2o_uks_tddft_data.nto_analyses is not None
+    assert parsed_qchem_62_h2o_uks_tddft_data.tddft.nto_analyses is not None
 
 
 @pytest.mark.integration
 def test_nto_state_numbers_match_tddft_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
     """Integration test: verify NTO state numbers match TDDFT state numbers for RKS."""
     tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
-    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.nto_analyses
-
     assert tddft is not None and tddft.tddft_states is not None
+    nto_analyses = tddft.nto_analyses
     assert nto_analyses is not None
 
     # Number of states should match
@@ -350,9 +353,8 @@ def test_nto_state_numbers_match_tddft_rks(parsed_qchem_62_h2o_rks_tddft_data: C
 def test_nto_state_numbers_match_tddft_uks(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
     """Integration test: verify NTO state numbers match TDDFT state numbers for UKS."""
     tddft = parsed_qchem_62_h2o_uks_tddft_data.tddft
-    nto_analyses = parsed_qchem_62_h2o_uks_tddft_data.nto_analyses
-
     assert tddft is not None and tddft.tddft_states is not None
+    nto_analyses = tddft.nto_analyses
     assert nto_analyses is not None
 
     # Number of states should match
@@ -372,7 +374,8 @@ def test_nto_state_numbers_match_tddft_uks(parsed_qchem_62_h2o_uks_tddft_data: C
 @pytest.mark.regression
 def test_rks_nto_state_count(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
     """Regression test: verify exact number of NTO states parsed for RKS."""
-    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.nto_analyses
+    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
     assert len(nto_analyses) == EXPECTED_RKS_NUM_NTO_STATES
 
@@ -380,7 +383,8 @@ def test_rks_nto_state_count(parsed_qchem_62_h2o_rks_tddft_data: CalculationResu
 @pytest.mark.regression
 def test_rks_nto_state_1_single_contribution(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
     """Regression test: verify RKS state 1 has single dominant NTO contribution."""
-    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.nto_analyses
+    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
     assert len(nto_analyses) > 0
 
@@ -400,7 +404,8 @@ def test_rks_nto_state_1_single_contribution(parsed_qchem_62_h2o_rks_tddft_data:
 @pytest.mark.regression
 def test_rks_nto_state_7_two_contributions(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
     """Regression test: verify RKS state 7 has two NTO contributions."""
-    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.nto_analyses
+    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
     assert len(nto_analyses) > 6
 
@@ -430,7 +435,8 @@ def test_rks_nto_state_7_two_contributions(parsed_qchem_62_h2o_rks_tddft_data: C
 @pytest.mark.regression
 def test_rks_nto_state_10_three_contributions(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
     """Regression test: verify RKS state 10 has three NTO contributions."""
-    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.nto_analyses
+    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
     assert len(nto_analyses) > 9
 
@@ -473,7 +479,8 @@ def test_rks_nto_state_10_three_contributions(parsed_qchem_62_h2o_rks_tddft_data
 @pytest.mark.regression
 def test_uks_nto_state_count(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
     """Regression test: verify exact number of NTO states parsed for UKS."""
-    nto_analyses = parsed_qchem_62_h2o_uks_tddft_data.nto_analyses
+    assert parsed_qchem_62_h2o_uks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_62_h2o_uks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
     assert len(nto_analyses) == EXPECTED_UKS_NUM_NTO_STATES
 
@@ -481,7 +488,8 @@ def test_uks_nto_state_count(parsed_qchem_62_h2o_uks_tddft_data: CalculationResu
 @pytest.mark.regression
 def test_uks_nto_state_1_alpha_beta(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
     """Regression test: verify UKS state 1 has alpha and beta contributions."""
-    nto_analyses = parsed_qchem_62_h2o_uks_tddft_data.nto_analyses
+    assert parsed_qchem_62_h2o_uks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_62_h2o_uks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
     assert len(nto_analyses) > 0
 
@@ -516,7 +524,8 @@ def test_uks_nto_state_1_alpha_beta(parsed_qchem_62_h2o_uks_tddft_data: Calculat
 @pytest.mark.regression
 def test_uks_nto_state_9_multiple_alpha_beta(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
     """Regression test: verify UKS state 9 has multiple alpha and beta contributions."""
-    nto_analyses = parsed_qchem_62_h2o_uks_tddft_data.nto_analyses
+    assert parsed_qchem_62_h2o_uks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_62_h2o_uks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
     assert len(nto_analyses) > 8
 
@@ -569,7 +578,8 @@ def test_uks_nto_state_9_multiple_alpha_beta(parsed_qchem_62_h2o_uks_tddft_data:
 @pytest.mark.regression
 def test_uks_54_nto_state_count(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
     """Regression test: verify exact number of NTO states parsed for UKS 5.4."""
-    nto_analyses = parsed_qchem_54_h2o_uks_tddft_data.nto_analyses
+    assert parsed_qchem_54_h2o_uks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_54_h2o_uks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
     assert len(nto_analyses) == EXPECTED_UKS_54_NUM_NTO_STATES
 
@@ -577,7 +587,8 @@ def test_uks_54_nto_state_count(parsed_qchem_54_h2o_uks_tddft_data: CalculationR
 @pytest.mark.regression
 def test_uks_54_nto_state_1_alpha_beta(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
     """Regression test: verify UKS 5.4 state 1 has alpha and beta contributions with opposite signs."""
-    nto_analyses = parsed_qchem_54_h2o_uks_tddft_data.nto_analyses
+    assert parsed_qchem_54_h2o_uks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_54_h2o_uks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
     assert len(nto_analyses) > 0
 
@@ -614,7 +625,8 @@ def test_uks_54_nto_state_1_alpha_beta(parsed_qchem_54_h2o_uks_tddft_data: Calcu
 @pytest.mark.regression
 def test_uks_54_nto_state_9_multiple_alpha_beta(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
     """Regression test: verify UKS 5.4 state 9 has multiple alpha and beta contributions."""
-    nto_analyses = parsed_qchem_54_h2o_uks_tddft_data.nto_analyses
+    assert parsed_qchem_54_h2o_uks_tddft_data.tddft is not None
+    nto_analyses = parsed_qchem_54_h2o_uks_tddft_data.tddft.nto_analyses
     assert nto_analyses is not None
     assert len(nto_analyses) > 8
 

@@ -14,7 +14,7 @@ Format:
 import re
 from collections.abc import Iterator
 
-from calcflow.common.models import NTOContribution, NTOStateAnalysis
+from calcflow.common.models import NTOContribution, NTOStateAnalysis, TddftResults
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -61,7 +61,7 @@ class NTOParser:
         """
         Parse SA-NTO decomposition block.
 
-        Consumes lines from iterator until end of block, populating state.nto_analyses.
+        Consumes lines from iterator until end of block, populating state.tddft.nto_analyses.
         """
         logger.debug("Starting SA-NTO decomposition block parsing.")
 
@@ -192,7 +192,10 @@ class NTOParser:
             return
 
         # --- Update ParseState ---
-        state.nto_analyses = nto_states
+        # Integrate into existing TddftResults or create new one
+        existing_tddft = state.tddft.model_dump() if state.tddft else {}
+        existing_tddft["nto_analyses"] = nto_states
+        state.tddft = TddftResults.model_validate(existing_tddft)
         state.parsed_nto = True
 
         logger.debug(f"Parsed {len(nto_states)} NTO states.")
