@@ -1,9 +1,10 @@
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
 
 from calcflow.common.models import CalculationResult
-from calcflow.io.qchem import parse_qchem_output
+from calcflow.io.qchem import parse_qchem_multi_job_output, parse_qchem_output
 
 # =============================================================================
 # FIXTURE FILES: Single source of truth
@@ -11,12 +12,31 @@ from calcflow.io.qchem import parse_qchem_output
 # Maps fixture names to their corresponding output file paths.
 # Adding a new test fixture only requires adding one entry here.
 
+# Single-job fixtures - parsed with parse_qchem_output()
 FIXTURE_FILES = {
     "parsed_qchem_54_h2o_sp_data": "qchem/h2o/5.4-sp-smd.out",
     "parsed_qchem_62_h2o_sp_data": "qchem/h2o/6.2-sp-smd.out",
     "parsed_qchem_54_h2o_uks_tddft_data": "qchem/h2o/5.4-uks-tddft.out",
     "parsed_qchem_62_h2o_uks_tddft_data": "qchem/h2o/6.2-uks-tddft.out",
     "parsed_qchem_62_h2o_rks_tddft_data": "qchem/h2o/6.2-rks-tddft.out",
+}
+
+# Multi-job fixtures - parsed with parse_qchem_multi_job_output()
+# Returns Sequence[CalculationResult]
+MULTI_JOB_FIXTURE_FILES = {
+    "parsed_qchem_54_h2o_mom_sp_multi": "qchem/h2o/5.4-mom-sp-smd.out",
+    "parsed_qchem_62_h2o_mom_sp_multi": "qchem/h2o/6.2-mom-sp-smd.out",
+    "parsed_qchem_54_h2o_mom_xas_multi": "qchem/h2o/5.4-mom-xas-smd.out",
+    "parsed_qchem_62_h2o_mom_xas_multi": "qchem/h2o/6.2-mom-xas-smd.out",
+}
+
+# Individual job fixtures - extracts job1 from multi-job files for contract tests
+# Returns CalculationResult (just the first job)
+JOB1_FIXTURE_FILES = {
+    "parsed_qchem_54_h2o_mom_sp_job1": "qchem/h2o/5.4-mom-sp-smd.out",
+    "parsed_qchem_62_h2o_mom_sp_job1": "qchem/h2o/6.2-mom-sp-smd.out",
+    "parsed_qchem_54_h2o_mom_xas_job1": "qchem/h2o/5.4-mom-xas-smd.out",
+    "parsed_qchem_62_h2o_mom_xas_job1": "qchem/h2o/6.2-mom-xas-smd.out",
 }
 
 # =============================================================================
@@ -33,6 +53,8 @@ FIXTURE_SPECS = {
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_rks_tddft_data",
+        # "parsed_qchem_54_h2o_mom_sp_job1",
+        # "parsed_qchem_62_h2o_mom_sp_job1",
     ],
     "scf": [
         "parsed_qchem_54_h2o_sp_data",
@@ -40,6 +62,8 @@ FIXTURE_SPECS = {
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_rks_tddft_data",
+        # "parsed_qchem_54_h2o_mom_sp_job1",
+        # "parsed_qchem_62_h2o_mom_sp_job1",
     ],
     "orbitals": [
         "parsed_qchem_54_h2o_sp_data",
@@ -47,6 +71,8 @@ FIXTURE_SPECS = {
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_rks_tddft_data",
+        # "parsed_qchem_54_h2o_mom_sp_job1",
+        # "parsed_qchem_62_h2o_mom_sp_job1",
     ],
     # Blocks present in SP calculations only
     "charges": [
@@ -93,6 +119,8 @@ FIXTURE_SPECS = {
         "parsed_qchem_54_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_uks_tddft_data",
         "parsed_qchem_62_h2o_rks_tddft_data",
+        # "parsed_qchem_54_h2o_mom_sp_job1",
+        # "parsed_qchem_62_h2o_mom_sp_job1",
     ],
 }
 
@@ -102,6 +130,7 @@ FIXTURE_SPECS = {
 # =============================================================================
 
 _parsed_cache: dict[str, CalculationResult] = {}
+_multi_job_cache: dict[str, Sequence[CalculationResult]] = {}
 
 
 # =============================================================================
@@ -110,7 +139,7 @@ _parsed_cache: dict[str, CalculationResult] = {}
 
 
 def _create_qchem_fixture(fixture_name: str):
-    """Factory function to create a session-scoped fixture for a given fixture name."""
+    """Factory function to create a session-scoped fixture for single-job files."""
 
     @pytest.fixture(scope="session", name=fixture_name)
     def _fixture(testing_data_path: Path) -> CalculationResult:
@@ -122,9 +151,42 @@ def _create_qchem_fixture(fixture_name: str):
     return _fixture
 
 
+def _create_multi_job_fixture(fixture_name: str):
+    """Factory function to create a session-scoped fixture for multi-job files."""
+
+    @pytest.fixture(scope="session", name=fixture_name)
+    def _fixture(testing_data_path: Path) -> Sequence[CalculationResult]:
+        if fixture_name not in _multi_job_cache:
+            file_path = testing_data_path / MULTI_JOB_FIXTURE_FILES[fixture_name]
+            _multi_job_cache[fixture_name] = parse_qchem_multi_job_output(file_path.read_text())
+        return _multi_job_cache[fixture_name]
+
+    return _fixture
+
+
+def _create_job1_fixture(fixture_name: str):
+    """Factory function to create a session-scoped fixture that extracts job1 from multi-job files."""
+
+    @pytest.fixture(scope="session", name=fixture_name)
+    def _fixture(testing_data_path: Path) -> CalculationResult:
+        if fixture_name not in _parsed_cache:
+            file_path = testing_data_path / JOB1_FIXTURE_FILES[fixture_name]
+            jobs = parse_qchem_multi_job_output(file_path.read_text())
+            _parsed_cache[fixture_name] = jobs[0]  # Extract first job
+        return _parsed_cache[fixture_name]
+
+    return _fixture
+
+
 # Dynamically create all fixtures from FIXTURE_FILES
 for fixture_name in FIXTURE_FILES:
     globals()[fixture_name] = _create_qchem_fixture(fixture_name)
+
+for fixture_name in MULTI_JOB_FIXTURE_FILES:
+    globals()[fixture_name] = _create_multi_job_fixture(fixture_name)
+
+for fixture_name in JOB1_FIXTURE_FILES:
+    globals()[fixture_name] = _create_job1_fixture(fixture_name)
 
 
 # =============================================================================
