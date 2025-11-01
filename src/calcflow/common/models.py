@@ -511,8 +511,3 @@ class OptimizationResult(BaseModel):
     # TBD, but would likely contain a sequence of CalculationResult-like
     # objects for each optimization cycle.
     pass
-
-
-if __name__ == "__main__":
-    o = OrbitalTransition.model_json_schema()
-    print(o)

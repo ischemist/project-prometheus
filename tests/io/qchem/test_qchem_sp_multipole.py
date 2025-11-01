@@ -3,6 +3,7 @@
 import pytest
 
 from calcflow.common.models import CalculationResult
+from tests.io.qchem.conftest import FIXTURES_SP_ONLY
 
 
 class TestQChemMultipole:
@@ -11,9 +12,8 @@ class TestQChemMultipole:
     @pytest.mark.contract
     @pytest.mark.parametrize(
         "parsed_qchem_h2o_sp_data",
-        ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
+        FIXTURES_SP_ONLY,
         indirect=True,
-        ids=["sp-5.4", "sp-6.2"],
     )
     def test_qchem_multipole_present(self, parsed_qchem_h2o_sp_data: CalculationResult) -> None:
         """

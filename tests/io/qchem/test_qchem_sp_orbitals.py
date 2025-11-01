@@ -22,6 +22,7 @@ import pytest
 from calcflow.common.models import CalculationResult, Orbital, OrbitalsSet
 from calcflow.io.qchem.blocks.orbitals import OrbitalsParser
 from calcflow.io.state import ParseState
+from tests.io.qchem.conftest import FIXTURES_SP_AND_TDDFT
 
 # =============================================================================
 # HARDCODED TEST DATA
@@ -111,15 +112,8 @@ def test_orbitals_parser_does_not_mutate_state_in_matches():
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURES_SP_AND_TDDFT,
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_orbitals_set_has_correct_type(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify orbitals field is OrbitalsSet instance."""
@@ -130,15 +124,8 @@ def test_orbitals_set_has_correct_type(parsed_qchem_h2o_sp_or_tddft_data: Calcul
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURES_SP_AND_TDDFT,
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_orbitals_set_alpha_orbitals_is_sequence(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify alpha_orbitals is a sequence of Orbital objects."""
@@ -152,15 +139,8 @@ def test_orbitals_set_alpha_orbitals_is_sequence(parsed_qchem_h2o_sp_or_tddft_da
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURES_SP_AND_TDDFT,
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_orbital_required_fields_present(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify each Orbital has required fields with correct types."""
@@ -179,15 +159,8 @@ def test_orbital_required_fields_present(parsed_qchem_h2o_sp_or_tddft_data: Calc
 @pytest.mark.contract
 @pytest.mark.parametrize(
     "parsed_qchem_h2o_sp_or_tddft_data",
-    [
-        "parsed_qchem_54_h2o_sp_data",
-        "parsed_qchem_62_h2o_sp_data",
-        "parsed_qchem_54_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_uks_tddft_data",
-        "parsed_qchem_62_h2o_rks_tddft_data",
-    ],
+    FIXTURES_SP_AND_TDDFT,
     indirect=True,
-    ids=["sp-5.4", "sp-6.2", "tddft-uks-5.4", "tddft-uks-6.2", "tddft-rks-6.2"],
 )
 def test_orbitals_homo_lumo_indices_set(parsed_qchem_h2o_sp_or_tddft_data: CalculationResult):
     """Contract test: verify HOMO/LUMO indices are set and valid."""

@@ -25,6 +25,7 @@ import pytest
 from calcflow.common.models import CalculationResult, ExcitedState, OrbitalTransition, TddftResults
 from calcflow.io.qchem.blocks.tddft.excitations import ExcitationsParser
 from calcflow.io.state import ParseState
+from tests.io.qchem.conftest import FIXTURES_TDDFT, FIXTURES_UKS_TDDFT
 
 # =============================================================================
 # HARDCODED TEST DATA (from ex-tddft.md)
@@ -192,11 +193,7 @@ def test_excitations_parser_does_not_mutate_state_in_matches():
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
 def test_tddft_results_has_correct_type(fixture_name: str, request):
     """Contract test: verify tddft field is TddftResults instance across all fixtures."""
     data = request.getfixturevalue(fixture_name)
@@ -205,11 +202,7 @@ def test_tddft_results_has_correct_type(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
 def test_tda_states_is_sequence(fixture_name: str, request):
     """Contract test: verify tda_states is a sequence of ExcitedState objects."""
     data = request.getfixturevalue(fixture_name)
@@ -222,11 +215,7 @@ def test_tda_states_is_sequence(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
 def test_tddft_states_is_sequence(fixture_name: str, request):
     """Contract test: verify tddft_states is a sequence of ExcitedState objects."""
     data = request.getfixturevalue(fixture_name)
@@ -239,11 +228,7 @@ def test_tddft_states_is_sequence(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
 def test_excited_state_required_fields_present(fixture_name: str, request):
     """Contract test: verify each ExcitedState has required fields with correct types."""
     data = request.getfixturevalue(fixture_name)
@@ -264,11 +249,7 @@ def test_excited_state_required_fields_present(fixture_name: str, request):
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
 def test_excited_state_transition_moment_fields_present(fixture_name: str, request):
     """Contract test: verify ExcitedState has transition moment fields with correct types."""
     data = request.getfixturevalue(fixture_name)
@@ -284,11 +265,7 @@ def test_excited_state_transition_moment_fields_present(fixture_name: str, reque
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
 def test_orbital_transition_structure(fixture_name: str, request):
     """Contract test: verify OrbitalTransition structure in excited states."""
     data = request.getfixturevalue(fixture_name)
@@ -325,11 +302,7 @@ def test_rks_transitions_have_no_spin_labels(parsed_qchem_62_h2o_rks_tddft_data:
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURES_UKS_TDDFT)
 def test_uks_transitions_may_have_spin_labels(fixture_name: str, request):
     """Contract test: verify UKS transitions may have spin labels (is_alpha_spin=True/False)."""
     data = request.getfixturevalue(fixture_name)
@@ -354,11 +327,7 @@ def test_uks_transitions_may_have_spin_labels(fixture_name: str, request):
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
 def test_tddft_parsed_alongside_scf_and_orbitals(fixture_name: str, request):
     """Integration test: verify TDDFT, SCF, and orbitals all parsed together."""
     data = request.getfixturevalue(fixture_name)
@@ -368,11 +337,7 @@ def test_tddft_parsed_alongside_scf_and_orbitals(fixture_name: str, request):
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
 def test_state_numbers_are_sequential(fixture_name: str, request):
     """Integration test: verify excited state numbers are 1-based and sequential."""
     data = request.getfixturevalue(fixture_name)
@@ -385,11 +350,7 @@ def test_state_numbers_are_sequential(fixture_name: str, request):
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
 def test_tda_and_tddft_both_present(fixture_name: str, request):
     """Integration test: verify both TDA and full TDDFT blocks parsed."""
     data = request.getfixturevalue(fixture_name)
@@ -401,11 +362,7 @@ def test_tda_and_tddft_both_present(fixture_name: str, request):
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize(
-    "fixture_name",
-    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
-)
+@pytest.mark.parametrize("fixture_name", FIXTURES_TDDFT)
 def test_orbital_transitions_reference_valid_indices(fixture_name: str, request):
     """
     Integration test: verify orbital transition indices are within valid range.
@@ -440,7 +397,6 @@ def test_orbital_transitions_reference_valid_indices(fixture_name: str, request)
         ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_NUM_TDA_STATES),
         ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_UKS_54_NUM_TDA_STATES),
     ],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
 )
 def test_tda_state_count(fixture_name: str, expected_count: int, request):
     """Regression test: verify exact number of TDA states parsed."""
@@ -459,7 +415,6 @@ def test_tda_state_count(fixture_name: str, expected_count: int, request):
         ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_NUM_TDDFT_STATES),
         ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_UKS_54_NUM_TDDFT_STATES),
     ],
-    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
 )
 def test_tddft_state_count(fixture_name: str, expected_count: int, request):
     """Regression test: verify exact number of TDDFT states parsed."""
