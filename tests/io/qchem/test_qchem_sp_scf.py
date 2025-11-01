@@ -22,6 +22,7 @@ import pytest
 from calcflow.common.models import CalculationResult, ScfIteration, ScfResults, SmdResults
 from calcflow.io.qchem.blocks.scf import ScfParser
 from calcflow.io.state import ParseState
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # HARDCODED TEST DATA (Q-Chem 5.4 and 6.2 have identical SCF values)
@@ -129,25 +130,32 @@ def test_scf_parser_does_not_mutate_state_in_matches():
 
 
 @pytest.mark.contract
-def test_scf_results_has_correct_type(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["scf"],
+    indirect=True,
+)
+def test_scf_results_has_correct_type(parsed_qchem_data: CalculationResult):
     """Contract test: verify scf field is ScfResults instance."""
-    assert parsed_qchem_62_h2o_sp_data.scf is not None
-    assert isinstance(parsed_qchem_62_h2o_sp_data.scf, ScfResults)
+    assert parsed_qchem_data.scf is not None
+    assert isinstance(parsed_qchem_data.scf, ScfResults)
 
 
 @pytest.mark.contract
-def test_scf_results_iterations_is_tuple(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["scf"], indirect=True)
+def test_scf_results_iterations_is_tuple(parsed_qchem_data: CalculationResult):
     """Contract test: verify iterations field is a tuple of ScfIteration objects."""
-    assert parsed_qchem_62_h2o_sp_data.scf is not None
-    assert isinstance(parsed_qchem_62_h2o_sp_data.scf.iterations, tuple)
-    assert len(parsed_qchem_62_h2o_sp_data.scf.iterations) > 0
-    assert all(isinstance(it, ScfIteration) for it in parsed_qchem_62_h2o_sp_data.scf.iterations)
+    assert parsed_qchem_data.scf is not None
+    assert isinstance(parsed_qchem_data.scf.iterations, tuple)
+    assert len(parsed_qchem_data.scf.iterations) > 0
+    assert all(isinstance(it, ScfIteration) for it in parsed_qchem_data.scf.iterations)
 
 
 @pytest.mark.contract
-def test_scf_results_required_fields_present(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["scf"], indirect=True)
+def test_scf_results_required_fields_present(parsed_qchem_data: CalculationResult):
     """Contract test: verify all required ScfResults fields are present with correct types."""
-    scf = parsed_qchem_62_h2o_sp_data.scf
+    scf = parsed_qchem_data.scf
     assert scf is not None
 
     # Check required fields
@@ -158,9 +166,10 @@ def test_scf_results_required_fields_present(parsed_qchem_62_h2o_sp_data: Calcul
 
 
 @pytest.mark.contract
-def test_scf_iteration_required_fields(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["scf"], indirect=True)
+def test_scf_iteration_required_fields(parsed_qchem_data: CalculationResult):
     """Contract test: verify each ScfIteration has required fields."""
-    scf = parsed_qchem_62_h2o_sp_data.scf
+    scf = parsed_qchem_data.scf
     assert scf is not None
 
     for iteration in scf.iterations:
@@ -171,9 +180,10 @@ def test_scf_iteration_required_fields(parsed_qchem_62_h2o_sp_data: CalculationR
 
 
 @pytest.mark.contract
-def test_scf_n_iterations_matches_length(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize("parsed_qchem_data", FIXTURE_SPECS["scf"], indirect=True)
+def test_scf_n_iterations_matches_length(parsed_qchem_data: CalculationResult):
     """Contract test: verify n_iterations field matches actual iteration count."""
-    scf = parsed_qchem_62_h2o_sp_data.scf
+    scf = parsed_qchem_data.scf
     assert scf is not None
     assert scf.n_iterations == len(scf.iterations)
 
@@ -409,6 +419,7 @@ def test_last_iteration_convergence_marker(parsed_qchem_62_h2o_sp_data: Calculat
 
     last_iteration = scf.iterations[-1]
     # The convergence criterion was met at iteration 7 with DIIS error 2.17e-08
+    assert last_iteration.diis_error is not None
     assert last_iteration.diis_error < 1e-05  # Below convergence threshold
 
 
@@ -418,11 +429,7 @@ def test_last_iteration_convergence_marker(parsed_qchem_62_h2o_sp_data: Calculat
 
 
 @pytest.mark.contract
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_scf_results_present_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Contract test: verify SCF results are present in both Q-Chem 5.4 and 6.2 formats.
@@ -436,11 +443,7 @@ def test_scf_results_present_both_versions(parsed_data_fixture: str, request: py
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_scf_converged_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Regression test: verify SCF converged status is identical in both versions.
@@ -451,11 +454,7 @@ def test_scf_converged_both_versions(parsed_data_fixture: str, request: pytest.F
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_scf_number_of_iterations_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Regression test: verify exact number of SCF iterations in both versions.
@@ -467,11 +466,7 @@ def test_scf_number_of_iterations_both_versions(parsed_data_fixture: str, reques
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_scf_final_energy_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Regression test: verify exact final SCF energy in both versions.
@@ -542,11 +537,7 @@ def test_scf_iteration_values_both_versions(
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_smd_results_present_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Regression test: verify SMD results are present in both versions.
@@ -567,11 +558,7 @@ def test_smd_results_present_both_versions(parsed_data_fixture: str, request: py
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_smd_values_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Regression test: verify exact SMD values in both versions.
@@ -594,11 +581,7 @@ def test_smd_values_both_versions(parsed_data_fixture: str, request: pytest.Fixt
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "parsed_data_fixture",
-    ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"],
-    ids=["qchem-5.4", "qchem-6.2"],
-)
+@pytest.mark.parametrize("parsed_data_fixture", ["parsed_qchem_54_h2o_sp_data", "parsed_qchem_62_h2o_sp_data"])
 def test_final_energy_both_versions(parsed_data_fixture: str, request: pytest.FixtureRequest):
     """
     Regression test: verify final energy is set correctly in both versions.

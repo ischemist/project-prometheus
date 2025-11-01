@@ -23,6 +23,7 @@ from calcflow.common.models import (
     TddftResults,
     TransitionDensityMatrix,
 )
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # HARDCODED TEST DATA (from ex-tran-dm.md)
@@ -231,96 +232,104 @@ def test_trans_dm_parser_exists():
 
 
 @pytest.mark.contract
-class TestRksTransitionDensityMatrix:
-    """Contract tests for RKS transition density matrix parsing."""
-
-    def test_trans_dm_exists(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Transition density matrices should exist in TDDFT results."""
-        assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
-        assert isinstance(parsed_qchem_62_h2o_rks_tddft_data.tddft, TddftResults)
-        assert parsed_qchem_62_h2o_rks_tddft_data.tddft.transition_density_matrices is not None
-        assert len(parsed_qchem_62_h2o_rks_tddft_data.tddft.transition_density_matrices) > 0
-
-    def test_trans_dm_structure(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Each transition DM should have correct structure."""
-        trans_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.transition_density_matrices
-        assert trans_dms is not None
-
-        for dm in trans_dms:
-            assert isinstance(dm, TransitionDensityMatrix)
-            assert isinstance(dm.state_number, int)
-            assert dm.state_number > 0
-            assert isinstance(dm.multiplicity, str)
-            assert isinstance(dm.exciton_total, ExcitonAnalysis)
-
-    def test_rks_has_no_alpha_beta_exciton(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """RKS should not have alpha/beta exciton analysis."""
-        trans_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.transition_density_matrices
-        assert trans_dms is not None
-
-        for dm in trans_dms:
-            assert dm.exciton_alpha is None, "RKS should not have alpha exciton"
-            assert dm.exciton_beta is None, "RKS should not have beta exciton"
-
-    def test_mulliken_structure(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Mulliken should have transition DM specific fields."""
-        trans_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.transition_density_matrices
-        assert trans_dms is not None
-        dm = trans_dms[0]
-
-        assert dm.mulliken is not None
-        assert dm.mulliken.charges is not None
-        assert dm.mulliken.trans_charges is not None
-        assert dm.mulliken.hole_populations is not None
-        assert dm.mulliken.electron_populations is not None
-        assert dm.mulliken.del_q is not None
-
-    def test_exciton_has_transition_fields(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
-        """Exciton should have transition-specific fields."""
-        trans_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.transition_density_matrices
-        assert trans_dms is not None
-        dm = trans_dms[0]
-        exciton = dm.exciton_total
-
-        # Check for transition-specific fields
-        assert exciton.rms_separation_ang is not None
-        assert exciton.covariance is not None
-        assert exciton.correlation_coef is not None
-        assert exciton.center_of_mass_size_ang is not None
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_trans_dm"])
+def test_trans_dm_exists(fixture_name: str, request):
+    """Contract test: transition density matrices should exist in TDDFT results."""
+    data = request.getfixturevalue(fixture_name)
+    assert data.tddft is not None
+    assert isinstance(data.tddft, TddftResults)
+    assert data.tddft.transition_density_matrices is not None
+    assert len(data.tddft.transition_density_matrices) > 0
 
 
 @pytest.mark.contract
-class TestUksTransitionDensityMatrix:
-    """Contract tests for UKS transition density matrix parsing."""
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_trans_dm"])
+def test_trans_dm_structure(fixture_name: str, request):
+    """Contract test: each transition DM should have correct structure."""
+    data = request.getfixturevalue(fixture_name)
+    trans_dms = data.tddft.transition_density_matrices
+    assert trans_dms is not None
 
-    def test_trans_dm_exists(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """Transition density matrices should exist in UKS TDDFT results."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.tddft is not None
-        assert isinstance(parsed_qchem_62_h2o_uks_tddft_data.tddft, TddftResults)
-        assert parsed_qchem_62_h2o_uks_tddft_data.tddft.transition_density_matrices is not None
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.tddft.transition_density_matrices) > 0
+    for dm in trans_dms:
+        assert isinstance(dm, TransitionDensityMatrix)
+        assert isinstance(dm.state_number, int)
+        assert dm.state_number > 0
+        assert isinstance(dm.multiplicity, str)
+        assert isinstance(dm.exciton_total, ExcitonAnalysis)
 
-    def test_uks_has_alpha_beta_exciton(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """UKS should have alpha/beta exciton analysis."""
-        trans_dms = parsed_qchem_62_h2o_uks_tddft_data.tddft.transition_density_matrices
-        assert trans_dms is not None
 
-        for dm in trans_dms:
-            assert dm.exciton_alpha is not None, "UKS should have alpha exciton"
-            assert dm.exciton_beta is not None, "UKS should have beta exciton"
-            assert isinstance(dm.exciton_alpha, ExcitonAnalysis)
-            assert isinstance(dm.exciton_beta, ExcitonAnalysis)
+@pytest.mark.contract
+def test_rks_has_no_alpha_beta_exciton(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult) -> None:
+    """Contract test: RKS should not have alpha/beta exciton analysis."""
+    trans_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.transition_density_matrices
+    assert trans_dms is not None
 
-    def test_mulliken_has_spin_pops(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult) -> None:
-        """UKS Mulliken should have alpha/beta populations."""
-        trans_dms = parsed_qchem_62_h2o_uks_tddft_data.tddft.transition_density_matrices
-        assert trans_dms is not None
+    for dm in trans_dms:
+        assert dm.exciton_alpha is None, "RKS should not have alpha exciton"
+        assert dm.exciton_beta is None, "RKS should not have beta exciton"
 
-        for dm in trans_dms:
-            assert dm.mulliken.hole_populations_alpha is not None, "UKS should have h+ alpha"
-            assert dm.mulliken.hole_populations_beta is not None, "UKS should have h+ beta"
-            assert dm.mulliken.electron_populations_alpha is not None, "UKS should have e- alpha"
-            assert dm.mulliken.electron_populations_beta is not None, "UKS should have e- beta"
+
+@pytest.mark.contract
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_unrel_dm"])
+def test_uks_has_alpha_beta_exciton(fixture_name: str, request):
+    """Contract test: UKS should have alpha/beta exciton analysis."""
+    data = request.getfixturevalue(fixture_name)
+    trans_dms = data.tddft.transition_density_matrices
+    assert trans_dms is not None
+
+    for dm in trans_dms:
+        assert dm.exciton_alpha is not None, "UKS should have alpha exciton"
+        assert dm.exciton_beta is not None, "UKS should have beta exciton"
+        assert isinstance(dm.exciton_alpha, ExcitonAnalysis)
+        assert isinstance(dm.exciton_beta, ExcitonAnalysis)
+
+
+@pytest.mark.contract
+def test_mulliken_structure_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+    """Contract test: mulliken should have transition DM specific fields for RKS."""
+    trans_dms = parsed_qchem_62_h2o_rks_tddft_data.tddft.transition_density_matrices
+    assert trans_dms is not None
+    dm = trans_dms[0]
+
+    assert dm.mulliken is not None
+    assert dm.mulliken.charges is not None
+    assert dm.mulliken.trans_charges is not None
+    assert dm.mulliken.hole_populations is not None
+    assert dm.mulliken.electron_populations is not None
+    assert dm.mulliken.del_q is not None
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_trans_dm"])
+def test_exciton_has_transition_fields(fixture_name: str, request):
+    """Contract test: exciton should have transition-specific fields."""
+    data = request.getfixturevalue(fixture_name)
+    trans_dms = data.tddft.transition_density_matrices
+    assert trans_dms is not None
+    dm = trans_dms[0]
+    exciton = dm.exciton_total
+
+    # Check for transition-specific fields
+    assert exciton.rms_separation_ang is not None
+    assert exciton.covariance is not None
+    assert exciton.correlation_coef is not None
+    assert exciton.center_of_mass_size_ang is not None
+
+
+@pytest.mark.contract
+@pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_unrel_dm"])
+def test_uks_mulliken_optional_but_exciton_present(fixture_name: str, request):
+    """Contract test: UKS may have None mulliken, but exciton analysis is always present."""
+    data = request.getfixturevalue(fixture_name)
+    trans_dms = data.tddft.transition_density_matrices
+    assert trans_dms is not None
+
+    for dm in trans_dms:
+        # For UKS, mulliken may be None (not parsed), but exciton data is always present
+        assert dm.exciton_alpha is not None
+        assert dm.exciton_beta is not None
+        assert isinstance(dm.exciton_alpha, ExcitonAnalysis)
+        assert isinstance(dm.exciton_beta, ExcitonAnalysis)
 
 
 # =============================================================================

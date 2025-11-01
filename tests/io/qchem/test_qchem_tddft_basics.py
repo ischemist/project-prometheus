@@ -5,22 +5,27 @@ These tests verify that when the QChem parser runs on TDDFT outputs (which conta
 geometry, SCF, orbital, and multipole blocks), those blocks are parsed correctly
 regardless of TDDFT-specific sections that we may not yet fully support.
 
-Tests use two TDDFT fixtures:
-- parsed_qchem_62_h2o_uks_tddft_data: UKS TDDFT calculation (6.2 version)
-- parsed_qchem_62_h2o_rks_tddft_data: RKS TDDFT calculation (6.2 version)
+Tests use three TDDFT fixtures (parametrized across all contract and integration tests):
+- parsed_qchem_54_h2o_uks_tddft_data: UKS TDDFT calculation (QChem 5.4 version)
+- parsed_qchem_62_h2o_uks_tddft_data: UKS TDDFT calculation (QChem 6.2 version)
+- parsed_qchem_62_h2o_rks_tddft_data: RKS TDDFT calculation (QChem 6.2 version)
 
-Expected values extracted from ex-uks-tddft.md and ex-rks-tddft.md
+Expected values extracted from output files. Values that differ by fixture version
+are tested in regression tests. Shared values (like geometry and SCF energy) are
+tested via parametrization across all fixtures for broad coverage.
 
 Test organization by blocks:
-- Geometry block tests
-- SCF block tests
-- Orbitals block tests
-- Multipole moments tests
+- Geometry block tests (parametrized across fixtures)
+- SCF block tests (parametrized across fixtures)
+- Orbitals block tests (parametrized across fixtures)
+- Multipole moments tests (parametrized across fixtures)
+- Cross-block integration tests (parametrized across fixtures)
 """
 
 import pytest
 
 from calcflow.common.models import CalculationResult, OrbitalsSet, ScfResults
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # HARDCODED TEST DATA from TDDFT extracts
@@ -87,31 +92,31 @@ class TestTDDFTGeometryBlock:
     """Tests for geometry block parsing in TDDFT outputs."""
 
     @pytest.mark.contract
-    def test_geometry_parsed_in_uks_tddft(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Contract test: verify geometry is parsed from UKS TDDFT output."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.input_geometry is not None
-        assert isinstance(parsed_qchem_62_h2o_uks_tddft_data.input_geometry, tuple)
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.input_geometry) > 0
-
-    @pytest.mark.contract
-    def test_geometry_parsed_in_rks_tddft(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
-        """Contract test: verify geometry is parsed from RKS TDDFT output."""
-        assert parsed_qchem_62_h2o_rks_tddft_data.input_geometry is not None
-        assert isinstance(parsed_qchem_62_h2o_rks_tddft_data.input_geometry, tuple)
-        assert len(parsed_qchem_62_h2o_rks_tddft_data.input_geometry) > 0
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_geometry_parsed_in_tddft(self, fixture_name: str, request):
+        """Contract test: verify geometry is parsed from TDDFT output (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert data.input_geometry is not None
+        assert isinstance(data.input_geometry, tuple)
+        assert len(data.input_geometry) > 0
 
     @pytest.mark.regression
-    def test_geometry_has_three_atoms(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Regression test: verify exactly 3 atoms in H2O geometry."""
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.input_geometry) == EXPECTED_GEOMETRY_ATOMS
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_geometry_has_three_atoms(self, fixture_name: str, request):
+        """Regression test: verify exactly 3 atoms in H2O geometry (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert len(data.input_geometry) == EXPECTED_GEOMETRY_ATOMS
 
     @pytest.mark.regression
-    def test_geometry_atom_symbols(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Regression test: verify atom symbols are H, O, H."""
-        symbols = [atom.symbol for atom in parsed_qchem_62_h2o_uks_tddft_data.input_geometry]
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_geometry_atom_symbols(self, fixture_name: str, request):
+        """Regression test: verify atom symbols are H, O, H (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        symbols = [atom.symbol for atom in data.input_geometry]
         assert symbols == EXPECTED_GEOMETRY_SYMBOLS
 
     @pytest.mark.regression
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     @pytest.mark.parametrize(
         "atom_idx,expected_x,expected_y,expected_z",
         [
@@ -123,14 +128,16 @@ class TestTDDFTGeometryBlock:
     )
     def test_geometry_coordinates_exact(
         self,
-        parsed_qchem_62_h2o_uks_tddft_data: CalculationResult,
+        fixture_name: str,
+        request,
         atom_idx: int,
         expected_x: float,
         expected_y: float,
         expected_z: float,
     ):
-        """Regression test: verify exact geometry coordinates."""
-        atom = parsed_qchem_62_h2o_uks_tddft_data.input_geometry[atom_idx]
+        """Regression test: verify exact geometry coordinates (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        atom = data.input_geometry[atom_idx]
         assert atom.x == pytest.approx(expected_x, abs=COORD_TOL)
         assert atom.y == pytest.approx(expected_y, abs=COORD_TOL)
         assert atom.z == pytest.approx(expected_z, abs=COORD_TOL)
@@ -167,23 +174,21 @@ class TestTDDFTSCFBlock:
     """Tests for SCF block parsing in TDDFT outputs."""
 
     @pytest.mark.contract
-    def test_scf_parsed_in_uks_tddft(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Contract test: verify SCF block is parsed from UKS TDDFT output."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.scf is not None
-        assert isinstance(parsed_qchem_62_h2o_uks_tddft_data.scf, ScfResults)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_scf_parsed_in_tddft(self, fixture_name: str, request):
+        """Contract test: verify SCF block is parsed from TDDFT output (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert data.scf is not None
+        assert isinstance(data.scf, ScfResults)
 
     @pytest.mark.contract
-    def test_scf_parsed_in_rks_tddft(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
-        """Contract test: verify SCF block is parsed from RKS TDDFT output."""
-        assert parsed_qchem_62_h2o_rks_tddft_data.scf is not None
-        assert isinstance(parsed_qchem_62_h2o_rks_tddft_data.scf, ScfResults)
-
-    @pytest.mark.contract
-    def test_scf_has_iterations(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Contract test: verify SCF has iterations data."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.scf is not None
-        assert isinstance(parsed_qchem_62_h2o_uks_tddft_data.scf.iterations, tuple)
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.scf.iterations) > 0
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_scf_has_iterations(self, fixture_name: str, request):
+        """Contract test: verify SCF has iterations data (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert data.scf is not None
+        assert isinstance(data.scf.iterations, tuple)
+        assert len(data.scf.iterations) > 0
 
     @pytest.mark.regression
     def test_scf_converged(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
@@ -259,31 +264,31 @@ class TestTDDFTOrbitalsBlock:
     """Tests for orbitals block parsing in TDDFT outputs."""
 
     @pytest.mark.contract
-    def test_orbitals_parsed_in_uks_tddft(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Contract test: verify orbitals block is parsed from UKS TDDFT output."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.orbitals is not None
-        assert isinstance(parsed_qchem_62_h2o_uks_tddft_data.orbitals, OrbitalsSet)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_orbitals_parsed_in_tddft(self, fixture_name: str, request):
+        """Contract test: verify orbitals block is parsed from TDDFT output (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert data.orbitals is not None
+        assert isinstance(data.orbitals, OrbitalsSet)
 
     @pytest.mark.contract
-    def test_orbitals_parsed_in_rks_tddft(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
-        """Contract test: verify orbitals block is parsed from RKS TDDFT output."""
-        assert parsed_qchem_62_h2o_rks_tddft_data.orbitals is not None
-        assert isinstance(parsed_qchem_62_h2o_rks_tddft_data.orbitals, OrbitalsSet)
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_alpha_orbitals_present_in_tddft(self, fixture_name: str, request):
+        """Contract test: verify alpha orbitals are parsed (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert data.orbitals is not None
+        assert isinstance(data.orbitals.alpha_orbitals, (list, tuple))
+        assert len(data.orbitals.alpha_orbitals) > 0
 
     @pytest.mark.contract
-    def test_alpha_orbitals_present_in_tddft(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Contract test: verify alpha orbitals are parsed."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.orbitals is not None
-        assert isinstance(parsed_qchem_62_h2o_uks_tddft_data.orbitals.alpha_orbitals, (list, tuple))
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.orbitals.alpha_orbitals) > 0
-
-    @pytest.mark.contract
-    def test_uks_has_beta_orbitals(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["beta_orbitals"])
+    def test_uks_has_beta_orbitals(self, fixture_name: str, request):
         """Contract test: verify UKS TDDFT has beta orbitals."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.orbitals is not None
-        assert parsed_qchem_62_h2o_uks_tddft_data.orbitals.beta_orbitals is not None
-        assert isinstance(parsed_qchem_62_h2o_uks_tddft_data.orbitals.beta_orbitals, (list, tuple))
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.orbitals.beta_orbitals) > 0
+        data = request.getfixturevalue(fixture_name)
+        assert data.orbitals is not None
+        assert data.orbitals.beta_orbitals is not None
+        assert isinstance(data.orbitals.beta_orbitals, (list, tuple))
+        assert len(data.orbitals.beta_orbitals) > 0
 
     @pytest.mark.regression
     def test_alpha_orbital_count(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
@@ -404,38 +409,43 @@ class TestTDDFTMultipoleBlock:
     """Tests for multipole moments block parsing in TDDFT outputs."""
 
     @pytest.mark.contract
-    def test_multipole_parsed_in_uks_tddft(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Contract test: verify multipole block is parsed from UKS TDDFT output."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.multipole is not None
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_multipole_parsed_in_tddft(self, fixture_name: str, request):
+        """Contract test: verify multipole block is parsed from TDDFT output (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert data.multipole is not None
 
     @pytest.mark.contract
-    def test_multipole_parsed_in_rks_tddft(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
-        """Contract test: verify multipole block is parsed from RKS TDDFT output."""
-        assert parsed_qchem_62_h2o_rks_tddft_data.multipole is not None
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_multipole_has_dipole(self, fixture_name: str, request):
+        """Contract test: verify multipole has dipole moment (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert data.multipole is not None
+        assert data.multipole.dipole is not None
 
     @pytest.mark.contract
-    def test_multipole_has_dipole(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Contract test: verify multipole has dipole moment."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.multipole is not None
-        assert parsed_qchem_62_h2o_uks_tddft_data.multipole.dipole is not None
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_multipole_has_quadrupole(self, fixture_name: str, request):
+        """Contract test: verify multipole has quadrupole moments (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert data.multipole is not None
+        assert data.multipole.quadrupole is not None
 
     @pytest.mark.contract
-    def test_multipole_has_quadrupole(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Contract test: verify multipole has quadrupole moments."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.multipole is not None
-        assert parsed_qchem_62_h2o_uks_tddft_data.multipole.quadrupole is not None
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_multipole_has_octopole(self, fixture_name: str, request):
+        """Contract test: verify multipole has octopole moments (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert data.multipole is not None
+        assert data.multipole.octopole is not None
 
     @pytest.mark.contract
-    def test_multipole_has_octopole(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Contract test: verify multipole has octopole moments."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.multipole is not None
-        assert parsed_qchem_62_h2o_uks_tddft_data.multipole.octopole is not None
-
-    @pytest.mark.contract
-    def test_multipole_has_hexadecapole(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Contract test: verify multipole has hexadecapole moments."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.multipole is not None
-        assert parsed_qchem_62_h2o_uks_tddft_data.multipole.hexadecapole is not None
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_multipole_has_hexadecapole(self, fixture_name: str, request):
+        """Contract test: verify multipole has hexadecapole moments (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert data.multipole is not None
+        assert data.multipole.hexadecapole is not None
 
     @pytest.mark.regression
     def test_dipole_x_component(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
@@ -576,32 +586,20 @@ class TestTDDFTBlockIntegration:
     """Integration tests verifying multiple blocks work together in TDDFT output."""
 
     @pytest.mark.integration
-    def test_all_blocks_present_in_uks_tddft(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-        """Integration test: verify all major blocks are parsed in UKS TDDFT."""
-        assert parsed_qchem_62_h2o_uks_tddft_data.input_geometry is not None
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.input_geometry) > 0
+    @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
+    def test_all_blocks_present_in_tddft(self, fixture_name: str, request):
+        """Integration test: verify all major blocks are parsed in TDDFT (all variants)."""
+        data = request.getfixturevalue(fixture_name)
+        assert data.input_geometry is not None
+        assert len(data.input_geometry) > 0
 
-        assert parsed_qchem_62_h2o_uks_tddft_data.scf is not None
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.scf.iterations) > 0
+        assert data.scf is not None
+        assert len(data.scf.iterations) > 0
 
-        assert parsed_qchem_62_h2o_uks_tddft_data.orbitals is not None
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.orbitals.alpha_orbitals) > 0
+        assert data.orbitals is not None
+        assert len(data.orbitals.alpha_orbitals) > 0
 
-        assert parsed_qchem_62_h2o_uks_tddft_data.multipole is not None
-
-    @pytest.mark.integration
-    def test_all_blocks_present_in_rks_tddft(self, parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
-        """Integration test: verify all major blocks are parsed in RKS TDDFT."""
-        assert parsed_qchem_62_h2o_rks_tddft_data.input_geometry is not None
-        assert len(parsed_qchem_62_h2o_rks_tddft_data.input_geometry) > 0
-
-        assert parsed_qchem_62_h2o_rks_tddft_data.scf is not None
-        assert len(parsed_qchem_62_h2o_rks_tddft_data.scf.iterations) > 0
-
-        assert parsed_qchem_62_h2o_rks_tddft_data.orbitals is not None
-        assert len(parsed_qchem_62_h2o_rks_tddft_data.orbitals.alpha_orbitals) > 0
-
-        assert parsed_qchem_62_h2o_rks_tddft_data.multipole is not None
+        assert data.multipole is not None
 
     @pytest.mark.integration
     def test_final_energy_consistent_across_blocks(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):

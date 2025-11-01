@@ -11,6 +11,7 @@ import pytest
 from calcflow.common.models import Atom, CalculationResult
 from calcflow.io.qchem.blocks.geometry import GeometryParser
 from calcflow.io.state import ParseState
+from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # Tolerance for coordinate precision (7 decimal places)
 COORD_TOL = 1e-7
@@ -106,76 +107,119 @@ def test_geometry_parser_ignores_non_geometry_lines():
 
 
 @pytest.mark.contract
-def test_input_geometry_is_tuple_of_atoms(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["geometry"],
+    indirect=True,
+)
+def test_input_geometry_is_tuple_of_atoms(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify input_geometry is a tuple of Atom objects.
     """
-    assert isinstance(parsed_qchem_62_h2o_sp_data.input_geometry, tuple)
-    assert len(parsed_qchem_62_h2o_sp_data.input_geometry) > 0
-    assert all(isinstance(atom, Atom) for atom in parsed_qchem_62_h2o_sp_data.input_geometry)
+    assert isinstance(parsed_qchem_data.input_geometry, tuple)
+    assert len(parsed_qchem_data.input_geometry) > 0
+    assert all(isinstance(atom, Atom) for atom in parsed_qchem_data.input_geometry)
 
 
 @pytest.mark.contract
-def test_final_geometry_is_tuple_of_atoms(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["geometry"],
+    indirect=True,
+)
+def test_final_geometry_is_tuple_of_atoms(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify final_geometry is a tuple of Atom objects.
     """
-    assert isinstance(parsed_qchem_62_h2o_sp_data.final_geometry, tuple)
-    assert len(parsed_qchem_62_h2o_sp_data.final_geometry) > 0
-    assert all(isinstance(atom, Atom) for atom in parsed_qchem_62_h2o_sp_data.final_geometry)
+    assert isinstance(parsed_qchem_data.final_geometry, tuple)
+    assert len(parsed_qchem_data.final_geometry) > 0
+    assert all(isinstance(atom, Atom) for atom in parsed_qchem_data.final_geometry)
 
 
 @pytest.mark.contract
-def test_input_geometry_has_three_atoms(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["geometry"],
+    indirect=True,
+)
+def test_input_geometry_has_three_atoms(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify input_geometry has exactly 3 atoms for H2O.
     """
-    assert len(parsed_qchem_62_h2o_sp_data.input_geometry) == 3
+    assert len(parsed_qchem_data.input_geometry) == 3
 
 
 @pytest.mark.contract
-def test_final_geometry_has_three_atoms(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["geometry"],
+    indirect=True,
+)
+def test_final_geometry_has_three_atoms(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify final_geometry has exactly 3 atoms for H2O.
     """
-    assert len(parsed_qchem_62_h2o_sp_data.final_geometry) == 3
+    assert parsed_qchem_data.final_geometry is not None
+    assert len(parsed_qchem_data.final_geometry) == 3
 
 
 @pytest.mark.contract
-def test_input_geometry_atom_symbols(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["geometry"],
+    indirect=True,
+)
+def test_input_geometry_atom_symbols(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify input_geometry has correct atom symbols (H, O, H).
     """
-    symbols = [atom.symbol for atom in parsed_qchem_62_h2o_sp_data.input_geometry]
+    symbols = [atom.symbol for atom in parsed_qchem_data.input_geometry]
     assert symbols == ["H", "O", "H"]
 
 
 @pytest.mark.contract
-def test_final_geometry_atom_symbols(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["geometry"],
+    indirect=True,
+)
+def test_final_geometry_atom_symbols(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify final_geometry has correct atom symbols (H, O, H).
     """
-    symbols = [atom.symbol for atom in parsed_qchem_62_h2o_sp_data.final_geometry]
+    assert parsed_qchem_data.final_geometry is not None
+    symbols = [atom.symbol for atom in parsed_qchem_data.final_geometry]
     assert symbols == ["H", "O", "H"]
 
 
 @pytest.mark.contract
-def test_input_geometry_coordinates_are_floats(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["geometry"],
+    indirect=True,
+)
+def test_input_geometry_coordinates_are_floats(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify all input coordinates are floats.
     """
-    for atom in parsed_qchem_62_h2o_sp_data.input_geometry:
+    for atom in parsed_qchem_data.input_geometry:
         assert isinstance(atom.x, float)
         assert isinstance(atom.y, float)
         assert isinstance(atom.z, float)
 
 
 @pytest.mark.contract
-def test_final_geometry_coordinates_are_floats(parsed_qchem_62_h2o_sp_data: CalculationResult):
+@pytest.mark.parametrize(
+    "parsed_qchem_data",
+    FIXTURE_SPECS["geometry"],
+    indirect=True,
+)
+def test_final_geometry_coordinates_are_floats(parsed_qchem_data: CalculationResult):
     """
     Contract test: verify all final coordinates are floats.
     """
-    for atom in parsed_qchem_62_h2o_sp_data.final_geometry:
+    assert parsed_qchem_data.final_geometry is not None
+    for atom in parsed_qchem_data.final_geometry:
         assert isinstance(atom.x, float)
         assert isinstance(atom.y, float)
         assert isinstance(atom.z, float)
@@ -209,6 +253,7 @@ def test_input_geometry_coordinates(
     expected_z: float,
 ):
     """Regression test: verify input geometry coordinates for all atoms."""
+    assert parsed_qchem_62_h2o_sp_data.input_geometry is not None
     atom = parsed_qchem_62_h2o_sp_data.input_geometry[atom_idx]
     assert atom.x == pytest.approx(expected_x, abs=COORD_TOL)
     assert atom.y == pytest.approx(expected_y, abs=COORD_TOL)
@@ -226,6 +271,7 @@ def test_final_geometry_coordinates(
     expected_z: float,
 ):
     """Regression test: verify final geometry coordinates for all atoms."""
+    assert parsed_qchem_62_h2o_sp_data.final_geometry is not None
     atom = parsed_qchem_62_h2o_sp_data.final_geometry[atom_idx]
     assert atom.x == pytest.approx(expected_x, abs=COORD_TOL)
     assert atom.y == pytest.approx(expected_y, abs=COORD_TOL)
@@ -255,6 +301,8 @@ def test_geometries_match_for_single_point(parsed_qchem_62_h2o_sp_data: Calculat
     Integration test: verify that input and final geometries are identical
     for a single-point calculation (no optimization).
     """
+    assert parsed_qchem_62_h2o_sp_data.input_geometry is not None
+    assert parsed_qchem_62_h2o_sp_data.final_geometry is not None
     input_coords = [(a.x, a.y, a.z) for a in parsed_qchem_62_h2o_sp_data.input_geometry]
     final_coords = [(a.x, a.y, a.z) for a in parsed_qchem_62_h2o_sp_data.final_geometry]
 
