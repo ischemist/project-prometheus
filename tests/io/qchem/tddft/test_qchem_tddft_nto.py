@@ -241,20 +241,32 @@ def test_nto_parser_does_not_mutate_state_in_matches():
 
 
 @pytest.mark.contract
-def test_nto_analyses_has_correct_type(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_nto_analyses_has_correct_type(fixture_name: str, request):
     """Contract test: verify nto_analyses field is sequence of NTOStateAnalysis."""
-    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
-    assert parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses is not None
-    assert isinstance(parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses, (list, tuple))
-    assert len(parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses) > 0
-    assert all(isinstance(state, NTOStateAnalysis) for state in parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses)
+    data = request.getfixturevalue(fixture_name)
+    assert data.tddft is not None
+    assert data.tddft.nto_analyses is not None
+    assert isinstance(data.tddft.nto_analyses, (list, tuple))
+    assert len(data.tddft.nto_analyses) > 0
+    assert all(isinstance(state, NTOStateAnalysis) for state in data.tddft.nto_analyses)
 
 
 @pytest.mark.contract
-def test_nto_state_analysis_has_required_fields(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_nto_state_analysis_has_required_fields(fixture_name: str, request):
     """Contract test: verify each NTOStateAnalysis has required fields."""
-    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
-    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses
+    data = request.getfixturevalue(fixture_name)
+    assert data.tddft is not None
+    nto_analyses = data.tddft.nto_analyses
     assert nto_analyses is not None
 
     for nto_state in nto_analyses:
@@ -267,10 +279,16 @@ def test_nto_state_analysis_has_required_fields(parsed_qchem_62_h2o_rks_tddft_da
 
 
 @pytest.mark.contract
-def test_nto_contribution_structure(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_nto_contribution_structure(fixture_name: str, request):
     """Contract test: verify NTOContribution structure in NTO states."""
-    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
-    nto_analyses = parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses
+    data = request.getfixturevalue(fixture_name)
+    assert data.tddft is not None
+    nto_analyses = data.tddft.nto_analyses
     assert nto_analyses is not None
 
     for nto_state in nto_analyses:
@@ -298,10 +316,16 @@ def test_rks_all_contributions_single_spin(parsed_qchem_62_h2o_rks_tddft_data: C
 
 
 @pytest.mark.contract
-def test_uks_contributions_have_alpha_and_beta(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["uks-6.2", "uks-5.4"],
+)
+def test_uks_contributions_have_alpha_and_beta(fixture_name: str, request):
     """Contract test: verify UKS contributions have both alpha and beta spins."""
-    assert parsed_qchem_62_h2o_uks_tddft_data.tddft is not None
-    nto_analyses = parsed_qchem_62_h2o_uks_tddft_data.tddft.nto_analyses
+    data = request.getfixturevalue(fixture_name)
+    assert data.tddft is not None
+    nto_analyses = data.tddft.nto_analyses
     assert nto_analyses is not None
 
     # Check first state
@@ -317,42 +341,29 @@ def test_uks_contributions_have_alpha_and_beta(parsed_qchem_62_h2o_uks_tddft_dat
 
 
 @pytest.mark.integration
-def test_nto_parsed_alongside_tddft_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
-    """Integration test: verify NTO and TDDFT both parsed for RKS."""
-    assert parsed_qchem_62_h2o_rks_tddft_data.tddft is not None
-    assert parsed_qchem_62_h2o_rks_tddft_data.tddft.tddft_states is not None
-    assert parsed_qchem_62_h2o_rks_tddft_data.tddft.nto_analyses is not None
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_nto_parsed_alongside_tddft(fixture_name: str, request):
+    """Integration test: verify NTO and TDDFT both parsed together."""
+    data = request.getfixturevalue(fixture_name)
+    assert data.tddft is not None
+    assert data.tddft.tddft_states is not None
+    assert data.tddft.nto_analyses is not None
 
 
 @pytest.mark.integration
-def test_nto_parsed_alongside_tddft_uks(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-    """Integration test: verify NTO and TDDFT both parsed for UKS."""
-    assert parsed_qchem_62_h2o_uks_tddft_data.tddft is not None
-    assert parsed_qchem_62_h2o_uks_tddft_data.tddft.tddft_states is not None
-    assert parsed_qchem_62_h2o_uks_tddft_data.tddft.nto_analyses is not None
-
-
-@pytest.mark.integration
-def test_nto_state_numbers_match_tddft_rks(parsed_qchem_62_h2o_rks_tddft_data: CalculationResult):
-    """Integration test: verify NTO state numbers match TDDFT state numbers for RKS."""
-    tddft = parsed_qchem_62_h2o_rks_tddft_data.tddft
-    assert tddft is not None and tddft.tddft_states is not None
-    nto_analyses = tddft.nto_analyses
-    assert nto_analyses is not None
-
-    # Number of states should match
-    assert len(nto_analyses) == len(tddft.tddft_states)
-
-    # State numbers should match
-    for i, nto_state in enumerate(nto_analyses):
-        tddft_state = tddft.tddft_states[i]
-        assert nto_state.state_number == tddft_state.state_number
-
-
-@pytest.mark.integration
-def test_nto_state_numbers_match_tddft_uks(parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
-    """Integration test: verify NTO state numbers match TDDFT state numbers for UKS."""
-    tddft = parsed_qchem_62_h2o_uks_tddft_data.tddft
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["parsed_qchem_62_h2o_rks_tddft_data", "parsed_qchem_62_h2o_uks_tddft_data", "parsed_qchem_54_h2o_uks_tddft_data"],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_nto_state_numbers_match_tddft(fixture_name: str, request):
+    """Integration test: verify NTO state numbers match TDDFT state numbers."""
+    data = request.getfixturevalue(fixture_name)
+    tddft = data.tddft
     assert tddft is not None and tddft.tddft_states is not None
     nto_analyses = tddft.nto_analyses
     assert nto_analyses is not None
@@ -576,12 +587,22 @@ def test_uks_nto_state_9_multiple_alpha_beta(parsed_qchem_62_h2o_uks_tddft_data:
 
 
 @pytest.mark.regression
-def test_uks_54_nto_state_count(parsed_qchem_54_h2o_uks_tddft_data: CalculationResult):
-    """Regression test: verify exact number of NTO states parsed for UKS 5.4."""
-    assert parsed_qchem_54_h2o_uks_tddft_data.tddft is not None
-    nto_analyses = parsed_qchem_54_h2o_uks_tddft_data.tddft.nto_analyses
+@pytest.mark.parametrize(
+    "fixture_name,expected_count",
+    [
+        ("parsed_qchem_62_h2o_rks_tddft_data", EXPECTED_RKS_NUM_NTO_STATES),
+        ("parsed_qchem_62_h2o_uks_tddft_data", EXPECTED_UKS_NUM_NTO_STATES),
+        ("parsed_qchem_54_h2o_uks_tddft_data", EXPECTED_UKS_54_NUM_NTO_STATES),
+    ],
+    ids=["rks-6.2", "uks-6.2", "uks-5.4"],
+)
+def test_nto_state_count(fixture_name: str, expected_count: int, request):
+    """Regression test: verify exact number of NTO states parsed."""
+    data = request.getfixturevalue(fixture_name)
+    assert data.tddft is not None
+    nto_analyses = data.tddft.nto_analyses
     assert nto_analyses is not None
-    assert len(nto_analyses) == EXPECTED_UKS_54_NUM_NTO_STATES
+    assert len(nto_analyses) == expected_count
 
 
 @pytest.mark.regression
