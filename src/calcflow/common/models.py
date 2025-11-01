@@ -19,6 +19,7 @@ Design Philosophy:
 import dataclasses
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from types import UnionType
 from typing import Any, Literal, TypeVar, Union, get_args, get_origin
 
 from calcflow.common.exceptions import ValidationError
@@ -64,8 +65,9 @@ class FrozenModel:
         origin = get_origin(target_type)
         args = get_args(target_type)
 
-        if origin is Union and type(None) in args:  # Handles Optional[T]
-            # Assumes Optional[T] is Union[T, NoneType]
+        # Handle Optional[T] with both old (Union) and new (UnionType | None) syntax
+        if (origin is Union or origin is UnionType) and type(None) in args:
+            # Assumes Optional[T] is Union[T, NoneType] or T | None
             inner_type = next(t for t in args if t is not type(None))
             return FrozenModel._convert_value(value, inner_type)
 
