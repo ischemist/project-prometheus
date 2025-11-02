@@ -7,7 +7,7 @@ from DFT-D output blocks into DispersionCorrection models.
 
 import pytest
 
-from calcflow.common.models import CalculationResult, DispersionCorrection
+from calcflow.common.results import CalculationResult, DispersionCorrection
 
 ENERGY_TOL = 1e-10
 PARAM_TOL = 1e-6

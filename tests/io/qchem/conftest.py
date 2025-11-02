@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from calcflow.common.models import CalculationResult
+from calcflow.common.results import CalculationResult
 from calcflow.io.qchem import parse_qchem_multi_job_output, parse_qchem_output
 
 # =============================================================================

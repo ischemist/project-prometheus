@@ -24,7 +24,7 @@ Test organization by blocks:
 
 import pytest
 
-from calcflow.common.models import CalculationResult, OrbitalsSet, ScfResults
+from calcflow.common.results import CalculationResult, OrbitalsSet, ScfResults
 from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================

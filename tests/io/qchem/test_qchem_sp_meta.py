@@ -8,8 +8,8 @@ pattern matching.
 
 import pytest
 
-from calcflow.common.models import CalculationMetadata
 from calcflow.common.patterns import VersionSpec
+from calcflow.common.results import CalculationMetadata
 from calcflow.io.qchem.blocks.metadata import MetadataParser
 from calcflow.io.state import ParseState
 

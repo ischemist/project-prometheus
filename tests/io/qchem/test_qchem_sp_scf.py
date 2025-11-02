@@ -19,7 +19,7 @@ Format notes:
 
 import pytest
 
-from calcflow.common.models import CalculationResult, ScfIteration, ScfResults, SmdResults
+from calcflow.common.results import CalculationResult, ScfIteration, ScfResults, SmdResults
 from calcflow.io.qchem.blocks.scf import ScfParser
 from calcflow.io.state import ParseState
 from tests.io.qchem.conftest import FIXTURE_SPECS

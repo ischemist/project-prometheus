@@ -9,7 +9,7 @@ ORCA provides:
 import re
 from collections.abc import Iterator
 
-from calcflow.common.models import TimingResults
+from calcflow.common.results import TimingResults
 from calcflow.io.state import ParseState
 
 # Pattern for total wall time: "TOTAL RUN TIME: 0 days 0 hours 1 minutes 31 seconds 640 msec"

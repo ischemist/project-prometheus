@@ -2,8 +2,8 @@ import re
 from collections.abc import Iterator
 
 from calcflow.common.exceptions import InternalCodeError, ParsingError
-from calcflow.common.models import ScfIteration, ScfResults, SmdResults
 from calcflow.common.patterns import VersionSpec
+from calcflow.common.results import ScfIteration, ScfResults, SmdResults
 from calcflow.io.qchem.blocks.patterns import QCHEM_PATTERNS
 from calcflow.io.state import ParseState
 from calcflow.utils import logger

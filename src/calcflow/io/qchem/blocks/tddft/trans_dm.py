@@ -18,7 +18,7 @@ from collections.abc import Iterator as LineIterator
 from itertools import chain
 from typing import Any, ClassVar
 
-from calcflow.common.models import (
+from calcflow.common.results import (
     AtomicCharges,
     ExcitonAnalysis,
     TddftResults,

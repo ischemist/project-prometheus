@@ -7,7 +7,7 @@ information (energies, occupations, HOMO/LUMO indices) from ORCA output files.
 
 import pytest
 
-from calcflow.common.models import CalculationResult, Orbital, OrbitalsSet
+from calcflow.common.results import CalculationResult, Orbital, OrbitalsSet
 
 # Tolerances for numerical comparisons
 ENERGY_TOL = 1e-8  # Hartree

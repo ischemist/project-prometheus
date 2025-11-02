@@ -19,7 +19,7 @@ Format notes:
 
 import pytest
 
-from calcflow.common.models import CalculationResult, GroundStateReference, TddftResults
+from calcflow.common.results import CalculationResult, GroundStateReference, TddftResults
 from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================

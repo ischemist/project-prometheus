@@ -7,7 +7,7 @@ analysis are correctly parsed into AtomicCharges models.
 
 import pytest
 
-from calcflow.common.models import AtomicCharges, CalculationResult
+from calcflow.common.results import AtomicCharges, CalculationResult
 
 CHARGE_TOL = 1e-6
 

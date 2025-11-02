@@ -22,7 +22,7 @@ Format notes:
 
 import pytest
 
-from calcflow.common.models import CalculationResult, ExcitedState, OrbitalTransition, TddftResults
+from calcflow.common.results import CalculationResult, ExcitedState, OrbitalTransition, TddftResults
 from calcflow.io.qchem.blocks.tddft.excitations import ExcitationsParser
 from calcflow.io.state import ParseState
 from tests.io.qchem.conftest import FIXTURE_SPECS

@@ -9,7 +9,7 @@ These tests verify that the finalization block is correctly parsed, including:
 
 import pytest
 
-from calcflow.common.models import CalculationResult
+from calcflow.common.results import CalculationResult
 
 ENERGY_TOL = 1e-8
 

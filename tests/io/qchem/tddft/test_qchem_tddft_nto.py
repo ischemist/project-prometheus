@@ -20,7 +20,7 @@ Format notes:
 
 import pytest
 
-from calcflow.common.models import CalculationResult, NTOStateAnalysis
+from calcflow.common.results import CalculationResult, NTOStateAnalysis
 from calcflow.io.qchem.blocks.tddft.nto import NTOParser
 from calcflow.io.state import ParseState
 from tests.io.qchem.conftest import FIXTURE_SPECS

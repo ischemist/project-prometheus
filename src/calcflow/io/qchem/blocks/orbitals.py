@@ -10,7 +10,7 @@ import re
 from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
-from calcflow.common.models import Orbital, OrbitalsSet
+from calcflow.common.results import Orbital, OrbitalsSet
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 

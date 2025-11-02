@@ -9,7 +9,7 @@ These tests verify that timing information is correctly parsed, including:
 
 import pytest
 
-from calcflow.common.models import CalculationResult, TimingResults
+from calcflow.common.results import CalculationResult, TimingResults
 from tests.io.qchem.conftest import FIXTURE_SPECS
 
 TIME_TOL = 0.001  # seconds

@@ -13,7 +13,7 @@ Test hierarchy:
 
 import pytest
 
-from calcflow.common.models import AtomicCharges, CalculationResult
+from calcflow.common.results import AtomicCharges, CalculationResult
 from calcflow.io.qchem.blocks.charges import ChargesParser
 from calcflow.io.state import ParseState
 from tests.io.qchem.conftest import FIXTURE_SPECS

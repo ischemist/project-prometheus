@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from calcflow.common.models import CalculationResult
+from calcflow.common.results import CalculationResult
 from calcflow.io.orca import parse_orca_output
 
 # =============================================================================

@@ -18,7 +18,7 @@ Format notes:
 
 import pytest
 
-from calcflow.common.models import (
+from calcflow.common.results import (
     CalculationResult,
     ExcitedState,
     TddftResults,

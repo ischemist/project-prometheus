@@ -8,7 +8,7 @@ output block.
 
 import pytest
 
-from calcflow.common.models import Atom, CalculationResult
+from calcflow.common.results import Atom, CalculationResult
 from calcflow.io.qchem.blocks.geometry import GeometryParser
 from calcflow.io.state import ParseState
 from tests.io.qchem.conftest import FIXTURE_SPECS

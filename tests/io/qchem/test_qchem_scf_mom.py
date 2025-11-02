@@ -25,7 +25,7 @@ Expected Values (Job 2, MOM iterations):
 
 import pytest
 
-from calcflow.common.models import CalculationResult, ScfResults
+from calcflow.common.results import CalculationResult, ScfResults
 from tests.io.qchem.conftest import FIXTURE_SPECS
 
 # =============================================================================

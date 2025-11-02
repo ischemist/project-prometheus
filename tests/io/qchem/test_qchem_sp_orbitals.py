@@ -19,7 +19,7 @@ Format notes:
 
 import pytest
 
-from calcflow.common.models import CalculationResult, Orbital, OrbitalsSet
+from calcflow.common.results import CalculationResult, Orbital, OrbitalsSet
 from calcflow.io.qchem.blocks.orbitals import OrbitalsParser
 from calcflow.io.state import ParseState
 from tests.io.qchem.conftest import FIXTURE_SPECS

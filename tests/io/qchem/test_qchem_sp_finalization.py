@@ -2,7 +2,7 @@
 
 import pytest
 
-from calcflow.common.models import CalculationResult
+from calcflow.common.results import CalculationResult
 from calcflow.io.qchem.blocks.finalization import TerminationParser
 from calcflow.io.state import ParseState
 

@@ -7,7 +7,7 @@ the final `calculationresult` object is assembled correctly.
 
 import pytest
 
-from calcflow.common.models import Atom, CalculationResult, ScfEnergyComponents, ScfResults
+from calcflow.common.results import Atom, CalculationResult, ScfEnergyComponents, ScfResults
 
 GEOM_TOL = 1e-6
 ENERGY_TOL = 1e-8

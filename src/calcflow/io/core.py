@@ -6,7 +6,7 @@ from collections.abc import Iterator, Sequence
 from typing import Protocol
 
 from calcflow.common.exceptions import ParsingError
-from calcflow.common.models import CalculationResult
+from calcflow.common.results import CalculationResult
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 

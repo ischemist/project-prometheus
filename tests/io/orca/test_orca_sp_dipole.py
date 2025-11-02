@@ -7,7 +7,7 @@ into the proper data structures and that numerical values match the known output
 
 import pytest
 
-from calcflow.common.models import CalculationResult, DipoleMoment, MultipoleResults
+from calcflow.common.results import CalculationResult, DipoleMoment, MultipoleResults
 
 DIPOLE_TOL = 1e-8  # Tolerance for dipole components (a.u.)
 MAGNITUDE_TOL = 1e-6  # Tolerance for magnitude (Debye)
