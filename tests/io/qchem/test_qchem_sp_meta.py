@@ -51,11 +51,11 @@ def test_metadata_parser_stops_after_version():
 
     parser = MetadataParser()
     # Create a state with version already populated
-    metadata = CalculationMetadata(
+    state = ParseState(raw_output="")
+    state.metadata = CalculationMetadata(
         software_name="QChem",
         software_version="6.2",
     )
-    state = ParseState(raw_output="", metadata=metadata)
 
     # Even with valid metadata lines, should not match because version is already set
     version_line = " Q-Chem 6.3, Q-Chem, Inc., Pleasanton, CA (2025)"

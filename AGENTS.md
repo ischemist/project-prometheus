@@ -14,7 +14,7 @@
 - **Line length**: 120 characters
 - **Imports**: Organized by ruff (stdlib, third-party, local). Use `from collections.abc` not `typing` for Sequence/Mapping
 - **Types**: Fully type-annotated. Use modern syntax (`float | None` not `Optional[float]`)
-- **Models**: Pydantic BaseModel with `frozen=True` for immutability. Use `model_config = IMMUTABLE_MODEL_CONFIG` or `ConfigDict(frozen=True)`
+- **Models**: Standard library dataclasses with `frozen=True` for immutability
 - **Naming**: lowercase_with_underscores for functions/variables/modules, CapitalCase for classes
 - **Docstrings**: concise. Focus on "why" not "what"
 - **Error handling**: Use custom exceptions from `calcflow.common.exceptions` (ParsingError, ConfigurationError, etc.)

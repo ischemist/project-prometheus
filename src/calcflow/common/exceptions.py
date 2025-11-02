@@ -35,3 +35,9 @@ class InternalCodeError(CalcflowError):
     """exception raised for logic errors that indicate a bug in the library itself."""
 
     pass
+
+
+class ValidationError(CalcflowError):
+    """exception raised for validation errors in data models."""
+
+    pass

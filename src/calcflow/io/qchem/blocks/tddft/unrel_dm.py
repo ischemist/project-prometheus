@@ -17,8 +17,6 @@ from collections.abc import Iterator as LineIterator
 from itertools import chain
 from typing import Any, ClassVar
 
-from pydantic import ValidationError
-
 from calcflow.common.models import (
     AtomicCharges,
     ExcitonAnalysis,
@@ -99,9 +97,9 @@ class UnrelaxedDensityMatrixParser(BlockParser):
             logger.warning(msg)
             return
 
-        existing_tddft = state.tddft.model_dump() if state.tddft else {}
+        existing_tddft = state.tddft.to_dict() if state.tddft else {}
         existing_tddft["unrelaxed_density_matrices"] = all_analyses
-        state.tddft = TddftResults.model_validate(existing_tddft)
+        state.tddft = TddftResults.from_dict(existing_tddft)
         logger.debug("Finished parsing 'Analysis of Unrelaxed Density Matrices'.")
 
     def _parse_single_state_block(
@@ -147,10 +145,10 @@ class UnrelaxedDensityMatrixParser(BlockParser):
                     break
 
         try:
-            model = UnrelaxedDensityMatrix.model_validate(data)
+            model = UnrelaxedDensityMatrix.from_dict(data)
             return model, line_buffer
-        except ValidationError as e:
-            logger.error(f"Pydantic validation failed for state {state_number}: {e}", exc_info=True)
+        except Exception as e:
+            logger.error(f"Model creation failed for state {state_number}: {e}", exc_info=True)
             return None, line_buffer
 
     def _parse_key_value_line(self, line: str, key: str) -> float | None:
@@ -198,7 +196,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
                     sub_data["pr_no"] = self._parse_key_value_line(line, "PR_NO")
 
             if sub_data:
-                nos[current_spin_key] = NaturalOrbitals.model_validate(sub_data)
+                nos[current_spin_key] = NaturalOrbitals.from_dict(sub_data)
         return nos, line_buffer
 
     def _parse_mulliken_section(self, iterator: LineIterator) -> tuple[AtomicCharges | None, str | None]:
@@ -246,7 +244,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
             except (ValueError, IndexError):
                 logger.warning(f"Could not parse Mulliken line: {line.strip()}")
 
-        return (AtomicCharges.model_validate(data) if data["charges"] else None), line_buffer
+        return (AtomicCharges.from_dict(data) if data["charges"] else None), line_buffer
 
     def _parse_multipole_section(self, iterator: LineIterator) -> tuple[dict[str, Any], str | None]:
         data: dict[str, Any] = {}
@@ -338,7 +336,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
                 or any(kw in line for kw in ["Mulliken Population", "Multipole moment"])
                 or self.STATE_HEADER_PAT.match(line)
             ):
-                return ExcitonAnalysis.model_validate(data), line
+                return ExcitonAnalysis.from_dict(data), line
 
             if not stripped:  # A blank line terminates the current sub-block.
                 break
@@ -369,4 +367,4 @@ class UnrelaxedDensityMatrixParser(BlockParser):
                 data["electron_size_ang"] = self._parse_key_value_line(line, "Electron size")
                 expecting_electron_components = True
 
-        return ExcitonAnalysis.model_validate(data), None
+        return ExcitonAnalysis.from_dict(data), None

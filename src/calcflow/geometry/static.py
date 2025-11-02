@@ -1,8 +1,7 @@
 import re
+from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-
-from pydantic import BaseModel, computed_field
 
 from calcflow.common.exceptions import ParsingError
 from calcflow.common.models import Atom
@@ -24,21 +23,20 @@ def _parse_energy_from_comment(comment: str) -> float | None:
     return None
 
 
-class Geometry(BaseModel, frozen=True):
+@dataclass(frozen=True)
+class Geometry:
     """
-    an immutable, pydantic-based representation of a molecular geometry.
+    an immutable, dataclass-based representation of a molecular geometry.
     the number of atoms and energy are derived properties, not stored state.
     """
 
     comment: str
     atoms: tuple[Atom, ...]
 
-    @computed_field  # type: ignore[misc]
     @cached_property
     def num_atoms(self) -> int:
         return len(self.atoms)
 
-    @computed_field  # type: ignore[misc]
     @cached_property
     def energy(self) -> float | None:
         return _parse_energy_from_comment(self.comment)

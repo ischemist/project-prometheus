@@ -83,4 +83,4 @@ def core_parse(output_text: str, parser_registry: Sequence[BlockParser]) -> Calc
         state.final_energy = state.scf.energy
         logger.debug("Using final SCF energy as the calculation's final_energy.")
 
-    return CalculationResult.model_validate(state.model_dump())
+    return state.to_calculation_result()
