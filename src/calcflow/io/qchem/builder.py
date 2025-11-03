@@ -3,8 +3,8 @@ from __future__ import annotations
 import re
 
 from calcflow.common.exceptions import ConfigurationError, NotSupportedError, ValidationError
-from calcflow.geometry.static import Geometry
 from calcflow.common.spec import CalculationSpec
+from calcflow.geometry.static import Geometry
 
 # fmt:off
 SUPPORTED_FUNCTIONALS = {"b3lyp", "pbe0", "m06", "cam-b3lyp", "wb97x", "wb97x-d3", "src1-r1"}

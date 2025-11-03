@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from calcflow.exceptions import ValidationError
+from calcflow.common.exceptions import ValidationError
 
 # --- Component Specifications ---
 # these are the building blocks. if a component is None in the main spec,

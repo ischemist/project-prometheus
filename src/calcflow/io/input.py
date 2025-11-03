@@ -3,11 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Any, Literal, TypeVar
 
-from calcflow.exceptions import ConfigurationError
+from calcflow.common.exceptions import ConfigurationError
+from calcflow.common.spec import CalculationSpec, OptimizationSpec, SolvationSpec, TddftSpec
 from calcflow.geometry.static import Geometry
 from calcflow.io.orca.builder import OrcaBuilder
 from calcflow.io.qchem.builder import QchemBuilder
-from calcflow.io.spec import CalculationSpec, OptimizationSpec, SolvationSpec, TddftSpec
 
 T_CalculationInput = TypeVar("T_CalculationInput", bound="CalculationInput")
 

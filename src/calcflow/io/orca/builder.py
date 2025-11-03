@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from calcflow.common.spec import CalculationSpec
 from calcflow.common.exceptions import NotSupportedError, ValidationError
+from calcflow.common.spec import CalculationSpec
 from calcflow.geometry.static import Geometry
 
 # fmt:off
