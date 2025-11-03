@@ -14,6 +14,17 @@ from calcflow.common.spec import (
 )
 from calcflow.io.input import CalculationInput
 from calcflow.io.orca.builder import OrcaBuilder
+from tests.io.orca.builders.conftest import (
+    assert_cpcm_block,
+    assert_geom_block,
+    assert_keywords_present,
+    assert_maxcore,
+    assert_pal_block,
+    assert_tddft_block,
+    assert_xyz_charge_mult,
+    assert_xyz_has_atoms,
+    parse_orca_input,
+)
 
 # ============================================================================
 # UNIT TESTS: Individual method behavior
@@ -302,14 +313,12 @@ class TestSPBasicStructure:
     def test_sp_basic_structure(self, orca_builder, h2o_geometry, minimal_spec):
         """Basic SP calculation should have correct structure."""
         result = orca_builder.build(minimal_spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
         # Check for required components
-        assert "! SP" in result
-        assert "hf" in result.lower()
-        assert "sto-3g" in result.lower()
-        assert "* xyz 0 1" in result
-        assert "O " in result  # geometry is present
-        assert "H " in result
+        assert_keywords_present(parsed.keyword_line, "SP", "HF", "sto-3g")
+        assert_xyz_charge_mult(parsed.xyz_block, 0, 1)
+        assert_xyz_has_atoms(parsed.xyz_block, ("O", 1), ("H", 2))
         assert result.count("*") == 2  # opening and closing xyz block
 
     @pytest.mark.contract
@@ -317,9 +326,10 @@ class TestSPBasicStructure:
         """SP with multiple cores should have %pal block."""
         spec = replace(minimal_spec, n_cores=4)
         result = orca_builder.build(spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
-        assert "%pal nprocs 4 end" in result
-        assert "! SP" in result
+        assert_keywords_present(parsed.keyword_line, "SP")
+        assert_pal_block(parsed.blocks, nprocs=4)
 
     @pytest.mark.contract
     def test_sp_with_custom_memory(self, orca_builder, h2o_geometry, minimal_spec):
@@ -327,7 +337,7 @@ class TestSPBasicStructure:
         spec = replace(minimal_spec, memory_per_core_mb=8000)
         result = orca_builder.build(spec, h2o_geometry)
 
-        assert "%maxcore 8000" in result
+        assert_maxcore(result, 8000)
 
     @pytest.mark.contract
     def test_sp_with_smd_solvation(self, orca_builder, h2o_geometry, minimal_spec):
@@ -337,10 +347,9 @@ class TestSPBasicStructure:
             solvation=SolvationSpec(model="smd", solvent="water"),
         )
         result = orca_builder.build(spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
-        assert "%cpcm" in result
-        assert "smd true" in result
-        assert 'SMDsolvent "water"' in result
+        assert_cpcm_block(parsed.blocks, smd=True, solvent="water")
 
 
 class TestOptimizationBasicStructure:
@@ -351,10 +360,10 @@ class TestOptimizationBasicStructure:
         """Optimization should have Opt keyword."""
         spec = replace(minimal_spec, task="geometry")
         result = orca_builder.build(spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
-        assert "! Opt" in result
-        assert "* xyz" in result
-        assert "O " in result
+        assert_keywords_present(parsed.keyword_line, "Opt")
+        assert_xyz_has_atoms(parsed.xyz_block, ("O", 1), ("H", 2))
 
     @pytest.mark.contract
     def test_opt_with_hessian_options(self, orca_builder, h2o_geometry, minimal_spec):
@@ -365,11 +374,10 @@ class TestOptimizationBasicStructure:
             optimization=OptimizationSpec(calc_hess_initial=True, recalc_hess_freq=5),
         )
         result = orca_builder.build(spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
-        assert "! Opt" in result
-        assert "%geom" in result
-        assert "Calc_Hess true" in result
-        assert "Recalc_Hess 5" in result
+        assert_keywords_present(parsed.keyword_line, "Opt")
+        assert_geom_block(parsed.blocks, calc_hess=True, recalc_hess=5)
 
 
 class TestFrequencyBasicStructure:
@@ -380,9 +388,9 @@ class TestFrequencyBasicStructure:
         """Frequency calculation should have Freq keyword."""
         spec = replace(minimal_spec, task="frequency")
         result = orca_builder.build(spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
-        assert "! Freq" in result
-        assert "* xyz" in result
+        assert_keywords_present(parsed.keyword_line, "Freq")
 
 
 class TestTDDFTStructure:
@@ -396,9 +404,9 @@ class TestTDDFTStructure:
             tddft=TddftSpec(nroots=5),
         )
         result = orca_builder.build(spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
-        assert "%tddft" in result
-        assert "NRoots 5" in result
+        assert_tddft_block(parsed.blocks, nroots=5)
 
 
 class TestXYZBlockStructure:
@@ -415,26 +423,18 @@ class TestXYZBlockStructure:
             basis_set="6-31g",
         )
         result = orca_builder.build(spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
-        assert "* xyz 1 2" in result
+        assert_xyz_charge_mult(parsed.xyz_block, 1, 2)
 
     @pytest.mark.contract
     def test_xyz_block_coordinates_formatted(self, orca_builder, h2o_geometry, minimal_spec):
         """XYZ block coordinates should be properly formatted."""
         result = orca_builder.build(minimal_spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
-        # Extract xyz block
-        xyz_start = result.index("* xyz")
-        xyz_end = result.index("*", xyz_start + 1)
-        xyz_block = result[xyz_start:xyz_end]
-
-        # Should have 4 lines: header + 3 atoms
-        lines = [line.strip() for line in xyz_block.split("\n") if line.strip()]
-        assert len(lines) >= 4  # at least header + 3 atoms
-
-        # Coordinates should be properly formatted
-        assert "O " in xyz_block
-        assert "H " in xyz_block
+        # Should have correct atoms
+        assert_xyz_has_atoms(parsed.xyz_block, ("O", 1), ("H", 2))
 
 
 # ============================================================================
@@ -459,11 +459,10 @@ class TestFluentAPIWorkflow:
 
         builder = OrcaBuilder()
         result = builder.build(calc.spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
-        assert "! SP" in result
-        assert "b3lyp" in result.lower()
-        assert "def2-svp" in result.lower()
-        assert "* xyz 0 1" in result
+        assert_keywords_present(parsed.keyword_line, "SP", "b3lyp", "def2-svp")
+        assert_xyz_charge_mult(parsed.xyz_block, 0, 1)
 
     @pytest.mark.integration
     def test_solvation_workflow(self, h2o_geometry):
@@ -479,9 +478,10 @@ class TestFluentAPIWorkflow:
 
         builder = OrcaBuilder()
         result = builder.build(calc.spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
-        assert "b3lyp" in result.lower()
-        assert "smd" in result.lower()
+        assert_keywords_present(parsed.keyword_line, "b3lyp")
+        assert_cpcm_block(parsed.blocks, smd=True, solvent="water")
 
     @pytest.mark.integration
     def test_tddft_workflow(self, h2o_geometry):
@@ -497,10 +497,10 @@ class TestFluentAPIWorkflow:
 
         builder = OrcaBuilder()
         result = builder.build(calc.spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
-        assert "cam-b3lyp" in result.lower()
-        assert "def2-tzvp" in result.lower()
-        assert "NRoots 10" in result
+        assert_keywords_present(parsed.keyword_line, "cam-b3lyp", "def2-tzvp")
+        assert_tddft_block(parsed.blocks, nroots=10, triplets=False, tda=True)
 
     @pytest.mark.integration
     def test_optimization_workflow(self, h2o_geometry):
@@ -516,9 +516,10 @@ class TestFluentAPIWorkflow:
 
         builder = OrcaBuilder()
         result = builder.build(calc.spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
-        assert "! Opt" in result
-        assert "nprocs 4" in result
+        assert_keywords_present(parsed.keyword_line, "Opt")
+        assert_pal_block(parsed.blocks, nprocs=4)
 
 
 # ============================================================================
@@ -542,31 +543,18 @@ class TestRegressionSPOutput:
             memory_per_core_mb=8000,
         )
         result = orca_builder.build(spec, h2o_geometry)
-
-        # Parse lines
-        lines = [line.strip() for line in result.split("\n") if line.strip()]
+        parsed = parse_orca_input(result)
 
         # Required keywords present
-        keyword_line = next(line for line in lines if line.startswith("!"))
-        assert "SP" in keyword_line
-        assert "RKS" in keyword_line
-        assert "b3lyp" in keyword_line
-        assert "def2-svp" in keyword_line
+        assert_keywords_present(parsed.keyword_line, "SP", "RKS", "b3lyp", "def2-svp")
 
-        # Check memory
-        assert any("%maxcore 8000" in line for line in lines)
-
-        # Check procs
-        assert any("nprocs 4" in line for line in lines)
+        # Check memory and procs
+        assert_maxcore(result, 8000)
+        assert_pal_block(parsed.blocks, nprocs=4)
 
         # Check xyz block structure
-        assert "* xyz 0 1" in result
-        xyz_start = result.index("* xyz 0 1")
-        xyz_end = result.index("*", xyz_start + 1)
-        xyz_block = result[xyz_start:xyz_end]
-        # Should have oxygen and hydrogens
-        assert "O " in xyz_block
-        assert "H " in xyz_block
+        assert_xyz_charge_mult(parsed.xyz_block, 0, 1)
+        assert_xyz_has_atoms(parsed.xyz_block, ("O", 1), ("H", 2))
 
     @pytest.mark.regression
     def test_opt_semantic_regression(self, orca_builder, h2o_geometry):
@@ -583,17 +571,13 @@ class TestRegressionSPOutput:
             ),
         )
         result = orca_builder.build(spec, h2o_geometry)
-
-        lines = [line.strip() for line in result.split("\n") if line.strip()]
+        parsed = parse_orca_input(result)
 
         # Verify Opt keyword
-        keyword_line = next(line for line in lines if line.startswith("!"))
-        assert "Opt" in keyword_line
+        assert_keywords_present(parsed.keyword_line, "Opt")
 
-        # Verify %geom block present
-        assert "%geom" in result
-        assert "Calc_Hess true" in result
-        assert "Recalc_Hess 5" in result
+        # Verify %geom block with correct settings
+        assert_geom_block(parsed.blocks, calc_hess=True, recalc_hess=5)
 
     @pytest.mark.regression
     def test_tddft_semantic_regression(self, orca_builder, h2o_geometry):
@@ -607,9 +591,7 @@ class TestRegressionSPOutput:
             tddft=TddftSpec(nroots=5, singlets=True, triplets=False, use_tda=True),
         )
         result = orca_builder.build(spec, h2o_geometry)
+        parsed = parse_orca_input(result)
 
         # Verify TDDFT block
-        assert "%tddft" in result
-        assert "NRoots 5" in result
-        assert "Triplets false" in result
-        assert "TDA true" in result
+        assert_tddft_block(parsed.blocks, nroots=5, triplets=False, tda=True)

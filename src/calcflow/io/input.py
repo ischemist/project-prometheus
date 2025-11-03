@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal, TypeVar, cast
 
 from calcflow.common.exceptions import ConfigurationError
 from calcflow.common.spec import CalculationSpec, OptimizationSpec, SolvationSpec, TddftSpec
@@ -70,34 +70,34 @@ class CalculationInput:
     def set_level_of_theory(self: T_CalculationInput, lot: str) -> T_CalculationInput:
         """updates the level of theory (method/functional)."""
         new_spec = replace(self.spec, level_of_theory=lot)
-        return self.__class__(**new_spec.__dict__)
+        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
 
     def set_basis_set(self: T_CalculationInput, basis: str | dict[str, str]) -> T_CalculationInput:
         """updates the basis set."""
         new_spec = replace(self.spec, basis_set=basis)
-        return self.__class__(**new_spec.__dict__)
+        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
 
     def set_task(self: T_CalculationInput, task: Literal["energy", "geometry", "frequency"]) -> T_CalculationInput:
         """updates the main calculation task."""
         new_spec = replace(self.spec, task=task)
-        return self.__class__(**new_spec.__dict__)
+        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
 
     def set_unrestricted(self: T_CalculationInput, unrestricted: bool = True) -> T_CalculationInput:
         """sets the calculation to be unrestricted (uks/uhf) or restricted (rks/rhf)."""
         new_spec = replace(self.spec, unrestricted=unrestricted)
-        return self.__class__(**new_spec.__dict__)
+        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
 
     # --- Computational Resource Setters ---
 
     def set_cores(self: T_CalculationInput, n_cores: int) -> T_CalculationInput:
         """sets the number of cpu cores to use."""
         new_spec = replace(self.spec, n_cores=n_cores)
-        return self.__class__(**new_spec.__dict__)
+        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
 
     def set_memory_per_core(self: T_CalculationInput, mb: int) -> T_CalculationInput:
         """sets the memory per core in megabytes."""
         new_spec = replace(self.spec, memory_per_core_mb=mb)
-        return self.__class__(**new_spec.__dict__)
+        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
 
     # --- Calculation Component Setters ---
 
@@ -105,7 +105,7 @@ class CalculationInput:
         """adds or updates the implicit solvation model."""
         solv_spec = SolvationSpec(model=model.lower(), solvent=solvent.lower())
         new_spec = replace(self.spec, solvation=solv_spec)
-        return self.__class__(**new_spec.__dict__)
+        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
 
     def set_tddft(
         self: T_CalculationInput,
@@ -126,7 +126,7 @@ class CalculationInput:
             state_to_optimize=state_to_optimize,
         )
         new_spec = replace(self.spec, tddft=tddft_spec)
-        return self.__class__(**new_spec.__dict__)
+        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
 
     def set_optimization(
         self: T_CalculationInput,
@@ -141,14 +141,14 @@ class CalculationInput:
             recalc_hess_freq=recalc_hess_freq,
         )
         new_spec = replace(self.spec, optimization=opt_spec)
-        return self.__class__(**new_spec.__dict__)
+        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
 
     def run_frequency_after_opt(self: T_CalculationInput) -> T_CalculationInput:
         """enables a frequency calculation to be run after a successful geometry optimization."""
         if self.spec.task != "geometry":
             raise ConfigurationError("frequency calculation can only follow a 'geometry' task.")
         new_spec = replace(self.spec, frequency_after_optimization=True)
-        return self.__class__(**new_spec.__dict__)
+        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
 
     # --- Program-Specific Options ---
 
@@ -165,7 +165,7 @@ class CalculationInput:
         # use a copy to ensure immutability
         new_opts = {**self.spec.program_options, **kwargs}
         new_spec = replace(self.spec, program_options=new_opts)
-        return self.__class__(**new_spec.__dict__)
+        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
 
     # --- Convenience Wrappers for Program-Specific Options ---
     # these methods provide a discoverable, type-safe api for common

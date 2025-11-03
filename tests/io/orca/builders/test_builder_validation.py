@@ -6,13 +6,6 @@ import pytest
 
 from calcflow.common.exceptions import NotSupportedError, ValidationError
 from calcflow.common.spec import CalculationSpec, SolvationSpec
-from calcflow.io.orca.builder import OrcaBuilder
-
-
-@pytest.fixture
-def orca_builder() -> OrcaBuilder:
-    """Orca builder instance."""
-    return OrcaBuilder()
 
 
 class TestValidateRejectsDictBasis:

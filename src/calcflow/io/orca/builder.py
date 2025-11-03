@@ -58,7 +58,8 @@ class OrcaBuilder:
         keywords.extend(self._handle_level_of_theory(spec))
 
         # basis set
-        keywords.append(spec.basis_set)
+        if isinstance(spec.basis_set, str):
+            keywords.append(spec.basis_set)
 
         # program options (ri, etc.)
         opts = spec.program_options
