@@ -25,7 +25,7 @@ import pytest
 from calcflow.common.results import CalculationResult, ExcitedState, OrbitalTransition, TddftResults
 from calcflow.io.qchem.blocks.tddft.excitations import ExcitationsParser
 from calcflow.io.state import ParseState
-from tests.io.qchem.conftest import FIXTURE_SPECS
+from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # HARDCODED TEST DATA (from ex-tddft.md)

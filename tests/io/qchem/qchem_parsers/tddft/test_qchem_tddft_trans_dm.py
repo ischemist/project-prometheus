@@ -23,7 +23,7 @@ from calcflow.common.results import (
     TddftResults,
     TransitionDensityMatrix,
 )
-from tests.io.qchem.conftest import FIXTURE_SPECS
+from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # HARDCODED TEST DATA (from ex-tran-dm.md)

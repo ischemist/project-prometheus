@@ -26,7 +26,7 @@ Expected Values (Job 2, MOM iterations):
 import pytest
 
 from calcflow.common.results import CalculationResult, ScfResults
-from tests.io.qchem.conftest import FIXTURE_SPECS
+from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # TEST DATA: Hardcoded expected values from qchem/h2o/6.2-mom-sp-smd.out, Job 2 (MOM)

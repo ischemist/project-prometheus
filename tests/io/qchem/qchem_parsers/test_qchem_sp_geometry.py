@@ -11,7 +11,7 @@ import pytest
 from calcflow.common.results import Atom, CalculationResult
 from calcflow.io.qchem.blocks.geometry import GeometryParser
 from calcflow.io.state import ParseState
-from tests.io.qchem.conftest import FIXTURE_SPECS
+from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # Tolerance for coordinate precision (7 decimal places)
 COORD_TOL = 1e-7

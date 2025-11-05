@@ -25,7 +25,7 @@ Test organization by blocks:
 import pytest
 
 from calcflow.common.results import CalculationResult, OrbitalsSet, ScfResults
-from tests.io.qchem.conftest import FIXTURE_SPECS
+from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
 # HARDCODED TEST DATA from TDDFT extracts
