@@ -6,8 +6,7 @@ from dataclasses import replace
 
 import pytest
 
-from calcflow.common.spec import CalculationSpec, SolvationSpec
-from calcflow.io.input import CalculationInput
+from calcflow.common.input import CalculationInput, SolvationSpec
 from tests.io.orca.orca_builders.conftest import (
     assert_cpcm_block,
     assert_keywords_present,
@@ -135,7 +134,7 @@ class TestSMDIntegrationInInput:
     @pytest.mark.contract
     def test_smd_sp_has_cpcm_block(self, orca_builder, h2o_geometry):
         """SMD SP calculation should have %cpcm block in output."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -152,7 +151,7 @@ class TestSMDIntegrationInInput:
     @pytest.mark.contract
     def test_smd_block_ordering(self, orca_builder, h2o_geometry):
         """Solvation block should come before xyz block."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -169,7 +168,7 @@ class TestSMDIntegrationInInput:
     @pytest.mark.contract
     def test_cpcm_keyword_in_sp(self, orca_builder, h2o_geometry):
         """CPCM SP calculation should have CPCM in keyword line."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -185,7 +184,7 @@ class TestSMDIntegrationInInput:
     @pytest.mark.contract
     def test_cpcm_no_block_in_output(self, orca_builder, h2o_geometry):
         """CPCM should not create a %cpcm block."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -205,7 +204,7 @@ class TestSolvationWithOtherFeatures:
     @pytest.mark.contract
     def test_smd_with_multiple_cores(self, orca_builder, h2o_geometry):
         """SMD + multiple cores should have both %cpcm and %pal."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -224,7 +223,7 @@ class TestSolvationWithOtherFeatures:
     @pytest.mark.contract
     def test_smd_with_custom_memory(self, orca_builder, h2o_geometry):
         """SMD + custom memory should have both in output."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -364,7 +363,7 @@ class TestSolvationRegression:
     @pytest.mark.regression
     def test_smd_water_semantic_output(self, orca_builder, h2o_geometry):
         """SMD water solvation should produce semantically correct output."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -397,7 +396,7 @@ class TestSolvationRegression:
     @pytest.mark.regression
     def test_cpcm_acetonitrile_semantic_output(self, orca_builder, h2o_geometry):
         """CPCM acetonitrile should produce semantically correct output."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -422,7 +421,7 @@ class TestSolvationRegression:
     @pytest.mark.regression
     def test_smd_multiple_features_semantic(self, orca_builder, h2o_geometry):
         """SMD + multiple cores + custom memory should all be present."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -448,7 +447,7 @@ class TestSolvationEdgeCases:
     @pytest.mark.regression
     def test_solvent_name_with_spaces_not_quoted(self, orca_builder, h2o_geometry):
         """Solvent names with underscores should work correctly."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -463,7 +462,7 @@ class TestSolvationEdgeCases:
     @pytest.mark.regression
     def test_smd_case_preservation_in_solvent(self, orca_builder, h2o_geometry):
         """Solvent name case should be preserved."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",

@@ -6,8 +6,7 @@ from dataclasses import replace
 
 import pytest
 
-from calcflow.common.spec import CalculationSpec, SolvationSpec, TddftSpec
-from calcflow.io.input import CalculationInput
+from calcflow.common.input import CalculationInput, SolvationSpec, TddftSpec
 from tests.io.orca.orca_builders.conftest import (
     assert_keywords_present,
     assert_tddft_block,
@@ -172,7 +171,7 @@ class TestTddftInFullInput:
     @pytest.mark.contract
     def test_tddft_sp_has_block(self, orca_builder, h2o_geometry):
         """TDDFT SP should have %tddft block in output."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -189,7 +188,7 @@ class TestTddftInFullInput:
     @pytest.mark.contract
     def test_tddft_with_triplets(self, orca_builder, h2o_geometry):
         """TDDFT with triplets should have correct settings."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -205,7 +204,7 @@ class TestTddftInFullInput:
     @pytest.mark.contract
     def test_tddft_block_ordering(self, orca_builder, h2o_geometry):
         """TDDFT block should come before xyz block."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -222,7 +221,7 @@ class TestTddftInFullInput:
     @pytest.mark.contract
     def test_tddft_with_iroot(self, orca_builder, h2o_geometry):
         """TDDFT with state optimization should include IRoot in block."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -242,7 +241,7 @@ class TestTddftWithOtherFeatures:
     @pytest.mark.contract
     def test_tddft_with_solvation(self, orca_builder, h2o_geometry):
         """TDDFT + solvation should have both blocks."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -260,7 +259,7 @@ class TestTddftWithOtherFeatures:
     @pytest.mark.contract
     def test_tddft_with_multiple_cores(self, orca_builder, h2o_geometry):
         """TDDFT + multiple cores should have both."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -279,7 +278,7 @@ class TestTddftWithOtherFeatures:
     @pytest.mark.contract
     def test_tddft_with_cpcm_keyword(self, orca_builder, h2o_geometry):
         """TDDFT + CPCM solvation should have CPCM in keyword line."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -397,7 +396,7 @@ class TestTddftRegression:
     @pytest.mark.regression
     def test_tddft_basic_semantic_output(self, orca_builder, h2o_geometry):
         """TDDFT should produce semantically correct output."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -423,7 +422,7 @@ class TestTddftRegression:
     @pytest.mark.regression
     def test_tddft_with_all_options_semantic(self, orca_builder, h2o_geometry):
         """TDDFT with all options should be semantically correct."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -457,7 +456,7 @@ class TestTddftRegression:
     def test_tddft_different_nroots_values(self, orca_builder, h2o_geometry):
         """TDDFT with different nroots should produce correct output."""
         for nroots in [5, 10, 20, 50]:
-            spec = CalculationSpec(
+            spec = CalculationInput(
                 charge=0,
                 spin_multiplicity=1,
                 task="energy",
@@ -479,7 +478,7 @@ class TestTddftRegression:
         ]
 
         for use_triplets, _ in test_cases:
-            spec = CalculationSpec(
+            spec = CalculationInput(
                 charge=0,
                 spin_multiplicity=1,
                 task="energy",
@@ -500,7 +499,7 @@ class TestTddftNumericalValues:
     @pytest.mark.regression
     def test_tddft_minimum_nroots(self, orca_builder, h2o_geometry):
         """TDDFT with minimum nroots should work."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -515,7 +514,7 @@ class TestTddftNumericalValues:
     @pytest.mark.regression
     def test_tddft_large_nroots(self, orca_builder, h2o_geometry):
         """TDDFT with large nroots should work."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",

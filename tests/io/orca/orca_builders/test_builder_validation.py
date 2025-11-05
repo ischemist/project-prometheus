@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from calcflow.common.exceptions import NotSupportedError, ValidationError
-from calcflow.common.spec import CalculationSpec, SolvationSpec
+from calcflow.common.input import CalculationInput, SolvationSpec
 
 
 class TestValidateRejectsDictBasis:
@@ -14,7 +14,7 @@ class TestValidateRejectsDictBasis:
     @pytest.mark.unit
     def test_validate_rejects_dict_basis(self, orca_builder):
         """Orca does not support per-element basis sets."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -31,7 +31,7 @@ class TestValidateSolvationModel:
     @pytest.mark.unit
     def test_validate_rejects_unsupported_solvation_model(self, orca_builder):
         """Orca only supports smd and cpcm solvation."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -112,7 +112,7 @@ class TestHandleLevelOfTheory:
     )
     def test_handle_dft_functionals_restricted(self, orca_builder, method, expected_keywords):
         """DFT functionals should map to RKS for restricted."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -135,7 +135,7 @@ class TestHandleLevelOfTheory:
     )
     def test_handle_dft_functionals_unrestricted(self, orca_builder, method, expected_keywords):
         """DFT functionals should map to UKS for unrestricted."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -151,7 +151,7 @@ class TestHandleLevelOfTheory:
     @pytest.mark.parametrize("method", ["hf", "rhf"])
     def test_handle_hf_restricted(self, orca_builder, method):
         """HF method should map to RHF for restricted."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -165,7 +165,7 @@ class TestHandleLevelOfTheory:
     @pytest.mark.unit
     def test_handle_hf_unrestricted(self, orca_builder):
         """HF method should map to UHF for unrestricted."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -180,7 +180,7 @@ class TestHandleLevelOfTheory:
     @pytest.mark.parametrize("method", ["mp2", "ri-mp2"])
     def test_handle_mp2_restricted(self, orca_builder, method):
         """MP2 method should map to MP2 for restricted."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -194,7 +194,7 @@ class TestHandleLevelOfTheory:
     @pytest.mark.unit
     def test_handle_mp2_unrestricted(self, orca_builder):
         """MP2 method should map to UMP2 for unrestricted."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -208,7 +208,7 @@ class TestHandleLevelOfTheory:
     @pytest.mark.unit
     def test_handle_ccsd(self, orca_builder):
         """CCSD method should be handled."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -221,7 +221,7 @@ class TestHandleLevelOfTheory:
     @pytest.mark.unit
     def test_handle_ccsd_t(self, orca_builder):
         """CCSD(T) method should be handled."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -234,7 +234,7 @@ class TestHandleLevelOfTheory:
     @pytest.mark.unit
     def test_handle_unsupported_method(self, orca_builder):
         """Unsupported method should raise NotSupportedError."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -247,7 +247,7 @@ class TestHandleLevelOfTheory:
     @pytest.mark.unit
     def test_handle_case_insensitive(self, orca_builder):
         """Method names should be case-insensitive."""
-        spec_upper = CalculationSpec(
+        spec_upper = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",

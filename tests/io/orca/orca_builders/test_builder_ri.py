@@ -7,8 +7,7 @@ from dataclasses import replace
 import pytest
 
 from calcflow.common.exceptions import ValidationError
-from calcflow.common.spec import CalculationSpec
-from calcflow.io.input import CalculationInput
+from calcflow.common.input import CalculationInput
 from tests.io.orca.orca_builders.conftest import (
     assert_keywords_present,
     parse_orca_input,
@@ -98,7 +97,7 @@ class TestRIValidation:
     @pytest.mark.unit
     def test_ri_without_aux_basis_fails(self, orca_builder):
         """RI approximation without aux_basis should raise error."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -113,7 +112,7 @@ class TestRIValidation:
     @pytest.mark.unit
     def test_ri_with_aux_basis_passes(self, orca_builder):
         """RI approximation with aux_basis should pass validation."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -128,7 +127,7 @@ class TestRIValidation:
     @pytest.mark.unit
     def test_no_ri_no_aux_basis_passes(self, orca_builder):
         """No RI without aux_basis should pass validation."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -151,7 +150,7 @@ class TestRIInFullInput:
     @pytest.mark.contract
     def test_rijcosx_sp_structure(self, orca_builder, h2o_geometry):
         """RIJCOSX SP should have correct structure."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -171,7 +170,7 @@ class TestRIInFullInput:
     @pytest.mark.contract
     def test_ri_with_cores(self, orca_builder, h2o_geometry):
         """RI approximation with multiple cores."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -194,7 +193,7 @@ class TestRIInFullInput:
     @pytest.mark.contract
     def test_ri_with_memory(self, orca_builder, h2o_geometry):
         """RI approximation with custom memory."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -212,7 +211,7 @@ class TestRIInFullInput:
     @pytest.mark.contract
     def test_rij_in_output(self, orca_builder, h2o_geometry):
         """RIJ approximation in output."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -232,9 +231,9 @@ class TestRIWithOtherFeatures:
     @pytest.mark.contract
     def test_ri_with_optimization(self, orca_builder, h2o_geometry):
         """RI approximation with geometry optimization."""
-        from calcflow.common.spec import OptimizationSpec
+        from calcflow.common.input import OptimizationSpec
 
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="geometry",
@@ -254,7 +253,7 @@ class TestRIWithOtherFeatures:
     @pytest.mark.contract
     def test_ri_with_unrestricted(self, orca_builder, h2o_geometry):
         """RI approximation with unrestricted calculation."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=3,  # Triplet
             task="energy",
@@ -380,7 +379,7 @@ class TestRIRegression:
     @pytest.mark.regression
     def test_rijcosx_semantic_output(self, orca_builder, h2o_geometry):
         """RIJCOSX should produce semantically correct output."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -404,7 +403,7 @@ class TestRIRegression:
     @pytest.mark.regression
     def test_ri_with_all_options_semantic(self, orca_builder, h2o_geometry):
         """RI with all options should be semantically correct."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -433,7 +432,7 @@ class TestRIRegression:
             ("RI", "def2/jk"),
             ("RIJ", "def2/j"),
         ]:
-            spec = CalculationSpec(
+            spec = CalculationInput(
                 charge=0,
                 spin_multiplicity=1,
                 task="energy",
@@ -449,7 +448,7 @@ class TestRIRegression:
     @pytest.mark.regression
     def test_no_ri_no_aux_keywords(self, orca_builder, h2o_geometry):
         """Without RI options, aux basis should not appear."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -466,7 +465,7 @@ class TestRIRegression:
     def test_ri_with_different_functionals(self, orca_builder, h2o_geometry):
         """RI should work with various functionals."""
         for functional in ["b3lyp", "pbe0", "cam-b3lyp", "m06"]:
-            spec = CalculationSpec(
+            spec = CalculationInput(
                 charge=0,
                 spin_multiplicity=1,
                 task="energy",
@@ -491,7 +490,7 @@ class TestRIAuxBasisOptions:
     )
     def test_various_aux_basis_sets(self, orca_builder, h2o_geometry, aux_basis):
         """Various auxiliary basis sets should work."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -506,7 +505,7 @@ class TestRIAuxBasisOptions:
     @pytest.mark.regression
     def test_rijcosx_with_def2_j(self, orca_builder, h2o_geometry):
         """RIJCOSX with def2/j should be present."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
