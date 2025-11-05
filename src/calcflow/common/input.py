@@ -9,7 +9,7 @@ from calcflow.io.orca.builder import OrcaBuilder
 from calcflow.io.qchem.builder import QchemBuilder
 
 T_CalculationInput = TypeVar("T_CalculationInput", bound="CalculationInput")
-type TASK_TYPES =  Literal["energy", "geometry", "frequency"]
+type TASK_TYPES = Literal["energy", "geometry", "frequency"]
 
 # lazy-loaded registry to prevent circular imports.
 BUILDERS = {"orca": OrcaBuilder(), "qchem": QchemBuilder()}
@@ -45,7 +45,9 @@ class OptimizationSpec:
     calc_hess_initial: bool = False
     recalc_hess_freq: int | None = None
 
+
 # --- Main Calculation Specification ---
+
 
 @dataclass(frozen=True)
 class CalculationInput:

@@ -5,10 +5,13 @@ from calcflow.geometry.static import Geometry
 # from calcflow.jobs.slurm import SlurmJob
 
 # 1. define the scientific calculation
-calc = CalculationInput(
-    charge=0, spin_multiplicity=1, task="geometry",
-    level_of_theory="wb97x-d3", basis_set="def2-svp", n_cores=16
-).enable_ri_for_orca("RIJCOSX", "def2/j").run_frequency_after_opt()
+calc = (
+    CalculationInput(
+        charge=0, spin_multiplicity=1, task="geometry", level_of_theory="wb97x-d3", basis_set="def2-svp", n_cores=16
+    )
+    .enable_ri_for_orca("RIJCOSX", "def2/j")
+    .run_frequency_after_opt()
+)
 
 # 2. define the compute job
 # slurm_job = SlurmJob(
