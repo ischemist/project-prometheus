@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from calcflow.common.exceptions import NotSupportedError, ValidationError
 from calcflow.geometry.static import Geometry
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from calcflow.common.input import CalculationInput

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 from calcflow.common.exceptions import ConfigurationError, NotSupportedError, ValidationError
 from calcflow.geometry.static import Geometry
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from calcflow.common.input import CalculationInput

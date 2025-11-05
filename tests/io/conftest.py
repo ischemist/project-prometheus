@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from calcflow.common.results import Atom
 from calcflow.common.input import CalculationInput
+from calcflow.common.results import Atom
 from calcflow.geometry.static import Geometry
 from calcflow.io.orca.builder import OrcaBuilder
 
