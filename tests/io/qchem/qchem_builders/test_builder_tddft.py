@@ -14,9 +14,9 @@ Test Structure:
 from __future__ import annotations
 
 import pytest
+from calcflow.common.spec import CalculationSpec, TddftSpec
 
 from calcflow.common.exceptions import ValidationError
-from calcflow.common.spec import CalculationSpec, TddftSpec
 from calcflow.io.qchem.builder import QchemBuilder
 from tests.io.conftest import h2o_geometry, minimal_spec  # noqa: F401
 from tests.io.qchem.qchem_builders.conftest import (

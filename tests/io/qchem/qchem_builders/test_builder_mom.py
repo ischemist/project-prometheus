@@ -16,9 +16,9 @@ from __future__ import annotations
 from dataclasses import replace
 
 import pytest
+from calcflow.common.spec import CalculationSpec
 
 from calcflow.common.exceptions import ConfigurationError, ValidationError
-from calcflow.common.spec import CalculationSpec
 from calcflow.io.qchem.builder import QchemBuilder
 from tests.io.conftest import h2o_geometry, minimal_spec  # noqa: F401
 from tests.io.qchem.qchem_builders.conftest import (

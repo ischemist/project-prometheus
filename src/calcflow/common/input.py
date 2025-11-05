@@ -1,111 +1,125 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
-from typing import Any, Literal, TypeVar, cast
+from dataclasses import dataclass, field, replace
+from typing import Any, Literal, TypeVar
 
-from calcflow.common.exceptions import ConfigurationError
-from calcflow.common.spec import CalculationSpec, OptimizationSpec, SolvationSpec, TddftSpec
+from calcflow.common.exceptions import ConfigurationError, ValidationError
 from calcflow.geometry.static import Geometry
 from calcflow.io.orca.builder import OrcaBuilder
 from calcflow.io.qchem.builder import QchemBuilder
 
 T_CalculationInput = TypeVar("T_CalculationInput", bound="CalculationInput")
+type TASK_TYPES =  Literal["energy", "geometry", "frequency"]
 
 # lazy-loaded registry to prevent circular imports.
-BUILDERS: dict[str, OrcaBuilder | QchemBuilder] = {}
+BUILDERS = {"orca": OrcaBuilder(), "qchem": QchemBuilder()}
+
+# --- Component Specifications ---
+# these are the building blocks. if a component is None in the main spec,
+# that feature is simply not requested.
 
 
-def _register_builders():
-    """lazy registration to prevent circular imports at module level."""
-    if BUILDERS:  # only register once
-        return
-    from calcflow.io.orca.builder import OrcaBuilder
-    from calcflow.io.qchem.builder import QchemBuilder
+@dataclass(frozen=True)
+class TddftSpec:
+    """specification for a time-dependent dft calculation."""
 
-    BUILDERS["orca"] = OrcaBuilder()
-    BUILDERS["qchem"] = QchemBuilder()
+    nroots: int
+    singlets: bool = True
+    triplets: bool = False
+    use_tda: bool = True  # Tamm-Dancoff Approximation is a common choice
+    state_to_optimize: int | None = None  # for geometry optimization of an excited state
 
+
+@dataclass(frozen=True)
+class SolvationSpec:
+    """specification for an implicit solvation model."""
+
+    model: str  # e.g., 'smd', 'cpcm'
+    solvent: str  # e.g., 'water', 'acetonitrile'
+
+
+@dataclass(frozen=True)
+class OptimizationSpec:
+    """specification for geometry optimization tasks."""
+
+    calc_hess_initial: bool = False
+    recalc_hess_freq: int | None = None
+
+# --- Main Calculation Specification ---
 
 @dataclass(frozen=True)
 class CalculationInput:
     """
-    the fluent, user-facing api for building a calculation.
+    the fluent, user-facing api for building a quantum chemistry calculation.
 
-    this class is an immutable factory for `CalculationSpec` objects.
-    each 'set' method returns a new instance with an updated spec.
+    this is an immutable dataclass with a fluent api for progressive construction.
+    each 'set' method returns a new instance with the updated field.
     """
 
-    spec: CalculationSpec
+    charge: int
+    spin_multiplicity: int
+    task: Literal["energy", "geometry", "frequency"]
+    level_of_theory: str
+    basis_set: str | dict[str, str]
+    unrestricted: bool = False
+    n_cores: int = 1
+    memory_per_core_mb: int = 4000
 
-    def __init__(
-        self,
-        charge: int,
-        spin_multiplicity: int,
-        task: Literal["energy", "geometry", "frequency"],
-        level_of_theory: str,
-        basis_set: str | dict[str, str],
-        **kwargs: Any,
-    ):
-        """
-        convenience constructor that builds the initial `CalculationSpec`.
-        this hides the `spec` object from the user on first creation.
-        """
-        # this is the sanctioned way to initialize a frozen dataclass
-        # with a custom __init__ signature. it bypasses the frozen check.
-        object.__setattr__(
-            self,
-            "spec",
-            CalculationSpec(
-                charge=charge,
-                spin_multiplicity=spin_multiplicity,
-                task=task,
-                level_of_theory=level_of_theory,
-                basis_set=basis_set,
-                **kwargs,
-            ),
-        )
+    # optional, modular components of the calculation
+    tddft: TddftSpec | None = None
+    solvation: SolvationSpec | None = None
+    optimization: OptimizationSpec | None = None
+    frequency_after_optimization: bool = False
+
+    # the escape hatch for anything program-specific that doesn't fit the generic model.
+    # e.g., for orca: {"ri_approx": "RIJCOSX", "aux_basis": "def2/j"}
+    program_options: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        """basic, program-agnostic validation."""
+        if self.spin_multiplicity < 1:
+            raise ValidationError("spin multiplicity must be a positive integer.")
+        if self.n_cores < 1:
+            raise ValidationError("number of cores must be a positive integer.")
+        if self.tddft and self.tddft.nroots < 1:
+            raise ValidationError("tddft nroots must be a positive integer.")
+        if self.solvation and (not self.solvation.model or not self.solvation.solvent):
+            raise ValidationError("solvation model and solvent must both be specified.")
 
     # --- Core Parameter Setters ---
 
     def set_level_of_theory(self: T_CalculationInput, lot: str) -> T_CalculationInput:
         """updates the level of theory (method/functional)."""
-        new_spec = replace(self.spec, level_of_theory=lot)
-        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
+        return replace(self, level_of_theory=lot)
 
     def set_basis_set(self: T_CalculationInput, basis: str | dict[str, str]) -> T_CalculationInput:
         """updates the basis set."""
-        new_spec = replace(self.spec, basis_set=basis)
-        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
+        return replace(self, basis_set=basis)
 
-    def set_task(self: T_CalculationInput, task: Literal["energy", "geometry", "frequency"]) -> T_CalculationInput:
+    def set_task(self: T_CalculationInput, task: TASK_TYPES) -> T_CalculationInput:
         """updates the main calculation task."""
-        new_spec = replace(self.spec, task=task)
-        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
+        return replace(self, task=task)
 
     def set_unrestricted(self: T_CalculationInput, unrestricted: bool = True) -> T_CalculationInput:
         """sets the calculation to be unrestricted (uks/uhf) or restricted (rks/rhf)."""
-        new_spec = replace(self.spec, unrestricted=unrestricted)
-        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
+        return replace(self, unrestricted=unrestricted)
 
     # --- Computational Resource Setters ---
 
     def set_cores(self: T_CalculationInput, n_cores: int) -> T_CalculationInput:
         """sets the number of cpu cores to use."""
-        new_spec = replace(self.spec, n_cores=n_cores)
-        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
+        return replace(self, n_cores=n_cores)
 
     def set_memory_per_core(self: T_CalculationInput, mb: int) -> T_CalculationInput:
         """sets the memory per core in megabytes."""
-        new_spec = replace(self.spec, memory_per_core_mb=mb)
-        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
+        return replace(self, memory_per_core_mb=mb)
 
     # --- Calculation Component Setters ---
 
     def set_solvation(self: T_CalculationInput, model: str, solvent: str) -> T_CalculationInput:
         """adds or updates the implicit solvation model."""
         solv_spec = SolvationSpec(model=model.lower(), solvent=solvent.lower())
-        new_spec = replace(self.spec, solvation=solv_spec)
-        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
+        return replace(self, solvation=solv_spec)
 
     def set_tddft(
         self: T_CalculationInput,
@@ -116,7 +130,7 @@ class CalculationInput:
         state_to_optimize: int | None = None,
     ) -> T_CalculationInput:
         """adds or updates the tddft calculation parameters."""
-        if state_to_optimize and self.spec.task != "geometry":
+        if state_to_optimize and self.task != "geometry":
             raise ConfigurationError("`state_to_optimize` is only valid for 'geometry' tasks.")
         tddft_spec = TddftSpec(
             nroots=nroots,
@@ -125,8 +139,7 @@ class CalculationInput:
             use_tda=use_tda,
             state_to_optimize=state_to_optimize,
         )
-        new_spec = replace(self.spec, tddft=tddft_spec)
-        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
+        return replace(self, tddft=tddft_spec)
 
     def set_optimization(
         self: T_CalculationInput,
@@ -134,21 +147,19 @@ class CalculationInput:
         recalc_hess_freq: int | None = None,
     ) -> T_CalculationInput:
         """adds or updates geometry optimization parameters."""
-        if self.spec.task != "geometry":
+        if self.task != "geometry":
             raise ConfigurationError("optimization settings are only valid for 'geometry' tasks.")
         opt_spec = OptimizationSpec(
             calc_hess_initial=calc_hess_initial,
             recalc_hess_freq=recalc_hess_freq,
         )
-        new_spec = replace(self.spec, optimization=opt_spec)
-        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
+        return replace(self, optimization=opt_spec)
 
     def run_frequency_after_opt(self: T_CalculationInput) -> T_CalculationInput:
         """enables a frequency calculation to be run after a successful geometry optimization."""
-        if self.spec.task != "geometry":
+        if self.task != "geometry":
             raise ConfigurationError("frequency calculation can only follow a 'geometry' task.")
-        new_spec = replace(self.spec, frequency_after_optimization=True)
-        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
+        return replace(self, frequency_after_optimization=True)
 
     # --- Program-Specific Options ---
 
@@ -163,9 +174,8 @@ class CalculationInput:
             .set_options(ri_approx="RIJCOSX", aux_basis="def2/j")
         """
         # use a copy to ensure immutability
-        new_opts = {**self.spec.program_options, **kwargs}
-        new_spec = replace(self.spec, program_options=new_opts)
-        return cast(T_CalculationInput, self.__class__(**new_spec.__dict__))
+        new_opts = {**self.program_options, **kwargs}
+        return replace(self, program_options=new_opts)
 
     # --- Convenience Wrappers for Program-Specific Options ---
     # these methods provide a discoverable, type-safe api for common
@@ -191,11 +201,10 @@ class CalculationInput:
         returns:
             a string containing the formatted input file.
         """
-        _register_builders()  # ensure builders are loaded
         program_lower = program.lower()
         if program_lower not in BUILDERS:
             raise NotImplementedError(
                 f"no builder registered for program '{program}'. available: {list(BUILDERS.keys())}"
             )
         builder = BUILDERS[program_lower]
-        return builder.build(self.spec, geometry)
+        return builder.build(self, geometry)

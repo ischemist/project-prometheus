@@ -13,9 +13,9 @@ Test Structure:
 from __future__ import annotations
 
 import pytest
+from calcflow.common.spec import CalculationSpec, SolvationSpec
 
 from calcflow.common.exceptions import NotSupportedError
-from calcflow.common.spec import CalculationSpec, SolvationSpec
 from calcflow.io.qchem.builder import QchemBuilder
 from tests.io.conftest import h2o_geometry, minimal_spec  # noqa: F401
 from tests.io.qchem.qchem_builders.conftest import (

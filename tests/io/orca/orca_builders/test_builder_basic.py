@@ -6,13 +6,12 @@ from dataclasses import replace
 
 import pytest
 
-from calcflow.common.spec import (
-    CalculationSpec,
+from calcflow.common.input import (
+    CalculationInput,
     OptimizationSpec,
     SolvationSpec,
     TddftSpec,
 )
-from calcflow.io.input import CalculationInput
 from calcflow.io.orca.builder import OrcaBuilder
 from tests.io.orca.orca_builders.conftest import (
     assert_cpcm_block,
@@ -415,7 +414,7 @@ class TestXYZBlockStructure:
     @pytest.mark.contract
     def test_xyz_block_has_correct_charge_multiplicity(self, orca_builder, h2o_geometry):
         """XYZ block should have correct charge and multiplicity."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=1,
             spin_multiplicity=2,
             task="energy",
@@ -458,7 +457,7 @@ class TestFluentAPIWorkflow:
         )
 
         builder = OrcaBuilder()
-        result = builder.build(calc.spec, h2o_geometry)
+        result = builder.build(calc, h2o_geometry)
         parsed = parse_orca_input(result)
 
         assert_keywords_present(parsed.keyword_line, "SP", "b3lyp", "def2-svp")
@@ -477,7 +476,7 @@ class TestFluentAPIWorkflow:
         ).set_solvation("smd", "water")
 
         builder = OrcaBuilder()
-        result = builder.build(calc.spec, h2o_geometry)
+        result = builder.build(calc, h2o_geometry)
         parsed = parse_orca_input(result)
 
         assert_keywords_present(parsed.keyword_line, "b3lyp")
@@ -496,7 +495,7 @@ class TestFluentAPIWorkflow:
         ).set_tddft(nroots=10, singlets=True, triplets=False, use_tda=True)
 
         builder = OrcaBuilder()
-        result = builder.build(calc.spec, h2o_geometry)
+        result = builder.build(calc, h2o_geometry)
         parsed = parse_orca_input(result)
 
         assert_keywords_present(parsed.keyword_line, "cam-b3lyp", "def2-tzvp")
@@ -515,7 +514,7 @@ class TestFluentAPIWorkflow:
         ).set_cores(4)
 
         builder = OrcaBuilder()
-        result = builder.build(calc.spec, h2o_geometry)
+        result = builder.build(calc, h2o_geometry)
         parsed = parse_orca_input(result)
 
         assert_keywords_present(parsed.keyword_line, "Opt")
@@ -533,7 +532,7 @@ class TestRegressionSPOutput:
     @pytest.mark.regression
     def test_sp_semantic_regression(self, orca_builder, h2o_geometry, minimal_spec):
         """SP output should maintain semantic correctness."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -559,7 +558,7 @@ class TestRegressionSPOutput:
     @pytest.mark.regression
     def test_opt_semantic_regression(self, orca_builder, h2o_geometry):
         """Optimization output should maintain semantic correctness."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="geometry",
@@ -582,7 +581,7 @@ class TestRegressionSPOutput:
     @pytest.mark.regression
     def test_tddft_semantic_regression(self, orca_builder, h2o_geometry):
         """TDDFT output should maintain semantic correctness."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",

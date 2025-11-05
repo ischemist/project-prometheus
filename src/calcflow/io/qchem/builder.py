@@ -3,8 +3,11 @@ from __future__ import annotations
 import re
 
 from calcflow.common.exceptions import ConfigurationError, NotSupportedError, ValidationError
-from calcflow.common.spec import CalculationSpec
 from calcflow.geometry.static import Geometry
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from calcflow.common.input import CalculationInput
 
 # fmt:off
 SUPPORTED_FUNCTIONALS = {"b3lyp", "pbe0", "m06", "cam-b3lyp", "wb97x", "wb97x-d3", "src1-r1"}
@@ -12,9 +15,9 @@ SUPPORTED_FUNCTIONALS = {"b3lyp", "pbe0", "m06", "cam-b3lyp", "wb97x", "wb97x-d3
 
 
 class QchemBuilder:
-    """translates a generic `CalculationSpec` into a q-chem input file."""
+    """translates a generic `CalculationInput` into a q-chem input file."""
 
-    def build(self, spec: CalculationSpec, geometry: Geometry) -> str:
+    def build(self, spec: CalculationInput, geometry: Geometry) -> str:
         """
         the main build method. orchestrates the creation of the input file.
         handles the special case for mom, which requires a two-job input.
@@ -64,7 +67,7 @@ class QchemBuilder:
 
         return f"{job1_str.strip()}\n\n@@@\n\n{job2_str.strip()}\n"
 
-    def _validate_spec(self, spec: CalculationSpec):
+    def _validate_spec(self, spec: CalculationInput):
         """performs q-chem-specific validation on the spec."""
         if spec.solvation and spec.solvation.model not in {"pcm", "smd", "isosvp", "cpcm"}:
             raise NotSupportedError(f"q-chem builder does not support solvation model '{spec.solvation.model}'.")
@@ -76,7 +79,7 @@ class QchemBuilder:
 
     def _build_molecule(
         self,
-        spec: CalculationSpec,
+        spec: CalculationInput,
         geometry: Geometry,
         charge_override: int | None = None,
         mult_override: int | None = None,
@@ -91,7 +94,7 @@ class QchemBuilder:
 
     def _build_rem(
         self,
-        spec: CalculationSpec,
+        spec: CalculationInput,
         scf_guess: str | None = None,
         mom_start: bool = False,
         force_unrestricted: bool = False,
@@ -155,7 +158,7 @@ class QchemBuilder:
         lines.append("$end")
         return "\n".join(lines)
 
-    def _build_basis(self, spec: CalculationSpec) -> str:
+    def _build_basis(self, spec: CalculationInput) -> str:
         if not isinstance(spec.basis_set, dict):
             return ""
         lines = ["$basis"]
@@ -166,7 +169,7 @@ class QchemBuilder:
         lines.append("$end")
         return "\n".join(lines)
 
-    def _build_solvation_blocks(self, spec: CalculationSpec) -> str:
+    def _build_solvation_blocks(self, spec: CalculationInput) -> str:
         if not spec.solvation:
             return ""
         if spec.solvation.model == "pcm":
@@ -175,14 +178,14 @@ class QchemBuilder:
             return f"$smx\n    solvent {spec.solvation.solvent}\n$end"
         return ""
 
-    def _build_solute(self, spec: CalculationSpec) -> str:
+    def _build_solute(self, spec: CalculationInput) -> str:
         """builds the $solute block for trnss calculations."""
         trnss_orbs = spec.program_options.get("reduced_excitation_space_orbitals")
         if not spec.tddft or not trnss_orbs:
             return ""
         return f"$solute\n{' '.join(map(str, trnss_orbs))}\n$end"
 
-    def _build_occupied_block(self, spec: CalculationSpec, geometry: Geometry) -> str:
+    def _build_occupied_block(self, spec: CalculationInput, geometry: Geometry) -> str:
         """generates the $occupied block for mom calculations."""
         opts = spec.program_options
         if not opts.get("run_mom", False):
@@ -235,7 +238,7 @@ class QchemBuilder:
             )
 
     def _convert_extended_transitions_to_occupations(
-        self, transition_string: str, spec: CalculationSpec, geometry: Geometry
+        self, transition_string: str, spec: CalculationInput, geometry: Geometry
     ) -> tuple[str, str]:
         """converts symbolic transition string to alpha/beta occupation strings."""
         # ground state of the *first* job determines the reference homo

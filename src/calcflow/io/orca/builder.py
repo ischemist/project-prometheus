@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from calcflow.common.exceptions import NotSupportedError, ValidationError
-from calcflow.common.spec import CalculationSpec
 from calcflow.geometry.static import Geometry
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from calcflow.common.input import CalculationInput
 
 # fmt:off
 SUPPORTED_FUNCTIONALS = {"b3lyp", "pbe0", "m06", "cam-b3lyp", "wb97x", "wb97x-d3"}
@@ -13,9 +16,9 @@ CC_VARIANTS = {"ccsd", "ccsd(t)"}
 
 
 class OrcaBuilder:
-    """translates a generic `CalculationSpec` into an orca input file."""
+    """translates a generic `CalculationInput` into an orca input file."""
 
-    def build(self, spec: CalculationSpec, geometry: Geometry) -> str:
+    def build(self, spec: CalculationInput, geometry: Geometry) -> str:
         """
         the main build method. orchestrates the creation of the input file.
         """
@@ -34,7 +37,7 @@ class OrcaBuilder:
         ]
         return "\n".join(block for block in blocks if block).strip() + "\n"
 
-    def _validate_spec(self, spec: CalculationSpec):
+    def _validate_spec(self, spec: CalculationInput):
         """performs orca-specific validation on the spec."""
         if isinstance(spec.basis_set, dict):
             raise NotSupportedError("orca builder does not support dictionary basis sets.")
@@ -45,7 +48,7 @@ class OrcaBuilder:
         if "ri_approx" in opts and "aux_basis" not in opts:
             raise ValidationError("if 'ri_approx' is set, 'aux_basis' must also be provided.")
 
-    def _build_keywords(self, spec: CalculationSpec) -> str:
+    def _build_keywords(self, spec: CalculationInput) -> str:
         keywords: list[str] = []
 
         # task
@@ -73,7 +76,7 @@ class OrcaBuilder:
 
         return f"! {' '.join(keywords)}"
 
-    def _handle_level_of_theory(self, spec: CalculationSpec) -> list[str]:
+    def _handle_level_of_theory(self, spec: CalculationInput) -> list[str]:
         raw_method = spec.level_of_theory.lower()
         if raw_method in SUPPORTED_FUNCTIONALS:
             return ["UKS" if spec.unrestricted else "RKS", raw_method]
@@ -85,18 +88,18 @@ class OrcaBuilder:
             return [raw_method.upper()]
         raise NotSupportedError(f"level of theory '{spec.level_of_theory}' not supported by orca builder.")
 
-    def _build_procs(self, spec: CalculationSpec) -> str:
+    def _build_procs(self, spec: CalculationInput) -> str:
         return f"%pal nprocs {spec.n_cores} end" if spec.n_cores > 1 else ""
 
-    def _build_mem(self, spec: CalculationSpec) -> str:
+    def _build_mem(self, spec: CalculationInput) -> str:
         return f"%maxcore {spec.memory_per_core_mb}"
 
-    def _build_solvent(self, spec: CalculationSpec) -> str:
+    def _build_solvent(self, spec: CalculationInput) -> str:
         if spec.solvation and spec.solvation.model == "smd":
             return f'%cpcm\n    smd true\n    SMDsolvent "{spec.solvation.solvent}"\nend'
         return ""
 
-    def _build_tddft(self, spec: CalculationSpec) -> str:
+    def _build_tddft(self, spec: CalculationInput) -> str:
         if not spec.tddft:
             return ""
         lines = ["%tddft"]
@@ -108,7 +111,7 @@ class OrcaBuilder:
         lines.append("end")
         return "\n".join(lines)
 
-    def _build_geom(self, spec: CalculationSpec) -> str:
+    def _build_geom(self, spec: CalculationInput) -> str:
         if not spec.optimization:
             return ""
         lines = ["%geom"]

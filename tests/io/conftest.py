@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from calcflow.common.results import Atom
-from calcflow.common.spec import CalculationSpec
+from calcflow.common.input import CalculationInput
 from calcflow.geometry.static import Geometry
 from calcflow.io.orca.builder import OrcaBuilder
 
@@ -24,9 +24,9 @@ def h2o_geometry() -> Geometry:
 
 
 @pytest.fixture
-def minimal_spec() -> CalculationSpec:
+def minimal_spec() -> CalculationInput:
     """Bare minimum spec for unit testing."""
-    return CalculationSpec(
+    return CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
