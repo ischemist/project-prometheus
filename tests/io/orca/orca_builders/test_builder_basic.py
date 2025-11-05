@@ -5,7 +5,16 @@ from __future__ import annotations
 from dataclasses import replace
 
 import pytest
-from tests.io.orca.builders.conftest import (
+
+from calcflow.common.spec import (
+    CalculationSpec,
+    OptimizationSpec,
+    SolvationSpec,
+    TddftSpec,
+)
+from calcflow.io.input import CalculationInput
+from calcflow.io.orca.builder import OrcaBuilder
+from tests.io.orca.orca_builders.conftest import (
     assert_cpcm_block,
     assert_geom_block,
     assert_keywords_present,
@@ -16,15 +25,6 @@ from tests.io.orca.builders.conftest import (
     assert_xyz_has_atoms,
     parse_orca_input,
 )
-
-from calcflow.common.spec import (
-    CalculationSpec,
-    OptimizationSpec,
-    SolvationSpec,
-    TddftSpec,
-)
-from calcflow.io.input import CalculationInput
-from calcflow.io.orca.builder import OrcaBuilder
 
 # ============================================================================
 # UNIT TESTS: Individual method behavior

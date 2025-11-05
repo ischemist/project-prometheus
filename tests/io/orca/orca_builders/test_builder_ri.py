@@ -5,14 +5,14 @@ from __future__ import annotations
 from dataclasses import replace
 
 import pytest
-from tests.io.orca.builders.conftest import (
-    assert_keywords_present,
-    parse_orca_input,
-)
 
 from calcflow.common.exceptions import ValidationError
 from calcflow.common.spec import CalculationSpec
 from calcflow.io.input import CalculationInput
+from tests.io.orca.orca_builders.conftest import (
+    assert_keywords_present,
+    parse_orca_input,
+)
 
 # ============================================================================
 # UNIT TESTS: RI approximation keyword handling

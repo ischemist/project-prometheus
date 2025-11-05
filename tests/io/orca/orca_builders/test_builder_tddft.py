@@ -5,14 +5,14 @@ from __future__ import annotations
 from dataclasses import replace
 
 import pytest
-from tests.io.orca.builders.conftest import (
+
+from calcflow.common.spec import CalculationSpec, SolvationSpec, TddftSpec
+from calcflow.io.input import CalculationInput
+from tests.io.orca.orca_builders.conftest import (
     assert_keywords_present,
     assert_tddft_block,
     parse_orca_input,
 )
-
-from calcflow.common.spec import CalculationSpec, SolvationSpec, TddftSpec
-from calcflow.io.input import CalculationInput
 
 # ============================================================================
 # UNIT TESTS: Individual TDDFT method behavior
