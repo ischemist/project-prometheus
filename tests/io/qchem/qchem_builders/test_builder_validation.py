@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from calcflow.common.exceptions import ConfigurationError, NotSupportedError, ValidationError
-from calcflow.common.spec import CalculationSpec, TddftSpec
+from calcflow.common.input import CalculationInput, TddftSpec
 from calcflow.io.qchem.builder import QchemBuilder
 
 
@@ -16,11 +16,11 @@ def qchem_builder() -> QchemBuilder:
 
 
 @pytest.fixture
-def minimal_spec(minimal_spec: CalculationSpec) -> CalculationSpec:
+def minimal_spec(minimal_spec: CalculationInput) -> CalculationInput:
     """Minimal spec with qchem-compatible settings."""
     # minimal_spec from conftest.py uses HF which may not be qchem-compatible
     # so we override with a qchem-specific version
-    return CalculationSpec(
+    return CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -42,7 +42,7 @@ class TestValidateSpec:
         """Unsupported solvation model should raise NotSupportedError."""
         from dataclasses import replace
 
-        from calcflow.common.spec import SolvationSpec
+        from calcflow.common.input import SolvationSpec
 
         spec = replace(minimal_spec, solvation=SolvationSpec(model="cosmo", solvent="water"))
         with pytest.raises(NotSupportedError, match="solvation model"):
@@ -54,7 +54,7 @@ class TestValidateSpec:
         """All supported solvation models should be accepted."""
         from dataclasses import replace
 
-        from calcflow.common.spec import SolvationSpec
+        from calcflow.common.input import SolvationSpec
 
         spec = replace(minimal_spec, solvation=SolvationSpec(model=model, solvent="water"))
         qchem_builder._validate_spec(spec)  # Should not raise
@@ -62,7 +62,7 @@ class TestValidateSpec:
     @pytest.mark.unit
     def test_mom_requires_unrestricted(self, qchem_builder, minimal_spec):
         """MOM calculation requires unrestricted=True."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -77,7 +77,7 @@ class TestValidateSpec:
     @pytest.mark.unit
     def test_mom_with_unrestricted_valid(self, qchem_builder):
         """MOM with unrestricted=True should be valid."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -91,7 +91,7 @@ class TestValidateSpec:
     @pytest.mark.unit
     def test_trnss_requires_tddft(self, qchem_builder, minimal_spec):
         """TRNSS (reduced excitation space) requires TDDFT."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -105,7 +105,7 @@ class TestValidateSpec:
     @pytest.mark.unit
     def test_trnss_with_tddft_valid(self, qchem_builder):
         """TRNSS with TDDFT should be valid."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -119,7 +119,7 @@ class TestValidateSpec:
     @pytest.mark.unit
     def test_unsupported_level_of_theory(self, qchem_builder, h2o_geometry):
         """Unsupported level of theory should raise when building."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -132,7 +132,7 @@ class TestValidateSpec:
     @pytest.mark.unit
     def test_unsupported_task(self, qchem_builder, h2o_geometry):
         """Unsupported task should raise when building."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="raman",  # Not a valid task

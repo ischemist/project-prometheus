@@ -14,11 +14,10 @@ Test Structure:
 from __future__ import annotations
 
 import pytest
-from calcflow.common.spec import CalculationSpec, TddftSpec
 
 from calcflow.common.exceptions import ValidationError
+from calcflow.common.input import CalculationInput, TddftSpec
 from calcflow.io.qchem.builder import QchemBuilder
-from tests.io.conftest import h2o_geometry, minimal_spec  # noqa: F401
 from tests.io.qchem.qchem_builders.conftest import (
     assert_rem_value,
     parse_qchem_input,
@@ -41,7 +40,7 @@ from tests.io.qchem.qchem_builders.conftest import (
 )
 def test_tddft_nroots_keyword(qchem_builder, h2o_geometry, nroots, expected_rem_value):
     """TDDFT nroots should set CIS_N_ROOTS correctly."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -67,7 +66,7 @@ def test_tddft_nroots_keyword(qchem_builder, h2o_geometry, nroots, expected_rem_
 )
 def test_tddft_singlets_triplets(qchem_builder, h2o_geometry, singlets, triplets, expected_sing, expected_trip):
     """TDDFT should set CIS_SINGLETS and CIS_TRIPLETS correctly."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -92,7 +91,7 @@ def test_tddft_singlets_triplets(qchem_builder, h2o_geometry, singlets, triplets
 )
 def test_tddft_use_tda_rpa_flag(qchem_builder, h2o_geometry, use_tda, expected_rpa):
     """TDDFT use_tda should set RPA flag correctly (inverted)."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -114,7 +113,7 @@ def test_tddft_use_tda_rpa_flag(qchem_builder, h2o_geometry, use_tda, expected_r
 @pytest.mark.contract
 def test_tddft_keywords_present(qchem_builder, h2o_geometry):
     """TDDFT calculation should have all required CIS keywords."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -135,7 +134,7 @@ def test_tddft_keywords_present(qchem_builder, h2o_geometry):
 @pytest.mark.contract
 def test_tddft_with_sp_task(qchem_builder, h2o_geometry):
     """TDDFT should work with energy (SP) task."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -153,7 +152,7 @@ def test_tddft_with_sp_task(qchem_builder, h2o_geometry):
 @pytest.mark.contract
 def test_tddft_without_tda_uses_rpa(qchem_builder, h2o_geometry):
     """TDDFT without TDA should enable RPA (full TDDFT)."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -170,7 +169,7 @@ def test_tddft_without_tda_uses_rpa(qchem_builder, h2o_geometry):
 @pytest.mark.contract
 def test_tddft_with_tda(qchem_builder, h2o_geometry):
     """TDDFT with TDA approximation should set RPA=False."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -187,7 +186,7 @@ def test_tddft_with_tda(qchem_builder, h2o_geometry):
 @pytest.mark.contract
 def test_tddft_unrestricted(qchem_builder, h2o_geometry):
     """Unrestricted TDDFT should work correctly."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=3,  # Triplet
         task="energy",
@@ -206,9 +205,9 @@ def test_tddft_unrestricted(qchem_builder, h2o_geometry):
 @pytest.mark.contract
 def test_tddft_with_solvation(qchem_builder, h2o_geometry):
     """TDDFT with solvation should include solvent blocks."""
-    from calcflow.common.spec import SolvationSpec
+    from calcflow.common.input import SolvationSpec
 
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -233,7 +232,6 @@ def test_tddft_with_solvation(qchem_builder, h2o_geometry):
 @pytest.mark.integration
 def test_tddft_singlet_excitations_workflow(h2o_geometry):
     """TDDFT singlet excitation workflow should generate correct input."""
-    from calcflow.io.input import CalculationInput
 
     calc = (
         CalculationInput(
@@ -260,7 +258,6 @@ def test_tddft_singlet_excitations_workflow(h2o_geometry):
 @pytest.mark.integration
 def test_tddft_tda_workflow(h2o_geometry):
     """TDDFT with TDA approximation should work via fluent API."""
-    from calcflow.io.input import CalculationInput
 
     calc = CalculationInput(
         charge=0,
@@ -280,7 +277,6 @@ def test_tddft_tda_workflow(h2o_geometry):
 @pytest.mark.integration
 def test_tddft_with_solvation_workflow(h2o_geometry):
     """TDDFT combined with solvation should work correctly."""
-    from calcflow.io.input import CalculationInput
 
     calc = (
         CalculationInput(
@@ -305,7 +301,6 @@ def test_tddft_with_solvation_workflow(h2o_geometry):
 @pytest.mark.integration
 def test_tddft_unrestricted_workflow(h2o_geometry):
     """TDDFT for excited triplet state should work."""
-    from calcflow.io.input import CalculationInput
 
     calc = (
         CalculationInput(
@@ -330,7 +325,6 @@ def test_tddft_unrestricted_workflow(h2o_geometry):
 @pytest.mark.integration
 def test_tddft_with_different_functionals(h2o_geometry):
     """TDDFT should work with different functionals."""
-    from calcflow.io.input import CalculationInput
 
     for functional in ["b3lyp", "cam-b3lyp", "pbe0", "m06"]:
         calc = CalculationInput(
@@ -356,7 +350,7 @@ def test_tddft_with_different_functionals(h2o_geometry):
 @pytest.mark.regression
 def test_tddft_basic_output_structure(qchem_builder, h2o_geometry):
     """TDDFT output should have complete structure."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -381,7 +375,7 @@ def test_tddft_basic_output_structure(qchem_builder, h2o_geometry):
 @pytest.mark.regression
 def test_tddft_preserves_other_settings(qchem_builder, h2o_geometry):
     """TDDFT should preserve other spec settings like n_cores, memory."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -418,7 +412,7 @@ def test_tddft_no_tddft_when_none(qchem_builder, h2o_geometry, minimal_spec):
 @pytest.mark.parametrize("method", ["b3lyp", "pbe0", "m06", "cam-b3lyp", "wb97x"])
 def test_tddft_with_various_methods(qchem_builder, h2o_geometry, method):
     """TDDFT should work with various DFT functionals."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -442,7 +436,7 @@ def test_tddft_with_various_methods(qchem_builder, h2o_geometry, method):
 def test_tddft_zero_nroots_validation(minimal_spec):
     """TDDFT with zero nroots should be rejected during spec validation."""
     with pytest.raises(ValidationError, match="nroots"):
-        CalculationSpec(
+        CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -456,7 +450,7 @@ def test_tddft_zero_nroots_validation(minimal_spec):
 def test_tddft_negative_nroots_validation():
     """TDDFT with negative nroots should be rejected."""
     with pytest.raises(ValidationError, match="nroots"):
-        CalculationSpec(
+        CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",

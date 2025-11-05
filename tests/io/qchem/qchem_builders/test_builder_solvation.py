@@ -13,11 +13,10 @@ Test Structure:
 from __future__ import annotations
 
 import pytest
-from calcflow.common.spec import CalculationSpec, SolvationSpec
 
 from calcflow.common.exceptions import NotSupportedError
+from calcflow.common.input import CalculationInput, SolvationSpec
 from calcflow.io.qchem.builder import QchemBuilder
-from tests.io.conftest import h2o_geometry, minimal_spec  # noqa: F401
 from tests.io.qchem.qchem_builders.conftest import (
     assert_block_present,
     assert_rem_value,
@@ -43,7 +42,7 @@ from tests.io.qchem.qchem_builders.conftest import (
 )
 def test_solvation_model_support(qchem_builder, h2o_geometry, model, solvent):
     """Builder should support PCM, SMD, ISOSVP, and CPCM solvation models."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -59,7 +58,7 @@ def test_solvation_model_support(qchem_builder, h2o_geometry, model, solvent):
 @pytest.mark.unit
 def test_unsupported_solvation_model(qchem_builder, h2o_geometry):
     """Builder should reject unsupported solvation models."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -74,7 +73,7 @@ def test_unsupported_solvation_model(qchem_builder, h2o_geometry):
 @pytest.mark.unit
 def test_solvation_block_generation_smd(qchem_builder, h2o_geometry):
     """SMD solvation should generate $smx block."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -91,7 +90,7 @@ def test_solvation_block_generation_smd(qchem_builder, h2o_geometry):
 @pytest.mark.unit
 def test_solvation_block_generation_pcm(qchem_builder, h2o_geometry):
     """PCM solvation should include PCM keywords in $rem."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -116,7 +115,7 @@ def test_solvation_block_generation_pcm(qchem_builder, h2o_geometry):
 @pytest.mark.parametrize("model", ["pcm", "smd", "isosvp", "cpcm"])
 def test_solvation_models_have_solvent_setup(qchem_builder, h2o_geometry, model):
     """Each solvation model should set up solvent information."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -133,7 +132,7 @@ def test_solvation_models_have_solvent_setup(qchem_builder, h2o_geometry, model)
 @pytest.mark.contract
 def test_smd_generates_smx_block(qchem_builder, h2o_geometry):
     """SMD model should generate $smx block."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -150,7 +149,7 @@ def test_smd_generates_smx_block(qchem_builder, h2o_geometry):
 @pytest.mark.contract
 def test_solvation_with_unrestricted(qchem_builder, h2o_geometry):
     """Solvation should work with unrestricted calculations."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=3,  # Triplet
         task="energy",
@@ -169,7 +168,7 @@ def test_solvation_with_unrestricted(qchem_builder, h2o_geometry):
 @pytest.mark.contract
 def test_solvation_preserves_basis_and_method(qchem_builder, h2o_geometry):
     """Solvation should not affect basis set and method choices."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -188,7 +187,7 @@ def test_solvation_preserves_basis_and_method(qchem_builder, h2o_geometry):
 @pytest.mark.parametrize("solvent", ["water", "acetonitrile", "dichloromethane", "dmso"])
 def test_various_solvents_supported(qchem_builder, h2o_geometry, solvent):
     """Builder should support common solvents in SMD model."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -211,7 +210,7 @@ def test_various_solvents_supported(qchem_builder, h2o_geometry, solvent):
 @pytest.mark.integration
 def test_solvation_smd_workflow(h2o_geometry):
     """SMD solvation workflow via fluent API."""
-    from calcflow.io.input import CalculationInput
+    from calcflow.common.input import CalculationInput
 
     calc = CalculationInput(
         charge=0,
@@ -231,7 +230,7 @@ def test_solvation_smd_workflow(h2o_geometry):
 @pytest.mark.integration
 def test_solvation_pcm_workflow(h2o_geometry):
     """PCM solvation workflow via fluent API."""
-    from calcflow.io.input import CalculationInput
+    from calcflow.common.input import CalculationInput
 
     calc = CalculationInput(
         charge=0,
@@ -250,7 +249,7 @@ def test_solvation_pcm_workflow(h2o_geometry):
 @pytest.mark.integration
 def test_solvation_with_tddft_workflow(h2o_geometry):
     """Solvation combined with TDDFT should work correctly."""
-    from calcflow.io.input import CalculationInput
+    from calcflow.common.input import CalculationInput
 
     calc = (
         CalculationInput(
@@ -275,7 +274,7 @@ def test_solvation_with_tddft_workflow(h2o_geometry):
 @pytest.mark.integration
 def test_solvation_with_optimization_workflow(h2o_geometry):
     """Solvation combined with geometry optimization."""
-    from calcflow.io.input import CalculationInput
+    from calcflow.common.input import CalculationInput
 
     calc = CalculationInput(
         charge=0,
@@ -295,7 +294,7 @@ def test_solvation_with_optimization_workflow(h2o_geometry):
 @pytest.mark.integration
 def test_solvation_with_unrestricted_workflow(h2o_geometry):
     """Solvation with unrestricted calculation."""
-    from calcflow.io.input import CalculationInput
+    from calcflow.common.input import CalculationInput
 
     calc = (
         CalculationInput(
@@ -324,7 +323,7 @@ def test_solvation_with_unrestricted_workflow(h2o_geometry):
 @pytest.mark.regression
 def test_solvation_basic_output_structure(qchem_builder, h2o_geometry):
     """Solvation output should have complete structure."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -349,7 +348,7 @@ def test_solvation_basic_output_structure(qchem_builder, h2o_geometry):
 @pytest.mark.parametrize("model", ["pcm", "smd", "isosvp", "cpcm"])
 def test_solvation_models_produce_valid_input(qchem_builder, h2o_geometry, model):
     """Each solvation model should produce valid Q-Chem input."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -371,7 +370,7 @@ def test_solvation_models_produce_valid_input(qchem_builder, h2o_geometry, model
 def test_solvation_with_different_functionals(qchem_builder, h2o_geometry):
     """Solvation should work with different functionals."""
     for functional in ["b3lyp", "pbe0", "m06", "cam-b3lyp"]:
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -389,7 +388,7 @@ def test_solvation_with_different_functionals(qchem_builder, h2o_geometry):
 @pytest.mark.regression
 def test_solvation_preserves_charge_multiplicity(qchem_builder, h2o_geometry):
     """Solvation should preserve charge and multiplicity settings."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=1,
         spin_multiplicity=2,
         task="energy",
@@ -424,7 +423,7 @@ def test_solvation_no_solvation_when_none(qchem_builder, h2o_geometry, minimal_s
 @pytest.mark.regression
 def test_solvation_multiple_solvents_workflow(h2o_geometry):
     """Builder should work with different solvents in sequence."""
-    from calcflow.io.input import CalculationInput
+    from calcflow.common.input import CalculationInput
 
     solvents = ["water", "acetonitrile", "dichloromethane"]
 

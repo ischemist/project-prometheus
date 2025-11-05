@@ -6,7 +6,7 @@ from dataclasses import replace
 
 import pytest
 
-from calcflow.common.spec import CalculationSpec
+from calcflow.common.input import CalculationInput
 from calcflow.io.qchem.builder import QchemBuilder
 
 from .conftest import (
@@ -36,7 +36,7 @@ class TestBuildMolecule:
     @pytest.mark.unit
     def test_molecule_with_charge_and_multiplicity(self, qchem_builder, h2o_geometry):
         """$molecule block should include charge and multiplicity."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -53,7 +53,7 @@ class TestBuildMolecule:
     def test_molecule_with_charged_species(self, qchem_builder, h2o_geometry):
         """$molecule block should handle charged species."""
         spec = replace(
-            CalculationSpec(
+            CalculationInput(
                 charge=1,
                 spin_multiplicity=2,
                 task="energy",
@@ -67,7 +67,7 @@ class TestBuildMolecule:
     @pytest.mark.unit
     def test_molecule_read_flag(self, qchem_builder, h2o_geometry):
         """$molecule block with read_geom=True should use 'read' keyword."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -82,7 +82,7 @@ class TestBuildMolecule:
     @pytest.mark.unit
     def test_molecule_charge_override(self, qchem_builder, h2o_geometry):
         """charge_override should take precedence."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -95,7 +95,7 @@ class TestBuildMolecule:
     @pytest.mark.unit
     def test_molecule_multiplicity_override(self, qchem_builder, h2o_geometry):
         """mult_override should take precedence."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -199,7 +199,7 @@ class TestBuildBasis:
     @pytest.mark.unit
     def test_dict_basis_generates_block(self, qchem_builder):
         """Dictionary basis should generate $basis block."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -217,7 +217,7 @@ class TestBuildBasis:
     @pytest.mark.unit
     def test_dict_basis_format(self, qchem_builder):
         """Dictionary basis should have proper Q-Chem format."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -242,7 +242,7 @@ class TestBuildSolvationBlocks:
     @pytest.mark.unit
     def test_pcm_solvation_block(self, qchem_builder, minimal_spec):
         """PCM solvation should generate $solvent block."""
-        from calcflow.common.spec import SolvationSpec
+        from calcflow.common.input import SolvationSpec
 
         spec = replace(minimal_spec, solvation=SolvationSpec(model="pcm", solvent="water"))
         result = qchem_builder._build_solvation_blocks(spec)
@@ -253,7 +253,7 @@ class TestBuildSolvationBlocks:
     @pytest.mark.unit
     def test_smd_solvation_block(self, qchem_builder, minimal_spec):
         """SMD solvation should generate $smx block."""
-        from calcflow.common.spec import SolvationSpec
+        from calcflow.common.input import SolvationSpec
 
         spec = replace(minimal_spec, solvation=SolvationSpec(model="smd", solvent="water"))
         result = qchem_builder._build_solvation_blocks(spec)
@@ -273,7 +273,7 @@ class TestSpBasicStructure:
     @pytest.mark.contract
     def test_sp_has_required_blocks(self, qchem_builder, h2o_geometry):
         """Basic SP should have required blocks."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -291,7 +291,7 @@ class TestSpBasicStructure:
     @pytest.mark.contract
     def test_sp_molecule_structure(self, qchem_builder, h2o_geometry):
         """SP molecule block should have charge/mult and geometry."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -307,7 +307,7 @@ class TestSpBasicStructure:
     @pytest.mark.contract
     def test_sp_rem_has_required_keys(self, qchem_builder, h2o_geometry):
         """SP $rem should have required keys."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -329,7 +329,7 @@ class TestSpBasicStructure:
     @pytest.mark.contract
     def test_sp_rem_correct_values(self, qchem_builder, h2o_geometry):
         """SP $rem should have correct values."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -350,7 +350,7 @@ class TestOptStructure:
     @pytest.mark.contract
     def test_opt_jobtype(self, qchem_builder, h2o_geometry):
         """Optimization should have JOBTYPE opt."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="geometry",
@@ -365,7 +365,7 @@ class TestOptStructure:
     @pytest.mark.contract
     def test_opt_has_molecule_and_rem(self, qchem_builder, h2o_geometry):
         """Optimization should have molecule and rem blocks."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="geometry",
@@ -383,7 +383,7 @@ class TestFreqStructure:
     @pytest.mark.contract
     def test_freq_jobtype(self, qchem_builder, h2o_geometry):
         """Frequency should have JOBTYPE freq."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="frequency",
@@ -402,7 +402,7 @@ class TestUnrestrictedCalculations:
     @pytest.mark.contract
     def test_unrestricted_flag_set(self, qchem_builder, h2o_geometry):
         """Unrestricted calculation should set UNRESTRICTED True."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=3,  # Triplet
             task="energy",
@@ -422,7 +422,7 @@ class TestDictBasisStructure:
     @pytest.mark.contract
     def test_dict_basis_generates_basis_block(self, qchem_builder, h2o_geometry):
         """Dictionary basis should generate $basis block."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -437,7 +437,7 @@ class TestDictBasisStructure:
     @pytest.mark.contract
     def test_dict_basis_rem_has_gen(self, qchem_builder, h2o_geometry):
         """Dictionary basis should set BASIS gen in $rem."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -456,9 +456,9 @@ class TestSolvationStructure:
     @pytest.mark.contract
     def test_pcm_solvation_structure(self, qchem_builder, h2o_geometry):
         """PCM solvation should generate $solvent block."""
-        from calcflow.common.spec import SolvationSpec
+        from calcflow.common.input import SolvationSpec
 
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -474,9 +474,9 @@ class TestSolvationStructure:
     @pytest.mark.contract
     def test_smd_solvation_structure(self, qchem_builder, h2o_geometry):
         """SMD solvation should generate $smx block."""
-        from calcflow.common.spec import SolvationSpec
+        from calcflow.common.input import SolvationSpec
 
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -501,7 +501,7 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_basic_sp_workflow(self, h2o_geometry):
         """Basic SP workflow using fluent API."""
-        from calcflow.io.input import CalculationInput
+        from calcflow.common.input import CalculationInput
 
         calc = CalculationInput(
             charge=0,
@@ -520,7 +520,7 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_unrestricted_workflow(self, h2o_geometry):
         """Unrestricted calculation workflow."""
-        from calcflow.io.input import CalculationInput
+        from calcflow.common.input import CalculationInput
 
         calc = CalculationInput(
             charge=0,
@@ -537,7 +537,7 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_dict_basis_workflow(self, h2o_geometry):
         """Dictionary basis workflow."""
-        from calcflow.io.input import CalculationInput
+        from calcflow.common.input import CalculationInput
 
         calc = CalculationInput(
             charge=0,
@@ -556,7 +556,7 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_solvation_workflow(self, h2o_geometry):
         """Solvation workflow."""
-        from calcflow.io.input import CalculationInput
+        from calcflow.common.input import CalculationInput
 
         calc = CalculationInput(
             charge=0,
@@ -574,7 +574,7 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_tddft_workflow(self, h2o_geometry):
         """TDDFT workflow."""
-        from calcflow.io.input import CalculationInput
+        from calcflow.common.input import CalculationInput
 
         calc = CalculationInput(
             charge=0,
@@ -592,7 +592,7 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_complex_workflow(self, h2o_geometry):
         """Complex workflow combining multiple features."""
-        from calcflow.io.input import CalculationInput
+        from calcflow.common.input import CalculationInput
 
         calc = (
             CalculationInput(
@@ -627,7 +627,7 @@ class TestRegressionSemanticValidation:
     @pytest.mark.regression
     def test_sp_semantic_regression(self, qchem_builder, h2o_geometry):
         """Basic SP semantic regression test."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -648,7 +648,7 @@ class TestRegressionSemanticValidation:
     @pytest.mark.regression
     def test_opt_semantic_regression(self, qchem_builder, h2o_geometry):
         """Geometry optimization semantic regression test."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="geometry",
@@ -664,7 +664,7 @@ class TestRegressionSemanticValidation:
     @pytest.mark.regression
     def test_dict_basis_semantic_regression(self, qchem_builder, h2o_geometry):
         """Dictionary basis semantic regression test."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -680,9 +680,9 @@ class TestRegressionSemanticValidation:
     @pytest.mark.regression
     def test_solvation_semantic_regression(self, qchem_builder, h2o_geometry):
         """Solvation semantic regression test."""
-        from calcflow.common.spec import SolvationSpec
+        from calcflow.common.input import SolvationSpec
 
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
@@ -698,7 +698,7 @@ class TestRegressionSemanticValidation:
     @pytest.mark.regression
     def test_charged_species_semantic_regression(self, qchem_builder, h2o_geometry):
         """Charged species semantic regression test."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=1,
             spin_multiplicity=2,
             task="energy",
@@ -713,7 +713,7 @@ class TestRegressionSemanticValidation:
     @pytest.mark.regression
     def test_unrestricted_semantic_regression(self, qchem_builder, h2o_geometry):
         """Unrestricted calculation semantic regression test."""
-        spec = CalculationSpec(
+        spec = CalculationInput(
             charge=0,
             spin_multiplicity=3,
             task="energy",

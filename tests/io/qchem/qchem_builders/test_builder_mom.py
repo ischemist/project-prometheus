@@ -16,11 +16,10 @@ from __future__ import annotations
 from dataclasses import replace
 
 import pytest
-from calcflow.common.spec import CalculationSpec
 
 from calcflow.common.exceptions import ConfigurationError, ValidationError
+from calcflow.common.input import CalculationInput
 from calcflow.io.qchem.builder import QchemBuilder
-from tests.io.conftest import h2o_geometry, minimal_spec  # noqa: F401
 from tests.io.qchem.qchem_builders.conftest import (
     assert_block_not_present,
     assert_block_present,
@@ -117,7 +116,7 @@ def test_resolve_orbital_index_lumo(lumo_offset, expected):
 def test_apply_single_operation_homo_lumo_excitation(h2o_geometry):
     """_apply_single_operation should handle HOMO->LUMO excitation."""
     builder = QchemBuilder()
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -144,7 +143,7 @@ def test_apply_single_operation_homo_lumo_excitation(h2o_geometry):
 def test_apply_single_operation_homo_homo1_excitation(h2o_geometry):
     """_apply_single_operation should handle HOMO-1->LUMO+1 excitation."""
     builder = QchemBuilder()
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -171,7 +170,7 @@ def test_apply_single_operation_homo_homo1_excitation(h2o_geometry):
 def test_apply_ionization_from_homo(h2o_geometry):
     """_apply_ionization should remove electron from specified orbital."""
     builder = QchemBuilder()
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -199,7 +198,7 @@ def test_apply_ionization_from_homo(h2o_geometry):
 def test_apply_ionization_from_beta():
     """_apply_ionization should remove electron from beta if specified."""
     builder = QchemBuilder()
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=3,
         task="energy",
@@ -397,9 +396,9 @@ def test_mom_ionization_job2_charge_override(qchem_builder, h2o_geometry, minima
 @pytest.mark.contract
 def test_mom_with_solvation(qchem_builder, h2o_geometry):
     """mom with solvation should include solvent blocks in both jobs."""
-    from calcflow.common.spec import SolvationSpec
+    from calcflow.common.input import SolvationSpec
 
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -427,7 +426,7 @@ def test_mom_with_solvation(qchem_builder, h2o_geometry):
 @pytest.mark.integration
 def test_mom_single_transition(h2o_geometry):
     """mom with single transition should work correctly."""
-    from calcflow.io.input import CalculationInput
+    from calcflow.common.input import CalculationInput
 
     calc = (
         CalculationInput(
@@ -489,7 +488,7 @@ def test_mom_homo_lumo_occupation_count(qchem_builder, h2o_geometry, minimal_spe
 @pytest.mark.regression
 def test_mom_ionization_electron_count_decreased(qchem_builder, h2o_geometry):
     """Ionization should decrease total electron count in $occupied."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -514,7 +513,7 @@ def test_mom_ionization_electron_count_decreased(qchem_builder, h2o_geometry):
 @pytest.mark.regression
 def test_mom_preserves_other_spec_options(qchem_builder, h2o_geometry):
     """MOM should preserve other spec options like n_cores, basis set, functional."""
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -546,9 +545,9 @@ def test_mom_preserves_other_spec_options(qchem_builder, h2o_geometry):
 @pytest.mark.regression
 def test_mom_job1_no_tddft(qchem_builder, h2o_geometry):
     """MOM job1 should NOT have TDDFT even if spec requests it."""
-    from calcflow.common.spec import TddftSpec
+    from calcflow.common.input import TddftSpec
 
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -570,9 +569,9 @@ def test_mom_job1_no_tddft(qchem_builder, h2o_geometry):
 @pytest.mark.regression
 def test_mom_job2_preserves_tddft(qchem_builder, h2o_geometry):
     """MOM job2 should preserve TDDFT settings if specified."""
-    from calcflow.common.spec import TddftSpec
+    from calcflow.common.input import TddftSpec
 
-    spec = CalculationSpec(
+    spec = CalculationInput(
         charge=0,
         spin_multiplicity=1,
         task="energy",
@@ -628,7 +627,7 @@ def test_invalid_orbital_notation(qchem_builder):
     # Invalid HOMO notation - HOMO+5 should fail (should be HOMO+5 as two separate parts)
     # Actually "HOMO+5" fails to match the regex but returns None which might not raise
     # Let's test something that will definitely fail
-    with pytest.raises(Exception):  # Could be ValueError or ValidationError
+    with pytest.raises(ValidationError):
         builder._resolve_orbital_index("INVALID_ORBITAL", initial_homo=5)
 
 
