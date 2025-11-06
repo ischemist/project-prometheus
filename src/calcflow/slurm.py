@@ -90,12 +90,12 @@ class SlurmJob:
 
         # add program-specific directives for parallelism
         lines.extend(program_directives)
-        lines.append("\n")
+        lines.append("")
 
         if self.modules:
             for module in self.modules:
                 lines.append(f"module load {module}")
-            lines.append("\n")
+            lines.append("")
 
         lines.append(launch_command)
         return "\n".join(lines) + "\n"
