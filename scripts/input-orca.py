@@ -33,3 +33,12 @@ with open("h2o.inp", "w") as f:
 
 # with open("submit.sh", "w") as f:
 #     f.write(slurm_script_content)
+
+# 6. save calculation spec as json for reproducibility
+# this allows you to see exactly what parameters were used without parsing the input file
+with open("h2o_calc_spec.json", "w") as f:
+    f.write(calc.to_json())
+
+# 7. later, you can load the spec back from json
+# loaded_calc = CalculationInput.from_json(open("h2o_calc_spec.json").read())
+# assert loaded_calc == calc  # perfect roundtrip!

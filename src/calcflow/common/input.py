@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
+import json
+from dataclasses import asdict, dataclass, field, replace
 from typing import Any, Literal, TypeVar
 
 from calcflow.common.exceptions import ConfigurationError, ValidationError
@@ -29,6 +30,15 @@ class TddftSpec:
     use_tda: bool = True  # Tamm-Dancoff Approximation is a common choice
     state_to_optimize: int | None = None  # for geometry optimization of an excited state
 
+    def to_dict(self) -> dict[str, Any]:
+        """serializes to a dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TddftSpec:
+        """deserializes from a dictionary."""
+        return cls(**data)
+
 
 @dataclass(frozen=True)
 class SolvationSpec:
@@ -37,6 +47,15 @@ class SolvationSpec:
     model: str  # e.g., 'smd', 'cpcm'
     solvent: str  # e.g., 'water', 'acetonitrile'
 
+    def to_dict(self) -> dict[str, Any]:
+        """serializes to a dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> SolvationSpec:
+        """deserializes from a dictionary."""
+        return cls(**data)
+
 
 @dataclass(frozen=True)
 class OptimizationSpec:
@@ -44,6 +63,15 @@ class OptimizationSpec:
 
     calc_hess_initial: bool = False
     recalc_hess_freq: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """serializes to a dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> OptimizationSpec:
+        """deserializes from a dictionary."""
+        return cls(**data)
 
 
 @dataclass(frozen=True)
@@ -76,6 +104,15 @@ class MomSpec:
     # manual override for advanced users (bypasses symbolic transition parsing)
     alpha_occupation: str | None = None
     beta_occupation: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """serializes to a dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> MomSpec:
+        """deserializes from a dictionary."""
+        return cls(**data)
 
 
 # --- Main Calculation Specification ---
@@ -283,3 +320,46 @@ class CalculationInput:
             )
         builder = BUILDERS[program_lower]
         return builder.build(self, geometry)
+
+    # --- Serialization ---
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        serializes the calculation input to a dictionary.
+
+        nested spec objects are also converted to dicts for clean json serialization.
+        """
+        data = asdict(self)
+        # asdict already recursively converts nested dataclasses
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> CalculationInput:
+        """
+        deserializes a calculation input from a dictionary.
+
+        reconstructs nested spec objects from their dict representations.
+        """
+        # create a copy to avoid mutating the input
+        data = dict(data)
+
+        # reconstruct nested specs if present
+        if data.get("tddft") is not None:
+            data["tddft"] = TddftSpec.from_dict(data["tddft"])
+        if data.get("solvation") is not None:
+            data["solvation"] = SolvationSpec.from_dict(data["solvation"])
+        if data.get("optimization") is not None:
+            data["optimization"] = OptimizationSpec.from_dict(data["optimization"])
+        if data.get("mom") is not None:
+            data["mom"] = MomSpec.from_dict(data["mom"])
+
+        return cls(**data)
+
+    def to_json(self, indent: int = 2) -> str:
+        """serializes the calculation input to a json string."""
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_json(cls, json_str: str) -> CalculationInput:
+        """deserializes a calculation input from a json string."""
+        return cls.from_dict(json.loads(json_str))
