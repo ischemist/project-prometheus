@@ -17,6 +17,7 @@ Design Philosophy:
 """
 
 import dataclasses
+import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from types import UnionType
@@ -87,6 +88,15 @@ class FrozenModel:
             }
 
         return value
+
+    def to_json(self, indent: int = 2) -> str:
+        """Serializes the model to a JSON string."""
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_json(cls: type[T], json_str: str) -> T:
+        """Deserializes a model from a JSON string."""
+        return cls.from_dict(json.loads(json_str))
 
 
 # =============================================================================
@@ -521,3 +531,16 @@ class CalculationResult(FrozenModel):
 
     # --- Program Specific Data ---
     program_specific: Mapping[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Converts to dictionary, excluding raw_output to save space."""
+        data = super().to_dict()
+        data.pop("raw_output", None)
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "CalculationResult":
+        """Reconstructs from dictionary, setting raw_output to empty string."""
+        if "raw_output" not in data:
+            data = {**data, "raw_output": ""}
+        return super().from_dict(data)
