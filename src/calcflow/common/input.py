@@ -300,6 +300,41 @@ class CalculationInput:
         """
         return self.set_options(ri_approx=approx.upper(), aux_basis=aux_basis)
 
+    def set_basis(self: T_CalculationInput, basis: str | dict[str, str]) -> T_CalculationInput:
+        """
+        sets basis set, supporting element-specific basis sets.
+
+        args:
+            basis: either a uniform basis set string (e.g., "def2-tzvp") or
+                   a dict mapping element symbols to basis sets (e.g., {"H": "pc-2", "O": "pcX-2"})
+
+        example:
+            .set_basis("def2-svp")  # uniform basis
+            .set_basis({"H": "pc-2", "O": "pcX-2"})  # element-specific (Q-Chem)
+        """
+        if isinstance(basis, str):
+            return replace(self, basis_set=basis)
+        else:
+            return self.set_options(element_basis=basis)
+
+    def set_reduced_excitation_space(self: T_CalculationInput, initial_orbitals: list[int]) -> T_CalculationInput:
+        """
+        sets up reduced excitation space (TRNSS) for core-level spectroscopy.
+
+        this restricts tddft excitations to originate from specific orbitals,
+        useful for X-ray absorption spectroscopy (XAS) calculations.
+
+        args:
+            initial_orbitals: list of orbital indices (1-based) from which excitations originate.
+                             typically core orbitals for XAS.
+
+        example:
+            .set_reduced_excitation_space(initial_orbitals=[1])  # excitations from orbital 1 only
+
+        note: this is primarily for Q-Chem. requires tddft to be enabled.
+        """
+        return self.set_options(reduced_excitation_space_orbitals=initial_orbitals)
+
     # --- Exporter ---
 
     def export(self, program: str, geometry: Geometry) -> str:
