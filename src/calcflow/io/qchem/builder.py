@@ -20,60 +20,90 @@ class QchemBuilder:
     def build(self, spec: CalculationInput, geometry: Geometry) -> str:
         """
         the main build method. orchestrates the creation of the input file.
-        handles the special case for mom, which requires a two-job input.
+        delegates to specialized builders based on whether multiple jobs are required.
         """
         self._validate_spec(spec)
-        opts = spec.program_options
-        is_mom = opts.get("run_mom", False)
 
-        # --- build the first job ---
-        # for mom, the first job is always a simple energy calculation to get the orbitals.
-        task_for_job1 = "energy" if is_mom else spec.task
-        rem_job1 = self._build_rem(spec, task_override=task_for_job1)
+        if spec.requires_multiple_jobs:
+            return self._build_multi_job_input(spec, geometry)
+        else:
+            return self._build_single_job_input(spec, geometry)
 
-        blocks_job1 = [
+    def _build_single_job_input(self, spec: CalculationInput, geometry: Geometry) -> str:
+        """builds a standard single-job input file."""
+        blocks = [
             self._build_molecule(spec, geometry),
-            rem_job1,
+            self._build_rem(spec),
             self._build_basis(spec),
             self._build_solvation_blocks(spec),
-            self._build_solute(spec) if not is_mom else "",
+            self._build_solute(spec),
         ]
-        job1_str = "\n\n".join(block for block in blocks_job1 if block)
+        return "\n\n".join(block for block in blocks if block).strip() + "\n"
 
-        if not is_mom:
-            return job1_str.strip() + "\n"
+    def _build_multi_job_input(self, spec: CalculationInput, geometry: Geometry) -> str:
+        """
+        builds a multi-job input file (e.g., for mom).
+        currently only supports mom, but structured to allow future extensions.
+        """
+        if spec.mom:
+            return self._build_mom_input(spec, geometry)
+        else:
+            raise NotSupportedError("multi-job calculations are currently only supported for mom.")
 
-        # --- if mom, build the second job ---
-        rem_job2 = self._build_rem(
-            spec,
-            scf_guess="read",
-            mom_start=True,
-            force_unrestricted=True,
-            task_override="energy",  # the second job of a mom is always a single point calc of the excited state
+    def _build_mom_input(self, spec: CalculationInput, geometry: Geometry) -> str:
+        """
+        builds a two-job mom input file.
+        job 1: ground state calculation to generate reference orbitals.
+        job 2: excited state calculation with modified orbital occupations.
+        """
+        job1 = self._build_mom_job1(spec, geometry)
+        job2 = self._build_mom_job2(spec, geometry)
+        return f"{job1}\n\n@@@\n\n{job2}\n"
+
+    def _build_mom_job1(self, spec: CalculationInput, geometry: Geometry) -> str:
+        """builds the first job for mom: ground state reference calculation."""
+        blocks = [
+            self._build_molecule(spec, geometry),
+            self._build_rem(spec, task_override="energy"),
+            self._build_basis(spec),
+            self._build_solvation_blocks(spec),
+            # no $solute block in job1 (tddft only runs in job2)
+        ]
+        return "\n\n".join(block for block in blocks if block).strip()
+
+    def _build_mom_job2(self, spec: CalculationInput, geometry: Geometry) -> str:
+        """builds the second job for mom: excited state with target occupations."""
+        assert spec.mom is not None
+
+        # determine charge/spin for job2 (may differ for ionization)
+        charge_job2 = spec.mom.job2_charge if spec.mom.job2_charge is not None else spec.charge
+        mult_job2 = (
+            spec.mom.job2_spin_multiplicity if spec.mom.job2_spin_multiplicity is not None else spec.spin_multiplicity
         )
-        # check for overrides for job2 charge/spin, common for ionization
-        charge_job2 = opts.get("mom_job2_charge", spec.charge)
-        mult_job2 = opts.get("mom_job2_spin_multiplicity", spec.spin_multiplicity)
 
-        blocks_job2 = [
+        blocks = [
             self._build_molecule(spec, geometry, charge_override=charge_job2, mult_override=mult_job2, read_geom=True),
-            rem_job2,
+            self._build_rem(spec, scf_guess="read", mom_start=True, task_override="energy"),
             self._build_basis(spec),
             self._build_solvation_blocks(spec),
             self._build_occupied_block(spec, geometry),
-            self._build_solute(spec),  # solute block for tddft from mom state
+            self._build_solute(spec),  # tddft excitations from the mom state
         ]
-        job2_str = "\n\n".join(block for block in blocks_job2 if block)
-
-        return f"{job1_str.strip()}\n\n@@@\n\n{job2_str.strip()}\n"
+        return "\n\n".join(block for block in blocks if block).strip()
 
     def _validate_spec(self, spec: CalculationInput):
         """performs q-chem-specific validation on the spec."""
         if spec.solvation and spec.solvation.model not in {"pcm", "smd", "isosvp", "cpcm"}:
             raise NotSupportedError(f"q-chem builder does not support solvation model '{spec.solvation.model}'.")
-        opts = spec.program_options
-        if opts.get("run_mom", False) and not spec.unrestricted:
+
+        # mom validation (should already be caught by CalculationInput.__post_init__, but double-check)
+        if spec.mom and not spec.unrestricted:
             raise ConfigurationError("mom requires an unrestricted calculation. use .set_unrestricted()")
+
+        # program_options validation (for backward compatibility during transition)
+        opts = spec.program_options
+        if opts.get("run_mom", False):
+            raise ConfigurationError("program_options['run_mom'] is deprecated. use .set_mom() instead.")
         if opts.get("reduced_excitation_space_orbitals") and not spec.tddft:
             raise ConfigurationError("reduced excitation space requires tddft to be enabled.")
 
@@ -97,7 +127,6 @@ class QchemBuilder:
         spec: CalculationInput,
         scf_guess: str | None = None,
         mom_start: bool = False,
-        force_unrestricted: bool = False,
         task_override: str | None = None,
     ) -> str:
         rem_vars: dict[str, str | bool | int] = {}
@@ -118,7 +147,7 @@ class QchemBuilder:
             raise NotSupportedError(f"level of theory '{method}' not supported by q-chem builder.")
 
         rem_vars["BASIS"] = "gen" if isinstance(spec.basis_set, dict) else spec.basis_set
-        rem_vars["UNRESTRICTED"] = spec.unrestricted or force_unrestricted
+        rem_vars["UNRESTRICTED"] = spec.unrestricted
         rem_vars["SYMMETRY"] = False
         rem_vars["SYM_IGNORE"] = True
 
@@ -127,13 +156,13 @@ class QchemBuilder:
             rem_vars["SCF_GUESS"] = scf_guess
         if mom_start:
             rem_vars["MOM_START"] = 1
-            rem_vars["MOM_METHOD"] = opts.get("mom_method", "IMOM")
+            rem_vars["MOM_METHOD"] = spec.mom.method if spec.mom else "IMOM"
 
         # --- tddft ---
         if spec.tddft:  # noqa: SIM102
             # tddft block is only added to the *final* calculation step
             # i.e., the first job if not mom, or the second job if mom
-            if not opts.get("run_mom", False) or mom_start:
+            if not spec.mom or mom_start:
                 rem_vars["CIS_N_ROOTS"] = spec.tddft.nroots
                 rem_vars["CIS_SINGLETS"] = spec.tddft.singlets
                 rem_vars["CIS_TRIPLETS"] = spec.tddft.triplets
@@ -187,35 +216,36 @@ class QchemBuilder:
 
     def _build_occupied_block(self, spec: CalculationInput, geometry: Geometry) -> str:
         """generates the $occupied block for mom calculations."""
-        opts = spec.program_options
-        if not opts.get("run_mom", False):
+        if not spec.mom:
             return ""
 
         if not spec.unrestricted:
             # this check is redundant with _validate_spec, but good for defense
             raise ConfigurationError("mom requires an unrestricted calculation. use .set_unrestricted()")
 
-        # determine charge/multiplicity for this specific job, allowing overrides for job 2
-        effective_charge = opts.get("mom_job2_charge", spec.charge)
-        effective_multiplicity = opts.get("mom_job2_spin_multiplicity", spec.spin_multiplicity)
+        # determine charge/multiplicity for this specific job (may differ for ionization)
+        effective_charge = spec.mom.job2_charge if spec.mom.job2_charge is not None else spec.charge
+        effective_multiplicity = (
+            spec.mom.job2_spin_multiplicity if spec.mom.job2_spin_multiplicity is not None else spec.spin_multiplicity
+        )
         total_electrons = geometry.total_nuclear_charge - effective_charge
 
-        mom_transition = opts.get("mom_transition")
-        if mom_transition == "GROUND_STATE":
+        # check for manual occupation override
+        if spec.mom.alpha_occupation and spec.mom.beta_occupation:
+            alpha_occ = spec.mom.alpha_occupation
+            beta_occ = spec.mom.beta_occupation
+        elif spec.mom.transition == "GROUND_STATE":
+            # special case: ground state occupation (for testing/validation)
             if total_electrons % 2 != 0:
                 raise ConfigurationError("mom 'GROUND_STATE' requires an even number of electrons.")
             n_occ = total_electrons // 2
             alpha_occ = beta_occ = f"1:{n_occ}" if n_occ > 1 else "1"
-        elif mom_transition:
+        elif spec.mom.transition:
             # handle symbolic transitions like "HOMO->LUMO" or "5(beta)->vac"
-            alpha_occ, beta_occ = self._convert_extended_transitions_to_occupations(mom_transition, spec, geometry)
-        elif "mom_alpha_occ" in opts and "mom_beta_occ" in opts:
-            # use explicitly provided occupation strings
-            alpha_occ = opts["mom_alpha_occ"]
-            beta_occ = opts["mom_beta_occ"]
+            alpha_occ, beta_occ = self._convert_extended_transitions_to_occupations(spec.mom.transition, spec, geometry)
         else:
             raise ConfigurationError(
-                "for mom, must specify `mom_transition` or provide `mom_alpha_occ` and `mom_beta_occ` in program_options."
+                "mom requires either 'transition' or both 'alpha_occupation' and 'beta_occupation'."
             )
 
         self._validate_mom_occupations(alpha_occ, beta_occ, total_electrons, effective_multiplicity)
@@ -293,14 +323,38 @@ class QchemBuilder:
             return initial_homo + 1 + offset if operator == "+" else initial_homo + 1
 
     def _apply_ionization(self, source_idx: int, spin: str | None, alpha_occ: set[int], beta_occ: set[int]) -> None:
+        """
+        removes an electron from the specified orbital for ionization transitions (e.g., "HOMO->vac").
+
+        spin channel selection logic:
+        1. if spin is explicitly specified ("alpha" or "beta"), remove from that channel
+        2. if spin is unspecified (none), prefer removing from beta, then fall back to alpha
+        3. raise error if the orbital is unoccupied in the target channel
+
+        rationale for preferring beta when spin is unspecified:
+        - for closed-shell ground states (alpha == beta initially), ionizing from beta
+          leaves the unpaired electron in alpha (spin-up by convention)
+        - this matches the typical chemical interpretation: cation radicals from
+          closed-shell neutrals are usually represented with alpha (spin-up) unpaired electrons
+        - example: h2o (singlet, 10e) -> h2o+ (doublet, 9e) with unpaired electron in alpha
+
+        """
         if spin == "alpha":
+            if source_idx not in alpha_occ:
+                raise ValidationError(f"cannot ionize from unoccupied alpha orbital {source_idx}")
             alpha_occ.remove(source_idx)
-        elif spin == "beta" or source_idx in beta_occ:
+        elif spin == "beta":
+            if source_idx not in beta_occ:
+                raise ValidationError(f"cannot ionize from unoccupied beta orbital {source_idx}")
             beta_occ.remove(source_idx)
-        elif source_idx in alpha_occ:
-            alpha_occ.remove(source_idx)
         else:
-            raise ValidationError(f"cannot ionize from unoccupied orbital {source_idx}")
+            # no spin specified: prefer beta (closed-shell convention), fall back to alpha
+            if source_idx in beta_occ:
+                beta_occ.remove(source_idx)
+            elif source_idx in alpha_occ:
+                alpha_occ.remove(source_idx)
+            else:
+                raise ValidationError(f"cannot ionize from unoccupied orbital {source_idx}")
 
     def _apply_excitation(
         self,

@@ -17,7 +17,7 @@ from dataclasses import replace
 
 import pytest
 
-from calcflow.common.exceptions import ConfigurationError, ValidationError
+from calcflow.common.exceptions import ValidationError
 from calcflow.common.input import CalculationInput
 from calcflow.io.qchem.builder import QchemBuilder
 from tests.io.qchem.qchem_builders.conftest import (
@@ -123,8 +123,7 @@ def test_apply_single_operation_homo_lumo_excitation(h2o_geometry):
         level_of_theory="b3lyp",
         basis_set="6-31g",
         unrestricted=True,
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
+    ).set_mom(transition="HOMO->LUMO")
     builder._validate_spec(spec)
 
     alpha_occ = {1, 2, 3, 4, 5}
@@ -150,8 +149,7 @@ def test_apply_single_operation_homo_homo1_excitation(h2o_geometry):
         level_of_theory="b3lyp",
         basis_set="6-31g",
         unrestricted=True,
-        program_options={"run_mom": True, "mom_transition": "HOMO-1->LUMO+1"},
-    )
+    ).set_mom(transition="HOMO-1->LUMO+1")
     builder._validate_spec(spec)
 
     alpha_occ = {1, 2, 3, 4, 5}
@@ -177,8 +175,7 @@ def test_apply_ionization_from_homo(h2o_geometry):
         level_of_theory="b3lyp",
         basis_set="6-31g",
         unrestricted=True,
-        program_options={"run_mom": True, "mom_transition": "HOMO->vac"},
-    )
+    ).set_mom(transition="HOMO->vac")
     builder._validate_spec(spec)
 
     alpha_occ = {1, 2, 3, 4, 5}
@@ -205,8 +202,7 @@ def test_apply_ionization_from_beta():
         level_of_theory="b3lyp",
         basis_set="6-31g",
         unrestricted=True,
-        program_options={"run_mom": True, "mom_transition": "HOMO(beta)->vac"},
-    )
+    ).set_mom(transition="HOMO(beta)->vac")
     builder._validate_spec(spec)
 
     alpha_occ = {1, 2, 3, 4, 5}
@@ -257,11 +253,7 @@ def test_format_occupation_set_empty():
 @pytest.mark.contract
 def test_mom_two_job_structure(qchem_builder, h2o_geometry, minimal_spec):
     """mom calculation should generate two-job structure separated by @@@."""
-    spec = replace(
-        minimal_spec,
-        unrestricted=True,
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
+    spec = replace(minimal_spec, unrestricted=True).set_mom(transition="HOMO->LUMO")
     result = qchem_builder.build(spec, h2o_geometry)
 
     # Verify two-job structure
@@ -278,11 +270,7 @@ def test_mom_two_job_structure(qchem_builder, h2o_geometry, minimal_spec):
 @pytest.mark.contract
 def test_mom_job1_simple_sp(qchem_builder, h2o_geometry, minimal_spec):
     """job1 of mom calculation should be a simple SP energy calculation."""
-    spec = replace(
-        minimal_spec,
-        unrestricted=True,
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
+    spec = replace(minimal_spec, unrestricted=True).set_mom(transition="HOMO->LUMO")
     result = qchem_builder.build(spec, h2o_geometry)
     job1 = extract_job(result, 1)
     parsed = parse_qchem_input(job1)
@@ -296,11 +284,7 @@ def test_mom_job1_simple_sp(qchem_builder, h2o_geometry, minimal_spec):
 @pytest.mark.contract
 def test_mom_job2_has_read_molecule(qchem_builder, h2o_geometry, minimal_spec):
     """job2 of mom calculation should have $molecule read."""
-    spec = replace(
-        minimal_spec,
-        unrestricted=True,
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
+    spec = replace(minimal_spec, unrestricted=True).set_mom(transition="HOMO->LUMO")
     result = qchem_builder.build(spec, h2o_geometry)
     job2 = extract_job(result, 2)
     parsed = parse_qchem_input(job2)
@@ -312,11 +296,7 @@ def test_mom_job2_has_read_molecule(qchem_builder, h2o_geometry, minimal_spec):
 @pytest.mark.contract
 def test_mom_job2_has_occupied_block(qchem_builder, h2o_geometry, minimal_spec):
     """job2 of mom calculation should have $occupied block with MOM target."""
-    spec = replace(
-        minimal_spec,
-        unrestricted=True,
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
+    spec = replace(minimal_spec, unrestricted=True).set_mom(transition="HOMO->LUMO")
     result = qchem_builder.build(spec, h2o_geometry)
     job2 = extract_job(result, 2)
     parsed = parse_qchem_input(job2)
@@ -328,11 +308,7 @@ def test_mom_job2_has_occupied_block(qchem_builder, h2o_geometry, minimal_spec):
 @pytest.mark.contract
 def test_mom_job2_has_mom_start(qchem_builder, h2o_geometry, minimal_spec):
     """job2 of mom calculation should have MOM_START enabled."""
-    spec = replace(
-        minimal_spec,
-        unrestricted=True,
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
+    spec = replace(minimal_spec, unrestricted=True).set_mom(transition="HOMO->LUMO")
     result = qchem_builder.build(spec, h2o_geometry)
     job2 = extract_job(result, 2)
     parsed = parse_qchem_input(job2)
@@ -344,11 +320,7 @@ def test_mom_job2_has_mom_start(qchem_builder, h2o_geometry, minimal_spec):
 @pytest.mark.contract
 def test_mom_job2_scf_guess_read(qchem_builder, h2o_geometry, minimal_spec):
     """job2 of mom calculation should have SCF_GUESS read."""
-    spec = replace(
-        minimal_spec,
-        unrestricted=True,
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
+    spec = replace(minimal_spec, unrestricted=True).set_mom(transition="HOMO->LUMO")
     result = qchem_builder.build(spec, h2o_geometry)
     job2 = extract_job(result, 2)
     parsed = parse_qchem_input(job2)
@@ -359,30 +331,16 @@ def test_mom_job2_scf_guess_read(qchem_builder, h2o_geometry, minimal_spec):
 @pytest.mark.contract
 def test_mom_job2_unrestricted(qchem_builder, h2o_geometry, minimal_spec):
     """job2 of mom calculation should be unrestricted."""
-    spec = replace(
-        minimal_spec,
-        unrestricted=False,  # Even if job1 is restricted (shouldn't happen, but test it)
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
     # This should fail validation - MOM requires unrestricted
-    with pytest.raises(ConfigurationError, match="unrestricted"):
-        qchem_builder.build(spec, h2o_geometry)
+    with pytest.raises(ValidationError, match="unrestricted"):
+        replace(minimal_spec, unrestricted=False).set_mom(transition="HOMO->LUMO")
 
 
 @pytest.mark.contract
 def test_mom_ionization_job2_charge_override(qchem_builder, h2o_geometry, minimal_spec):
     """mom ionization should allow charge override for job2."""
-    spec = replace(
-        minimal_spec,
-        charge=0,
-        spin_multiplicity=1,
-        unrestricted=True,
-        program_options={
-            "run_mom": True,
-            "mom_transition": "HOMO->vac",
-            "mom_job2_charge": 1,  # Ionized
-            "mom_job2_spin_multiplicity": 2,  # Doublet
-        },
+    spec = replace(minimal_spec, charge=0, spin_multiplicity=1, unrestricted=True).set_mom(
+        transition="HOMO->vac", job2_charge=1, job2_spin_multiplicity=2
     )
     result = qchem_builder.build(spec, h2o_geometry)
     job2 = extract_job(result, 2)
@@ -406,8 +364,7 @@ def test_mom_with_solvation(qchem_builder, h2o_geometry):
         basis_set="6-31g",
         unrestricted=True,
         solvation=SolvationSpec(model="smd", solvent="water"),
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
+    ).set_mom(transition="HOMO->LUMO")
     result = qchem_builder.build(spec, h2o_geometry)
 
     assert "@@@" in result
@@ -437,10 +394,7 @@ def test_mom_single_transition(h2o_geometry):
             basis_set="6-31g",
         )
         .set_unrestricted(True)
-        .set_options(
-            run_mom=True,
-            mom_transition="HOMO->LUMO",
-        )
+        .set_mom(transition="HOMO->LUMO")
     )
 
     result = calc.export("qchem", h2o_geometry)
@@ -460,11 +414,7 @@ def test_mom_single_transition(h2o_geometry):
 @pytest.mark.regression
 def test_mom_homo_lumo_occupation_count(qchem_builder, h2o_geometry, minimal_spec):
     """HOMO->LUMO excitation should give correct electron count in $occupied."""
-    spec = replace(
-        minimal_spec,
-        unrestricted=True,
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
+    spec = replace(minimal_spec, unrestricted=True).set_mom(transition="HOMO->LUMO")
     result = qchem_builder.build(spec, h2o_geometry)
     job2 = extract_job(result, 2)
     parsed = parse_qchem_input(job2)
@@ -495,13 +445,7 @@ def test_mom_ionization_electron_count_decreased(qchem_builder, h2o_geometry):
         level_of_theory="b3lyp",
         basis_set="6-31g",
         unrestricted=True,
-        program_options={
-            "run_mom": True,
-            "mom_transition": "HOMO->vac",
-            "mom_job2_charge": 1,  # Ionized
-            "mom_job2_spin_multiplicity": 2,  # Doublet
-        },
-    )
+    ).set_mom(transition="HOMO->vac", job2_charge=1, job2_spin_multiplicity=2)
     result = qchem_builder.build(spec, h2o_geometry)
     job2 = extract_job(result, 2)
     parsed = parse_qchem_input(job2)
@@ -521,8 +465,7 @@ def test_mom_preserves_other_spec_options(qchem_builder, h2o_geometry):
         basis_set="def2-tzvp",
         n_cores=8,
         unrestricted=True,
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
+    ).set_mom(transition="HOMO->LUMO")
     result = qchem_builder.build(spec, h2o_geometry)
 
     job1 = extract_job(result, 1)
@@ -555,8 +498,7 @@ def test_mom_job1_no_tddft(qchem_builder, h2o_geometry):
         basis_set="6-31g",
         unrestricted=True,
         tddft=TddftSpec(nroots=5, singlets=True, triplets=False, use_tda=True),
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
+    ).set_mom(transition="HOMO->LUMO")
     result = qchem_builder.build(spec, h2o_geometry)
     job1 = extract_job(result, 1)
     parsed = parse_qchem_input(job1)
@@ -579,8 +521,7 @@ def test_mom_job2_preserves_tddft(qchem_builder, h2o_geometry):
         basis_set="6-31g",
         unrestricted=True,
         tddft=TddftSpec(nroots=5, singlets=True, triplets=False, use_tda=True),
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
+    ).set_mom(transition="HOMO->LUMO")
     result = qchem_builder.build(spec, h2o_geometry)
     job2 = extract_job(result, 2)
     parsed = parse_qchem_input(job2)
@@ -598,13 +539,8 @@ def test_mom_job2_preserves_tddft(qchem_builder, h2o_geometry):
 @pytest.mark.unit
 def test_mom_requires_unrestricted(qchem_builder, h2o_geometry, minimal_spec):
     """MOM requires unrestricted calculation."""
-    spec = replace(
-        minimal_spec,
-        unrestricted=False,
-        program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-    )
-    with pytest.raises(ConfigurationError, match="unrestricted"):
-        qchem_builder.build(spec, h2o_geometry)
+    with pytest.raises(ValidationError, match="unrestricted"):
+        replace(minimal_spec, unrestricted=False).set_mom(transition="HOMO->LUMO")
 
 
 @pytest.mark.unit

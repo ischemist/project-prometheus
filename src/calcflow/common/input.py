@@ -46,6 +46,38 @@ class OptimizationSpec:
     recalc_hess_freq: int | None = None
 
 
+@dataclass(frozen=True)
+class MomSpec:
+    """
+    specification for maximum overlap method (mom) calculations.
+
+    mom is a technique to converge scf to excited states or non-aufbau configurations
+    by guiding orbital occupations. requires a two-job input: job1 computes ground state
+    orbitals, job2 uses those orbitals with modified occupations to reach the target state.
+
+    transition notation supports both symbolic and numeric orbital specifications:
+    - symbolic: "HOMO->LUMO", "HOMO-1->LUMO+1", "HOMO-2->LUMO"
+    - numeric: "5->6", "3->LUMO", "HOMO->7" (absolute orbital indices)
+    - ionization: "HOMO->vac", "5->vac" (remove electron)
+    - spin-specific: "HOMO(beta)->LUMO(alpha)", "5(alpha)->vac"
+    - multiple transitions: "HOMO->LUMO; HOMO-1->LUMO+1" (semicolon-separated)
+
+    for ionization, job2_charge and job2_spin_multiplicity should be set to match
+    the ionized state (e.g., charge +1, multiplicity 2 for a neutral singlet -> cation doublet).
+    """
+
+    transition: str
+    method: str = "IMOM"  # or "MOM"
+
+    # for ionization: override charge/spin in second job
+    job2_charge: int | None = None
+    job2_spin_multiplicity: int | None = None
+
+    # manual override for advanced users (bypasses symbolic transition parsing)
+    alpha_occupation: str | None = None
+    beta_occupation: str | None = None
+
+
 # --- Main Calculation Specification ---
 
 
@@ -71,6 +103,7 @@ class CalculationInput:
     tddft: TddftSpec | None = None
     solvation: SolvationSpec | None = None
     optimization: OptimizationSpec | None = None
+    mom: MomSpec | None = None
     frequency_after_optimization: bool = False
 
     # the escape hatch for anything program-specific that doesn't fit the generic model.
@@ -87,6 +120,18 @@ class CalculationInput:
             raise ValidationError("tddft nroots must be a positive integer.")
         if self.solvation and (not self.solvation.model or not self.solvation.solvent):
             raise ValidationError("solvation model and solvent must both be specified.")
+        if self.mom:
+            if not self.unrestricted:
+                raise ValidationError("mom requires an unrestricted calculation.")
+            if not self.mom.transition and not (self.mom.alpha_occupation and self.mom.beta_occupation):
+                raise ValidationError(
+                    "mom requires either 'transition' or both 'alpha_occupation' and 'beta_occupation'."
+                )
+
+    @property
+    def requires_multiple_jobs(self) -> bool:
+        """returns true if this calculation requires multiple sequential jobs (e.g., for mom)."""
+        return self.mom is not None
 
     # --- Core Parameter Setters ---
 
@@ -162,6 +207,34 @@ class CalculationInput:
         if self.task != "geometry":
             raise ConfigurationError("frequency calculation can only follow a 'geometry' task.")
         return replace(self, frequency_after_optimization=True)
+
+    def set_mom(
+        self: T_CalculationInput,
+        transition: str,
+        method: str = "IMOM",
+        job2_charge: int | None = None,
+        job2_spin_multiplicity: int | None = None,
+    ) -> T_CalculationInput:
+        """
+        adds or updates maximum overlap method (mom) settings for excited state calculations.
+
+        mom requires a two-job calculation and unrestricted wavefunctions.
+
+        args:
+            transition: transition string supporting symbolic (e.g., "HOMO->LUMO") or
+                numeric (e.g., "5->6", "3->LUMO") orbital specifications.
+                use "->vac" for ionization (e.g., "HOMO->vac", "5->vac").
+            method: mom variant ("MOM" or "IMOM", default "IMOM")
+            job2_charge: charge for second job (for ionization, e.g., +1)
+            job2_spin_multiplicity: spin multiplicity for second job (for ionization, e.g., 2)
+        """
+        mom_spec = MomSpec(
+            transition=transition,
+            method=method,
+            job2_charge=job2_charge,
+            job2_spin_multiplicity=job2_spin_multiplicity,
+        )
+        return replace(self, mom=mom_spec)
 
     # --- Program-Specific Options ---
 
