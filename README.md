@@ -52,6 +52,10 @@ with open("h2o.inp", "w") as f:
 # 4. Save calculation spec as JSON for reproducibility
 with open("h2o_calc_spec.json", "w") as f:
     f.write(calc.to_json())
+
+# 5. Later, load the spec back from JSON
+loaded_calc = CalculationInput.from_json(open("h2o_calc_spec.json").read())
+assert loaded_calc == calc  # perfect roundtrip!
 ```
 
 ### Q-Chem: TDDFT with SMD Solvation
@@ -148,10 +152,11 @@ Fun fact: `Geometry` instances have a `.total_nuclear_charge` property used to c
 ### ORCA
 
 ```python
+from pathlib import Path
 from calcflow import parse_orca_output
 
 # Parse ORCA output
-result = parse_orca_output(open("h2o.out").read())
+result = parse_orca_output(Path("h2o.out").read_text())
 
 # Access results
 print(result.final_energy)  # -76.1234567
@@ -163,19 +168,20 @@ with open("orca_result.json", "w") as f:
 
 # Later, load from JSON (much faster than re-parsing)
 from calcflow.common.results import CalculationResult
-loaded = CalculationResult.from_json(open("orca_result.json").read())
+loaded = CalculationResult.from_json(Path("orca_result.json").read_text())
 ```
 
 ### Q-Chem
 
 ```python
+from pathlib import Path
 from calcflow import parse_qchem_output, parse_qchem_multi_job_output
 
 # Single-job output
-result = parse_qchem_output(open("h2o_sp.out").read())
+result = parse_qchem_output(Path("h2o_sp.out").read_text())
 
 # Multi-job output (e.g., MOM, XAS)
-jobs = parse_qchem_multi_job_output(open("h2o_mom_xas.out").read())
+jobs = parse_qchem_multi_job_output(Path("h2o_mom_xas.out").read_text())
 job1, job2 = jobs
 
 # Access TDDFT results
@@ -191,6 +197,43 @@ mulliken = job2.tddft.transition_dm_analyses[2].mulliken
 for pop in mulliken.populations:
     print(f"{pop.symbol}: {pop.transition_charge_e}")
 ```
+
+## LLM & Programmatic Usage
+
+CalcFlow provides built-in API documentation for easy exploration and LLM-assisted workflows:
+
+```python
+# Get comprehensive API documentation for input generation
+from calcflow.common.input import CalculationInput
+print(CalculationInput.get_api_docs())
+
+# Get comprehensive API documentation for results parsing
+from calcflow.common.results import CalculationResult
+print(CalculationResult.get_api_docs())
+```
+
+These methods return complete documentation of all available fields, methods, and usage examples - perfect for LLMs or programmatic exploration without needing to read source code.
+
+### Quick Testing with `uv`
+
+Test CalcFlow without installation using one-liners:
+
+```bash
+# Get input API docs
+uv run --with calcflow python -c "from calcflow.common.input import CalculationInput; print(CalculationInput.get_api_docs())"
+
+# Get results API docs
+uv run --with calcflow python -c "from calcflow.common.results import CalculationResult; print(CalculationResult.get_api_docs())"
+
+# Quick parse and inspect
+uv run --with calcflow python -c "from calcflow.io.qchem import parse_qchem_output; from pathlib import Path; result = parse_qchem_output(Path('calc.out').read_text()); print(f'Energy: {result.final_energy}, Status: {result.termination_status}')"
+
+# Save API docs to file
+uv run --with calcflow python -c "from calcflow.common.input import CalculationInput; open('api.txt', 'w').write(CalculationInput.get_api_docs())"
+```
+
+
+## More Examples
 
 For more examples, see [scripts/input-orca.py](scripts/input-orca.py) and [scripts/parse-orca.py](scripts/parse-orca.py). Test data is in [tests/testing_data/](tests/testing_data/).
 
