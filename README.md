@@ -7,9 +7,6 @@
 
 CalcFlow provides a robust, Pythonic interface for preparing inputs and parsing outputs for quantum chemistry software like Q-Chem and ORCA. It has **zero external dependencies** and is built for clarity and reliability. Get your calculations set up and results processed without the usual boilerplate.
 
-> [!WARNING]
-> Package is in pre-release alpha stage. May introduce backwards-incompatible changes. Contributions & suggestions & advice are welcome.
-
 ## Key Features
 
 what you care about:
@@ -26,66 +23,93 @@ what's nice under the hood:
 - **Extensible Core Architecture**: designed with clear abstract base classes, simplifying the integration of support for additional quantum chemistry programs.
 - **Assured Reliability via Comprehensive Testing**: so you don't have to worry if the parser is working correctly.
 
-## Quick Start: Q-Chem TDDFT Example
+## Quick Start
 
-Set up a Q-Chem tddft calculation for a water molecule with SMD solvation:
+### ORCA: Geometry Optimization
+
+Set up an ORCA geometry optimization with frequency calculation for a water molecule:
 
 ```python
-from calcflow.geometry.static import Geometry
-from calcflow.inputs.qchem import QchemInput
+from calcflow import CalculationInput, Geometry
 
-# 1. Define Molecular Geometry
-atoms = [
-    ("O", (0.000000, 0.000000, 0.117300)),
-    ("H", (0.000000, 0.757200, -0.469200)),
-    ("H", (0.000000, -0.757200, -0.469200)),
-]
-water_molecule = Geometry(atoms=atoms, comment="Water molecule for Q-Chem SP")
-# or load from xyz file
-water_molecule = Geometry.from_xyz_file(data_path / "1h2o.xyz")
+# 1. Load molecular geometry
+water = Geometry.from_xyz_file("tests/testing_data/geometries/1h2o.xyz")
 
-# 2. Configure Q-Chem Calculation Input
-base_job = QchemInput(
-    charge=0, spin_multiplicity=1, task="energy",
-    level_of_theory="wB97X-D3", basis_set="def2-tzvp", n_cores=16,
-    run_tddft=True, tddft_nroots=10, tddft_singlets=True, tddft_triplets=False
+# 2. Configure ORCA calculation - uses fluent API
+calc = (
+    CalculationInput(
+        charge=0, spin_multiplicity=1, task="geometry",
+        level_of_theory="wb97x-d3", basis_set="def2-svp", n_cores=16
+    )
+    .enable_ri_for_orca("RIJCOSX", "def2/j")
+    .run_frequency_after_opt()
 )
 
-# Uses a fluent API for modifications.
-qchem_job = base_job.set_solvation(model="smd", solvent="water")
+# 3. Export ORCA input file
+with open("h2o.inp", "w") as f:
+    f.write(calc.export("orca", water))
 
-# 3. Export the Input File Content
-with open("h2o_tddft.in", "w") as f:
-    f.write(qchem_job.export_input_file(water_molecule))
+# 4. Save calculation spec as JSON for reproducibility
+with open("h2o_calc_spec.json", "w") as f:
+    f.write(calc.to_json())
 ```
 
-Want to create another input file for a tddft with triplets or with state analysis? ezy.
+### Q-Chem: TDDFT with SMD Solvation
+
+Set up a Q-Chem TDDFT calculation with implicit solvation:
 
 ```python
-job2 = qchem_job.set_tddft(nroots=10, singlets=True, triplets=True, state_analysis=True)
+from calcflow import CalculationInput, Geometry
+
+# 1. Load molecular geometry from XYZ file (recommended)
+water = Geometry.from_xyz_file("tests/testing_data/geometries/1h2o.xyz")
+
+# Or define manually:
+# from calcflow.common.results import Atom
+# atoms = (
+#     Atom("O", 0.000000, 0.000000, 0.117300),
+#     Atom("H", 0.000000, 0.757200, -0.469200),
+#     Atom("H", 0.000000, -0.757200, -0.469200),
+# )
+# water = Geometry(atoms=atoms, comment="Water molecule")
+# 2. Configure Q-Chem calculation
+calc = (
+    CalculationInput(
+        charge=0, spin_multiplicity=1, task="energy",
+        level_of_theory="wB97X-D3", basis_set="def2-tzvp", n_cores=16
+    )
+    .set_tddft(nroots=10, singlets=True, triplets=False)
+    .set_solvation(model="smd", solvent="water")
+)
+
+# 3. Export Q-Chem input file
 with open("h2o_tddft.in", "w") as f:
-    f.write(job2.export_input_file(water_molecule))
+    f.write(calc.export("qchem", water))
 ```
 
-what about getting an O K-Edge XAS spectrum with an element-specific basis?
+Want to include triplets? Easy modification:
 
 ```python
-job3 = (
-    qchem_job.set_tddft(nroots=10, singlets=True, triplets=False, state_analysis=True)
+calc2 = calc.set_tddft(nroots=10, singlets=True, triplets=True)
+```
+
+Need an O K-Edge XAS spectrum with element-specific basis?
+
+```python
+calc3 = (
+    calc.set_tddft(nroots=10, singlets=True, triplets=False)
     .set_basis({"H": "pc-2", "O": "pcX-2"})
     .set_reduced_excitation_space(initial_orbitals=[1])
 )
-with open("h2o_xas.in", "w") as f:
-    f.write(job3.export_input_file(water_molecule))
 ```
 
-By the way, this pythonic (arguably intuitive) method
+By the way, this pythonic method:
 
 ```py
 .set_reduced_excitation_space(initial_orbitals=[1])
 ```
 
-translates into, take a guess
+translates into Q-Chem's cryptic syntax:
 
 ```
 $rem
@@ -99,75 +123,76 @@ $solute
 $end
 ```
 
-that was obvious, wasn't it. Honestly, a major reason why this package exists. Btw, if you want to get a XAS spectrum from S1 state, you can do that too:
+Honestly, a major reason why this package exists.
+
+### Advanced: XAS from Excited State (MOM)
+
+Want XAS spectrum from S1 state? Chain the methods:
 
 ```python
-job4 = (
-    qchem_job.set_tddft(nroots=10, singlets=True, triplets=False, state_analysis=True)
+calc4 = (
+    calc.set_tddft(nroots=10, singlets=True, triplets=False)
     .set_basis({"H": "pc-2", "O": "pcX-2"})
     .set_reduced_excitation_space(initial_orbitals=[1])
     .set_unrestricted()
-    .enable_mom()
-    .set_mom_transition("HOMO->LUMO")
+    .set_mom(transition="HOMO->LUMO")
 )
-with open("h2o_s1_xas.in", "w") as f:
-    f.write(job4.export_input_file(water_molecule))
 ```
 
-this will create a 2-job input file, initial SCF calculation followed by MOM with HOMO electron moved to LUMO and TDDFT from orbital 1 on top of that.
+This creates a 2-job input file: initial SCF followed by MOM with HOMO→LUMO transition and TDDFT.
 
-fun fact: because water_molecule is a Geometry instance, it has `.total_nuclear_charge` property, which is used to calculate indexes of HOMO and LUMO orbitals. You can specify same transition numerically `5->6` or even specify occupation numbers manually:
+Fun fact: `Geometry` instances have a `.total_nuclear_charge` property used to calculate HOMO/LUMO indices. You can also specify transitions numerically (e.g., `"5->6"`, `"3->LUMO"`) or use `"->vac"` for ionization (e.g., `"HOMO->vac"`).
 
-```py
-.set_mom_occupation(alpha_occ="1 2 3 4 6", beta_occ="1 2 3 4 5")
-# or
-.set_mom_occupation(alpha_occ="1:4 6", beta_occ="1:4 5")
-```
+## Parsing Output Files
 
-## Parsing Q-Chem Output Files
-
-Once your Q-Chem calculation is complete, use `CalcFlow` parsers. Example for the last calculation
+### ORCA
 
 ```python
-from calcflow.parsers.qchem import parse_qchem_mom_output
+from calcflow import parse_orca_output
 
-# Replace with your actual file path
-out_path = "h2o_qchem_sp.out"
-mom_pc2 = parse_qchem_mom_output((clc_folder / "mom-smd-xas.out").read_text())
+# Parse ORCA output
+result = parse_orca_output(open("h2o.out").read())
+
+# Access results
+print(result.final_energy)  # -76.1234567
+print(result.scf.n_iterations)  # 12
+
+# Save to JSON (excludes raw_output automatically)
+with open("orca_result.json", "w") as f:
+    f.write(result.to_json())
+
+# Later, load from JSON (much faster than re-parsing)
+from calcflow.common.results import CalculationResult
+loaded = CalculationResult.from_json(open("orca_result.json").read())
 ```
 
-And just like that you have access to all relevant results.
+### Q-Chem
 
-```py
-> mom_pc2.job2
-CalculationData(method='src1-r1', basis='gen', status='NORMAL')
-> print(mom_pc2.job2.scf)
-ScfResults(status='Converged', energy=-76.53682225, n_iterations=9)
-> print(mom_pc2.job2.tddft)
-TddftResults(tda_states=10 states, tddft_states=None, excited_state_analyses=10 analyses, transition_dm_analyses=10 analyses, nto_analyses=10 analyses)
+```python
+from calcflow import parse_qchem_output, parse_qchem_multi_job_output
+
+# Single-job output
+result = parse_qchem_output(open("h2o_sp.out").read())
+
+# Multi-job output (e.g., MOM, XAS)
+jobs = parse_qchem_multi_job_output(open("h2o_mom_xas.out").read())
+job1, job2 = jobs
+
+# Access TDDFT results
+print(job2.scf.energy)  # -76.53682225
+print(job2.tddft.tda_states[0].excitation_energy_ev)  # 7.42
+
+# Get excitation energies and oscillator strengths
+energies = [s.excitation_energy_ev for s in job2.tddft.tda_states]
+intensities = [s.oscillator_strength for s in job2.tddft.tda_states]
+
+# Mulliken populations for state 3
+mulliken = job2.tddft.transition_dm_analyses[2].mulliken
+for pop in mulliken.populations:
+    print(f"{pop.symbol}: {pop.transition_charge_e}")
 ```
 
-Say you want to get excitation energies and oscillator strenghts? Be my guest:
-
-```py
-eVs = [state.excitation_energy_ev for state in mom_pc2.job2.tddft.tda_states]
-intens = [state.oscillator_strength for state in mom_pc2.job2.tddft.tda_states]
-```
-
-Mulliken populations for 3rd state?
-
-```py
-> mom_pc2.job2.tddft.transition_dm_analyses[2].mulliken
-TransitionDMMulliken(
-    populations=[
-        TransitionDMAtomPopulation(atom_index=0, symbol='H', transition_charge_e=-0.000558, hole_charge_rks=None, electron_charge_rks=None, delta_charge_rks=None, hole_charge_alpha_uks=7.2e-05, hole_charge_beta_uks=7.2e-05, electron_charge_alpha_uks=-0.241416, electron_charge_beta_uks=-0.241421),
-        TransitionDMAtomPopulation(atom_index=1, symbol='O', transition_charge_e=0.001113, hole_charge_rks=None, electron_charge_rks=None, delta_charge_rks=None, hole_charge_alpha_uks=0.499858, hole_charge_beta_uks=0.499855, electron_charge_alpha_uks=-0.021788, electron_charge_beta_uks=-0.021788),
-        TransitionDMAtomPopulation(atom_index=2, symbol='H', transition_charge_e=-0.000555, hole_charge_rks=None, electron_charge_rks=None, delta_charge_rks=None, hole_charge_alpha_uks=7.2e-05, hole_charge_beta_uks=7.2e-05, electron_charge_alpha_uks=-0.236798, electron_charge_beta_uks=-0.23679)
-        ],
-    sum_abs_trans_charges_qta=0.002226, sum_sq_trans_charges_qt2=2e-06)
-```
-
-See [scripts/create-parse-qchem.py](scripts/create-parse-qchem.py) for more examples or to play with outputs used for tests (stored in [data/calculations/examples/qchem/](data/calculations/examples/qchem/))
+For more examples, see [scripts/input-orca.py](scripts/input-orca.py) and [scripts/parse-orca.py](scripts/parse-orca.py). Test data is in [tests/testing_data/](tests/testing_data/).
 
 ### Which versions of QChem do you support?
 
@@ -182,7 +207,7 @@ SCF   energy =   -75.32080770
 p.s. nevermind the difference in energy, 5.4. mistakenly prints SCF energy same as Total energy, which includes solvation terms
 ```
 
-which is why the [calcflow/parsers/qchem/blocks/scf.py](src/calcflow/parsers/qchem/blocks/scf.py) block defines different patterns for different versions:
+which is why the [calcflow/io/qchem/blocks/scf.py](src/calcflow/io/qchem/blocks/scf.py) block defines different patterns for different versions:
 
 ```py
 PatternDefinition(field_name="scf_energy", required=True, description="Final SCF energy value",
@@ -192,53 +217,6 @@ versioned_patterns=[
     ],
 ),
 ```
-
-## Slurm submission scripts
-
-As a bonus, there's also a pythonic way of preparing slurm submission files. Most likely you have system-specific variations in which modules should be loaded or which env variables should be defined, so you could inherit from a general SlurmArgs (in [calcflow/inputs/slurm.py](src/calcflow/inputs/slurm.py)):
-
-```py
-from dataclasses import dataclass
-
-from calcflow.inputs.slurm import SlurmArgs
-
-
-@dataclass(frozen=True)
-class NerscSlurmArgs(SlurmArgs):
-    def get_modules(self) -> str:
-        if self.software == "qchem":
-            return """
-module load qchem
-            """
-        elif self.software == "orca":
-            return """
-module load openmpi
-            """
-        return ""
-
-    def get_temp_variables(self) -> str:
-        if self.software == "qchem":
-            return f"""
-export QCSCRATCH=$PSCRATCH
-export QCLOCALSCR=$QCSCRATCH
-export OMP_NUM_THREADS={self.n_cores}
-export QC_THREADS={self.n_cores}
-        """
-        return ""
-```
-
-and then in a very similar manner you can create custom configs:
-
-```py
-nersc_args = NerscSlurmArgs(
-    exec_fname="mom-sp", time="01:00:00", n_cores=16,
-    constraint="cpu", account="mxxxx", queue="regular")
-nersc_args = nersc_args.set_parallelism('openmp')
-with (clc_folder / "submit.sh").open("w") as f:
-    f.write(nersc_args.set_software("qchem").create_submit_script(f"{name}-{state}-{mom_type}"))
-```
-
-where `.set_software` dictates which modules/temp variables will be printed, and arg to `create_submit_script` is the job name.
 
 ## Contributing
 
