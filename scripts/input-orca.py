@@ -1,5 +1,4 @@
-from calcflow.io.input import CalculationInput
-
+from calcflow.common.input import CalculationInput
 from calcflow.geometry.static import Geometry
 
 # from calcflow.jobs.slurm import SlurmJob

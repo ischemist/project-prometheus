@@ -60,18 +60,18 @@ class TestValidateSpec:
         qchem_builder._validate_spec(spec)  # Should not raise
 
     @pytest.mark.unit
-    def test_mom_requires_unrestricted(self, qchem_builder, minimal_spec):
-        """MOM calculation requires unrestricted=True."""
+    def test_deprecated_run_mom_in_program_options(self, qchem_builder, minimal_spec):
+        """Using program_options['run_mom'] should raise deprecation error."""
         spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
             task="energy",
             level_of_theory="b3lyp",
             basis_set="6-31g",
-            unrestricted=False,
+            unrestricted=True,
             program_options={"run_mom": True},
         )
-        with pytest.raises(ConfigurationError, match="unrestricted"):
+        with pytest.raises(ConfigurationError, match="deprecated"):
             qchem_builder._validate_spec(spec)
 
     @pytest.mark.unit
@@ -84,8 +84,7 @@ class TestValidateSpec:
             level_of_theory="b3lyp",
             basis_set="6-31g",
             unrestricted=True,
-            program_options={"run_mom": True, "mom_transition": "HOMO->LUMO"},
-        )
+        ).set_mom(transition="HOMO->LUMO")
         qchem_builder._validate_spec(spec)  # Should not raise
 
     @pytest.mark.unit
