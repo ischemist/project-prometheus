@@ -147,6 +147,77 @@ This creates a 2-job input file: initial SCF followed by MOM with HOMO→LUMO tr
 
 Fun fact: `Geometry` instances have a `.total_nuclear_charge` property used to calculate HOMO/LUMO indices. You can also specify transitions numerically (e.g., `"5->6"`, `"3->LUMO"`) or use `"->vac"` for ionization (e.g., `"HOMO->vac"`).
 
+### SLURM Job Submission Scripts
+
+Generate SLURM submission scripts for cluster computing:
+
+```python
+from calcflow import CalculationInput, Geometry
+from calcflow.slurm import SlurmJob
+
+# 1. Create your calculation
+water = Geometry.from_xyz_file("water.xyz")
+calc = (
+    CalculationInput(
+        charge=0, spin_multiplicity=1, task="energy",
+        level_of_theory="wB97X-D3", basis_set="def2-tzvp", n_cores=16
+    )
+    .set_tddft(nroots=10)
+    .set_solvation("smd", "water")
+)
+
+# 2. Create SLURM job configuration
+job = (
+    SlurmJob(
+        job_name="h2o_tddft",
+        time="04:00:00",
+        n_cores=16,
+        memory_mb=64000,
+        partition="gpu",
+        account="my_research_group"
+    )
+    .add_modules(["orca/5.0", "openmpi/4.1.1"])
+)
+
+# 3. Generate complete SLURM script
+slurm_script = job.export(calc, program="orca", 
+                          input_filename="h2o.inp", 
+                          output_filename="h2o.out")
+
+# 4. Save script for cluster submission
+with open("submit_h2o.sh", "w") as f:
+    f.write(slurm_script)
+
+# Now submit: sbatch submit_h2o.sh
+```
+
+The generated SLURM script automatically includes:
+- Proper `#SBATCH` directives for your HPC scheduler
+- Module loading commands
+- Program-specific parallelism directives (OpenMP/MPI)
+- Correct launch commands for ORCA or Q-Chem
+
+For Q-Chem with MPI parallelism:
+
+```python
+calc_mpi = calc.set_options(parallelism="mpi")
+
+job_mpi = (
+    SlurmJob(
+        job_name="h2o_mpi",
+        time="04:00:00",
+        n_cores=32,
+        memory_mb=128000,
+        partition="normal"
+    )
+    .add_modules(["qchem/6.2", "intel/2021.3"])
+)
+
+slurm_script = job_mpi.export(calc_mpi, program="qchem",
+                              input_filename="h2o.in",
+                              output_filename="h2o.out")
+```
+
 ## Parsing Output Files
 
 ### ORCA

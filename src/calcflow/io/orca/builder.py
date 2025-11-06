@@ -122,3 +122,12 @@ class OrcaBuilder:
             lines.append(f"    Recalc_Hess {spec.optimization.recalc_hess_freq}")
         lines.append("end")
         return "\n".join(lines) if len(lines) > 1 else ""
+
+    def get_slurm_directives(self, spec: CalculationInput) -> list[str]:
+        """returns orca-specific #sbatch directives for mpi parallelism."""
+        return [f"#SBATCH --ntasks={spec.n_cores}", "#SBATCH --nodes=1"]
+
+    def get_launch_command(self, spec: CalculationInput, input_fname: str, output_fname: str) -> str:
+        """returns the shell command to launch an orca calculation."""
+        # assumes 'orca' is in the user's path after loading modules
+        return f"$(which orca) {input_fname} > {output_fname}"

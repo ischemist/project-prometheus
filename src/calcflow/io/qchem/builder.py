@@ -412,6 +412,28 @@ class QchemBuilder:
         parts.append(str(start) if start == end else f"{start}:{end}")
         return " ".join(parts)
 
+    def get_slurm_directives(self, spec: CalculationInput) -> list[str]:
+        """returns q-chem-specific #sbatch directives for openmp or mpi."""
+        # q-chem parallelism is complex. let's assume openmp for now via program_options.
+        # a more robust implementation could check for an 'mpi' flag.
+        parallelism = spec.program_options.get("parallelism", "openmp")
+        if parallelism == "openmp":
+            return ["#SBATCH --ntasks=1", f"#SBATCH --cpus-per-task={spec.n_cores}"]
+        elif parallelism == "mpi":
+            return [f"#SBATCH --ntasks={spec.n_cores}"]
+        else:
+            return ["#SBATCH --ntasks=1"]
+
+    def get_launch_command(self, spec: CalculationInput, input_fname: str, output_fname: str) -> str:
+        """returns the shell command to launch a q-chem calculation."""
+        parallelism = spec.program_options.get("parallelism", "openmp")
+        if parallelism == "openmp":
+            return f"qchem -nt {spec.n_cores} {input_fname} {output_fname}"
+        elif parallelism == "mpi":
+            return f"qchem -np {spec.n_cores} {input_fname} {output_fname}"
+        else:
+            return f"qchem {input_fname} {output_fname}"
+
 
 def _count_electrons_in_qchem_occupation(occupation_string: str) -> int:
     """counts electrons in a q-chem occupation string like "1:5 7"."""

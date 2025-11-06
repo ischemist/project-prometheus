@@ -1,5 +1,6 @@
 from calcflow.common.input import CalculationInput
 from calcflow.geometry.static import Geometry
+from calcflow.slurm import SlurmJob
 
 # from calcflow.jobs.slurm import SlurmJob
 
@@ -13,26 +14,23 @@ calc = (
 )
 
 # 2. define the compute job
-# slurm_job = SlurmJob(
-#     job_name="h2o_sp", time="01:00:00", n_cores=16,
-#     account="m410", queue="premium"
-# ).add_modules(["orca"])
+slurm_job = SlurmJob(job_name="h2o_sp", time="01:00:00", n_cores=16, account="m410", queue="premium").add_modules(
+    ["orca"]
+)
 
 # 3. get geometry
 water = Geometry.from_xyz_file("tests/testing_data/geometries/1h2o.xyz")
 
 # 4. export files
 input_file_content = calc.export("orca", water)
-# slurm_script_content = slurm_job.export(
-#     calc, "orca", "h2o.inp", "h2o.out"
-# )
+slurm_script_content = slurm_job.export(calc, program="orca", input_filename="h2o.inp", output_filename="h2o.out")
 
 # 5. write to disk
 with open("h2o.inp", "w") as f:
     f.write(input_file_content)
 
-# with open("submit.sh", "w") as f:
-#     f.write(slurm_script_content)
+with open("submit.sh", "w") as f:
+    f.write(slurm_script_content)
 
 # 6. save calculation spec as json for reproducibility
 # this allows you to see exactly what parameters were used without parsing the input file
