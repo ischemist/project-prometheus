@@ -6,7 +6,7 @@ import re
 from collections.abc import Sequence
 
 from calcflow.common.exceptions import ParsingError
-from calcflow.common.models import CalculationResult
+from calcflow.common.results import CalculationResult
 from calcflow.io.core import BlockParser, core_parse
 from calcflow.io.qchem.blocks.charges import ChargesParser
 from calcflow.io.qchem.blocks.finalization import TerminationParser

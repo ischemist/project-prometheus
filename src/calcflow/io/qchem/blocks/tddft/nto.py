@@ -14,7 +14,7 @@ Format:
 import re
 from collections.abc import Iterator
 
-from calcflow.common.models import NTOContribution, NTOStateAnalysis, TddftResults
+from calcflow.common.results import NTOContribution, NTOStateAnalysis, TddftResults
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 

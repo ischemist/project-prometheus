@@ -4,7 +4,7 @@ Main entry point for parsing ORCA output files.
 
 from collections.abc import Sequence
 
-from calcflow.common.models import CalculationResult
+from calcflow.common.results import CalculationResult
 from calcflow.io.core import BlockParser, core_parse
 from calcflow.io.orca.blocks.charges import ChargesParser
 from calcflow.io.orca.blocks.dipole import DipoleParser

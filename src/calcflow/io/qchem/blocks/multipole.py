@@ -8,7 +8,7 @@ quadrupole, octopole, and hexadecapole moments.
 import re
 from collections.abc import Iterator
 
-from calcflow.common.models import (
+from calcflow.common.results import (
     DipoleMoment,
     HexadecapoleMoment,
     MultipoleResults,

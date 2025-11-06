@@ -8,7 +8,7 @@ QChem provides timing in the format:
 import re
 from collections.abc import Iterator
 
-from calcflow.common.models import TimingResults
+from calcflow.common.results import TimingResults
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 

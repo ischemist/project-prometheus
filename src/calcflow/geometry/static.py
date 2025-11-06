@@ -4,7 +4,7 @@ from functools import cached_property
 from pathlib import Path
 
 from calcflow.common.exceptions import ParsingError
-from calcflow.common.models import Atom
+from calcflow.common.results import Atom
 from calcflow.constants.ptable import ELEMENT_DATA
 
 

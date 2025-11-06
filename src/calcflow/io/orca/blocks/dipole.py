@@ -2,7 +2,7 @@ import re
 from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
-from calcflow.common.models import DipoleMoment, MultipoleResults
+from calcflow.common.results import DipoleMoment, MultipoleResults
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 

@@ -7,7 +7,7 @@ CalculationResult model.
 from collections.abc import Sequence
 from typing import Literal
 
-from calcflow.common.models import (
+from calcflow.common.results import (
     Atom,
     AtomicCharges,
     CalculationMetadata,

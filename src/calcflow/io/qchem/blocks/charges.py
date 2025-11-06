@@ -8,7 +8,7 @@ charges for each atom in the system.
 import re
 from collections.abc import Iterator
 
-from calcflow.common.models import AtomicCharges
+from calcflow.common.results import AtomicCharges
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
