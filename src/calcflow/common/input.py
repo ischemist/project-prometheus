@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
+import json
+from dataclasses import asdict, dataclass, field, replace
 from typing import Any, Literal, TypeVar
 
 from calcflow.common.exceptions import ConfigurationError, ValidationError
@@ -29,6 +30,15 @@ class TddftSpec:
     use_tda: bool = True  # Tamm-Dancoff Approximation is a common choice
     state_to_optimize: int | None = None  # for geometry optimization of an excited state
 
+    def to_dict(self) -> dict[str, Any]:
+        """serializes to a dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TddftSpec:
+        """deserializes from a dictionary."""
+        return cls(**data)
+
 
 @dataclass(frozen=True)
 class SolvationSpec:
@@ -37,6 +47,15 @@ class SolvationSpec:
     model: str  # e.g., 'smd', 'cpcm'
     solvent: str  # e.g., 'water', 'acetonitrile'
 
+    def to_dict(self) -> dict[str, Any]:
+        """serializes to a dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> SolvationSpec:
+        """deserializes from a dictionary."""
+        return cls(**data)
+
 
 @dataclass(frozen=True)
 class OptimizationSpec:
@@ -44,6 +63,15 @@ class OptimizationSpec:
 
     calc_hess_initial: bool = False
     recalc_hess_freq: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """serializes to a dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> OptimizationSpec:
+        """deserializes from a dictionary."""
+        return cls(**data)
 
 
 @dataclass(frozen=True)
@@ -76,6 +104,15 @@ class MomSpec:
     # manual override for advanced users (bypasses symbolic transition parsing)
     alpha_occupation: str | None = None
     beta_occupation: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """serializes to a dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> MomSpec:
+        """deserializes from a dictionary."""
+        return cls(**data)
 
 
 # --- Main Calculation Specification ---
@@ -283,3 +320,497 @@ class CalculationInput:
             )
         builder = BUILDERS[program_lower]
         return builder.build(self, geometry)
+
+    # --- Serialization ---
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        serializes the calculation input to a dictionary.
+
+        nested spec objects are also converted to dicts for clean json serialization.
+        """
+        data = asdict(self)
+        # asdict already recursively converts nested dataclasses
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> CalculationInput:
+        """
+        deserializes a calculation input from a dictionary.
+
+        reconstructs nested spec objects from their dict representations.
+        """
+        # create a copy to avoid mutating the input
+        data = dict(data)
+
+        # reconstruct nested specs if present
+        if data.get("tddft") is not None:
+            data["tddft"] = TddftSpec.from_dict(data["tddft"])
+        if data.get("solvation") is not None:
+            data["solvation"] = SolvationSpec.from_dict(data["solvation"])
+        if data.get("optimization") is not None:
+            data["optimization"] = OptimizationSpec.from_dict(data["optimization"])
+        if data.get("mom") is not None:
+            data["mom"] = MomSpec.from_dict(data["mom"])
+
+        return cls(**data)
+
+    def to_json(self, indent: int = 2) -> str:
+        """serializes the calculation input to a json string."""
+        return json.dumps(self.to_dict(), indent=indent)
+
+    @classmethod
+    def from_json(cls, json_str: str) -> CalculationInput:
+        """deserializes a calculation input from a json string."""
+        return cls.from_dict(json.loads(json_str))
+
+    @classmethod
+    def get_api_docs(cls) -> str:
+        """
+        returns comprehensive api documentation for llm-assisted code generation.
+
+        this method provides a complete reference of all available fields, methods,
+        and usage patterns without requiring access to source code. ideal for sharing
+        with llms when you want them to generate code using calcflow.
+
+        usage:
+            # print documentation for llm consumption
+            print(CalculationInput.get_api_docs())
+
+            # save to file
+            with open("calcflow_api.txt", "w") as f:
+                f.write(CalculationInput.get_api_docs())
+        """
+        return """
+CalculationInput API Reference
+==============================
+
+DESCRIPTION
+-----------
+Immutable specification for quantum chemistry calculations with a fluent API.
+All setter methods return a new instance (the original is unchanged).
+
+CONSTRUCTOR
+-----------
+Required parameters:
+  charge: int
+    Molecular charge (0 for neutral, -1 for anion, +1 for cation)
+
+  spin_multiplicity: int
+    Spin multiplicity: 1=singlet, 2=doublet, 3=triplet, etc.
+    Must be >= 1
+
+  task: Literal["energy", "geometry", "frequency"]
+    Type of calculation:
+      - "energy": single-point energy calculation
+      - "geometry": geometry optimization
+      - "frequency": vibrational frequency analysis
+
+  level_of_theory: str
+    DFT functional or ab initio method
+    Examples: "B3LYP", "wB97X-D3", "PBE0", "M06-2X", "MP2", "CCSD(T)"
+
+  basis_set: str | dict[str, str]
+    Basis set specification
+    - String for uniform basis: "def2-tzvp", "6-31G*", "cc-pvtz"
+    - Dict for element-specific: {"O": "aug-cc-pvtz", "H": "cc-pvdz"}
+
+Optional parameters:
+  unrestricted: bool = False
+    If True, use unrestricted (UKS/UHF) wavefunctions
+    If False, use restricted (RKS/RHF) wavefunctions
+    Required for open-shell systems and MOM calculations
+
+  n_cores: int = 1
+    Number of CPU cores to use
+
+  memory_per_core_mb: int = 4000
+    Memory allocation per core in megabytes
+
+  tddft: TddftSpec | None = None
+    TDDFT configuration (set via .set_tddft() method)
+
+  solvation: SolvationSpec | None = None
+    Implicit solvation configuration (set via .set_solvation() method)
+
+  optimization: OptimizationSpec | None = None
+    Optimization settings (set via .set_optimization() method)
+
+  mom: MomSpec | None = None
+    Maximum Overlap Method settings (set via .set_mom() method)
+
+  frequency_after_optimization: bool = False
+    Run frequency calculation after geometry optimization
+
+  program_options: dict[str, Any] = {}
+    Program-specific options not covered by generic API
+
+
+FLUENT API METHODS
+------------------
+
+Core Settings:
+  .set_level_of_theory(lot: str) -> CalculationInput
+    Update the level of theory (functional or method)
+    Example: .set_level_of_theory("wB97X-D3")
+
+  .set_basis_set(basis: str | dict[str, str]) -> CalculationInput
+    Update the basis set
+    Examples:
+      .set_basis_set("def2-tzvp")
+      .set_basis_set({"O": "pcX-2", "H": "pc-2"})
+
+  .set_task(task: Literal["energy", "geometry", "frequency"]) -> CalculationInput
+    Update the calculation task type
+    Example: .set_task("geometry")
+
+  .set_unrestricted(unrestricted: bool = True) -> CalculationInput
+    Enable/disable unrestricted wavefunctions
+    Example: .set_unrestricted(True)
+
+Computational Resources:
+  .set_cores(n_cores: int) -> CalculationInput
+    Set number of CPU cores
+    Example: .set_cores(16)
+
+  .set_memory_per_core(mb: int) -> CalculationInput
+    Set memory per core in MB
+    Example: .set_memory_per_core(8000)
+
+TDDFT (Excited States):
+  .set_tddft(
+      nroots: int,
+      singlets: bool = True,
+      triplets: bool = False,
+      use_tda: bool = True,
+      state_to_optimize: int | None = None
+  ) -> CalculationInput
+    Configure time-dependent DFT for excited states
+
+    Parameters:
+      nroots: Number of excited states to compute (must be >= 1)
+      singlets: Include singlet excitations
+      triplets: Include triplet excitations
+      use_tda: Use Tamm-Dancoff approximation (faster, usually adequate)
+      state_to_optimize: For geometry optimizations, which excited state to optimize
+                        (e.g., 1 for S1, 2 for S2). Only valid with task="geometry"
+
+    Examples:
+      .set_tddft(nroots=10)
+      .set_tddft(nroots=20, singlets=True, triplets=True)
+      .set_tddft(nroots=5, state_to_optimize=1)  # optimize S1 geometry
+
+Solvation:
+  .set_solvation(model: str, solvent: str) -> CalculationInput
+    Add implicit solvation model
+
+    Parameters:
+      model: Solvation model name (case-insensitive)
+             Common: "smd", "cpcm", "pcm", "cosmo"
+      solvent: Solvent name (case-insensitive)
+               Common: "water", "acetonitrile", "dmso", "methanol", "acetone"
+
+    Example:
+      .set_solvation(model="smd", solvent="water")
+      .set_solvation(model="cpcm", solvent="acetonitrile")
+
+Optimization:
+  .set_optimization(
+      calc_hess_initial: bool = False,
+      recalc_hess_freq: int | None = None
+  ) -> CalculationInput
+    Configure geometry optimization settings (only valid for task="geometry")
+
+    Parameters:
+      calc_hess_initial: Calculate Hessian at the start of optimization
+      recalc_hess_freq: Recalculate Hessian every N steps
+
+    Example:
+      .set_optimization(calc_hess_initial=True)
+      .set_optimization(recalc_hess_freq=5)
+
+  .run_frequency_after_opt() -> CalculationInput
+    Run frequency calculation after successful geometry optimization
+    Only valid for task="geometry"
+
+    Example:
+      .run_frequency_after_opt()
+
+MOM (Maximum Overlap Method for Excited States):
+  .set_mom(
+      transition: str,
+      method: str = "IMOM",
+      job2_charge: int | None = None,
+      job2_spin_multiplicity: int | None = None
+  ) -> CalculationInput
+    Configure Maximum Overlap Method for non-Aufbau electronic configurations
+    Requires unrestricted=True
+
+    Parameters:
+      transition: Orbital transition specification
+        Symbolic notation:
+          - "HOMO->LUMO": promote electron from HOMO to LUMO
+          - "HOMO-1->LUMO": from HOMO-1 to LUMO
+          - "HOMO->LUMO+1": from HOMO to LUMO+1
+        Numeric notation:
+          - "5->6": promote from orbital 5 to orbital 6
+          - "3->LUMO": from orbital 3 to LUMO
+        Ionization:
+          - "HOMO->vac": remove electron from HOMO
+          - "5->vac": remove electron from orbital 5
+        Spin-specific:
+          - "HOMO(beta)->LUMO(alpha)"
+        Multiple transitions:
+          - "HOMO->LUMO; HOMO-1->LUMO+1" (semicolon-separated)
+
+      method: "MOM" or "IMOM" (Initial Maximum Overlap Method, recommended)
+
+      job2_charge: Override charge for second job (used for ionization)
+      job2_spin_multiplicity: Override spin multiplicity for second job
+
+    Examples:
+      .set_unrestricted().set_mom("HOMO->LUMO")
+      .set_unrestricted().set_mom("HOMO->vac", job2_charge=1, job2_spin_multiplicity=2)
+      .set_unrestricted().set_mom("5->6", method="IMOM")
+
+Program-Specific Options:
+  .set_options(**kwargs: Any) -> CalculationInput
+    Escape hatch for program-specific options not covered by generic API
+    Options are passed directly to the program builder
+
+    Example:
+      .set_options(ri_approx="RIJCOSX", aux_basis="def2/j")
+      .set_options(scf_convergence=1e-8, max_scf_cycles=200)
+
+  .enable_ri_for_orca(approx: str, aux_basis: str) -> CalculationInput
+    Convenience method for enabling RI approximation in ORCA
+    This is a wrapper around .set_options()
+
+    Parameters:
+      approx: RI approximation type (e.g., "RIJCOSX", "RIJK", "RI")
+      aux_basis: Auxiliary basis set (e.g., "def2/j", "cc-pvtz/c")
+
+    Example:
+      .enable_ri_for_orca("RIJCOSX", "def2/j")
+
+
+EXPORT AND SERIALIZATION
+-------------------------
+  .export(program: str, geometry: Geometry) -> str
+    Generate program-specific input file content
+
+    Parameters:
+      program: Target program name ("orca", "qchem")
+      geometry: Molecular geometry (use Geometry.from_xyz_file() or Geometry())
+
+    Returns: String containing the formatted input file
+
+    Example:
+      from calcflow.geometry.static import Geometry
+      geom = Geometry.from_xyz_file("molecule.xyz")
+      input_content = calc.export("qchem", geom)
+
+  .to_dict() -> dict[str, Any]
+    Serialize to dictionary
+
+  .to_json(indent: int = 2) -> str
+    Serialize to JSON string
+
+  .from_dict(data: dict[str, Any]) -> CalculationInput
+    Deserialize from dictionary
+
+  .from_json(json_str: str) -> CalculationInput
+    Deserialize from JSON string
+
+
+PROPERTIES
+----------
+  .requires_multiple_jobs -> bool
+    Returns True if calculation requires multiple sequential jobs (e.g., MOM)
+
+
+USAGE EXAMPLES
+--------------
+
+1. Basic single-point energy calculation:
+    from calcflow.common.input import CalculationInput
+    from calcflow.geometry.static import Geometry
+
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="B3LYP",
+        basis_set="def2-tzvp"
+    )
+
+    geom = Geometry.from_xyz_file("molecule.xyz")
+    with open("qchem.in", "w") as f:
+        f.write(calc.export("qchem", geom))
+
+
+2. TDDFT with solvation:
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="wB97X-D3",
+        basis_set="def2-tzvp",
+        n_cores=16
+    ).set_tddft(
+        nroots=10,
+        singlets=True,
+        triplets=False
+    ).set_solvation(
+        model="smd",
+        solvent="water"
+    )
+
+
+3. Element-specific basis for XAS:
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="wB97X-D3",
+        basis_set={"O": "pcX-2", "H": "pc-2"}
+    ).set_tddft(nroots=10)
+
+
+4. Geometry optimization with frequency:
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="geometry",
+        level_of_theory="wB97X-D3",
+        basis_set="def2-svp",
+        n_cores=16
+    ).run_frequency_after_opt()
+
+
+5. Excited state optimization (S1):
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="geometry",
+        level_of_theory="PBE0",
+        basis_set="def2-svp"
+    ).set_tddft(
+        nroots=5,
+        state_to_optimize=1  # optimize S1
+    )
+
+
+6. MOM calculation for ionization:
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="wB97X-D3",
+        basis_set="def2-tzvp",
+        unrestricted=True
+    ).set_mom(
+        transition="HOMO->vac",
+        job2_charge=1,
+        job2_spin_multiplicity=2
+    ).set_solvation("smd", "water")
+
+
+7. ORCA calculation with RI approximation:
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="geometry",
+        level_of_theory="wB97X-D3",
+        basis_set="def2-svp",
+        n_cores=16
+    ).enable_ri_for_orca(
+        approx="RIJCOSX",
+        aux_basis="def2/j"
+    ).run_frequency_after_opt()
+
+
+8. Fluent API chaining:
+    calc = (
+        CalculationInput(
+            charge=-1,
+            spin_multiplicity=2,
+            task="energy",
+            level_of_theory="M06-2X",
+            basis_set="def2-tzvp"
+        )
+        .set_unrestricted()
+        .set_tddft(nroots=20, singlets=True, triplets=True)
+        .set_solvation("smd", "acetonitrile")
+        .set_cores(32)
+        .set_memory_per_core(8000)
+    )
+
+
+9. Save and load calculation spec:
+    # save
+    with open("calc_spec.json", "w") as f:
+        f.write(calc.to_json())
+
+    # load
+    loaded_calc = CalculationInput.from_json(
+        open("calc_spec.json").read()
+    )
+    assert loaded_calc == calc  # perfect roundtrip!
+
+
+10. Complete workflow:
+    from calcflow.common.input import CalculationInput
+    from calcflow.geometry.static import Geometry
+
+    # define calculation
+    calc = (
+        CalculationInput(
+            charge=0, spin_multiplicity=1, task="energy",
+            level_of_theory="wB97X-D3", basis_set="def2-tzvp", n_cores=16
+        )
+        .set_tddft(nroots=10)
+        .set_solvation("smd", "water")
+    )
+
+    # load geometry
+    geom = Geometry.from_xyz_file("molecule.xyz")
+
+    # export input files
+    qchem_input = calc.export("qchem", geom)
+    orca_input = calc.export("orca", geom)
+
+    # write to disk
+    with open("qchem.in", "w") as f:
+        f.write(qchem_input)
+    with open("orca.inp", "w") as f:
+        f.write(orca_input)
+
+    # save spec for reproducibility
+    with open("calc_spec.json", "w") as f:
+        f.write(calc.to_json())
+
+
+VALIDATION
+----------
+The constructor performs validation on initialization:
+  - spin_multiplicity must be >= 1
+  - tddft.nroots must be >= 1 (if tddft is set)
+  - solvation model and solvent must both be specified (if solvation is set)
+  - mom requires unrestricted=True
+  - mom requires either transition or manual occupation specification
+  - state_to_optimize only valid for task="geometry"
+  - optimization settings only valid for task="geometry"
+  - frequency_after_optimization only valid for task="geometry"
+
+Program-specific builders perform additional validation when .export() is called.
+
+
+RELATED CLASSES
+---------------
+TddftSpec: TDDFT configuration (nroots, singlets, triplets, use_tda, state_to_optimize)
+SolvationSpec: Solvation configuration (model, solvent)
+OptimizationSpec: Optimization configuration (calc_hess_initial, recalc_hess_freq)
+MomSpec: MOM configuration (transition, method, job2_charge, job2_spin_multiplicity)
+Geometry: Molecular geometry (use Geometry.from_xyz_file() or construct manually)
+""".strip()
