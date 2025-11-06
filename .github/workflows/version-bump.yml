@@ -10,21 +10,29 @@ permissions:
 
 jobs:
   update_version:
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: main # Checkout main branch instead of detached HEAD at tag
 
-      - name: Get version from published release
+      - name: Get next version from draft release
         id: get_version
         uses: actions/github-script@v7
         with:
           script: |
-            // Get version from the release that triggered this workflow
-            const version = context.payload.release.tag_name.replace(/^v/, '');
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            const draftRelease = releases.data.find(release => release.draft);
+            if (!draftRelease) {
+              throw new Error('No draft release found');
+            }
+            // Extract version without 'v' prefix
+            const version = draftRelease.tag_name.replace(/^v/, '');
             core.setOutput('version', version);
 
       - name: Update pyproject.toml version
@@ -39,4 +47,4 @@ jobs:
           git config --global user.email 'github-actions@github.com'
           git add pyproject.toml
           git commit -m "chore: update version to ${{ steps.get_version.outputs.version }}"
-          git push origin master
+          git push
