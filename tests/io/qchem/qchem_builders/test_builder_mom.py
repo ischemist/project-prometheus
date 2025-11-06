@@ -568,6 +568,330 @@ def test_invalid_orbital_notation(qchem_builder):
 
 
 # =============================================================================
+# UNIT TESTS: MOM GROUND_STATE Transition
+# =============================================================================
+
+
+@pytest.mark.unit
+def test_mom_ground_state_transition_even_electrons(qchem_builder, h2o_geometry):
+    """MOM GROUND_STATE transition should produce correct occupation for even electrons."""
+    # H2O has 10 electrons -> 5 alpha, 5 beta (ground state)
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        unrestricted=True,
+    ).set_mom(transition="GROUND_STATE")
+
+    result = qchem_builder.build(spec, h2o_geometry)
+    job2 = extract_job(result, 2)
+    parsed = parse_qchem_input(job2)
+
+    occupied_block = parsed.blocks.get("occupied", "")
+    lines = [line.strip() for line in occupied_block.split("\n") if line.strip() and not line.strip().startswith("$")]
+
+    # Should have alpha and beta lines
+    assert len(lines) == 2
+    alpha_line = lines[0]
+    beta_line = lines[1]
+
+    # For 10 electrons: alpha = 1:5, beta = 1:5
+    assert alpha_line == "1:5"
+    assert beta_line == "1:5"
+
+
+@pytest.mark.unit
+def test_mom_ground_state_single_electron_pair(qchem_builder):
+    """MOM GROUND_STATE with 2 electrons (1 pair) should format as '1' not '1:1'."""
+    from calcflow.common.results import Atom
+    from calcflow.geometry.static import Geometry
+
+    # H2 molecule has 2 electrons -> 1 alpha, 1 beta
+    h2_geom = Geometry(
+        comment="H2 molecule",
+        atoms=(
+            Atom(symbol="H", x=0.0, y=0.0, z=0.0),
+            Atom(symbol="H", x=0.0, y=0.0, z=0.74),
+        ),
+    )
+
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        unrestricted=True,
+    ).set_mom(transition="GROUND_STATE")
+
+    result = qchem_builder.build(spec, h2_geom)
+    job2 = extract_job(result, 2)
+    parsed = parse_qchem_input(job2)
+
+    occupied_block = parsed.blocks.get("occupied", "")
+    lines = [line.strip() for line in occupied_block.split("\n") if line.strip() and not line.strip().startswith("$")]
+
+    # For 2 electrons: alpha = 1, beta = 1 (not 1:1)
+    alpha_line = lines[0]
+    beta_line = lines[1]
+
+    assert alpha_line == "1"
+    assert beta_line == "1"
+
+
+# =============================================================================
+# CONTRACT TESTS: MOM GROUND_STATE Validation
+# =============================================================================
+
+
+@pytest.mark.contract
+def test_mom_ground_state_requires_even_electrons(qchem_builder):
+    """MOM GROUND_STATE with odd electrons should raise error."""
+    from calcflow.common.exceptions import ConfigurationError
+    from calcflow.common.results import Atom
+    from calcflow.geometry.static import Geometry
+
+    # OH radical has 9 electrons (odd)
+    oh_geom = Geometry(
+        comment="OH radical",
+        atoms=(
+            Atom(symbol="O", x=0.0, y=0.0, z=0.0),
+            Atom(symbol="H", x=0.0, y=0.0, z=0.96),
+        ),
+    )
+
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=2,  # Doublet
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        unrestricted=True,
+    ).set_mom(transition="GROUND_STATE")
+
+    with pytest.raises(ConfigurationError, match="GROUND_STATE.*even number of electrons"):
+        qchem_builder.build(spec, oh_geom)
+
+
+@pytest.mark.contract
+def test_mom_ground_state_two_job_structure(qchem_builder, h2o_geometry):
+    """MOM GROUND_STATE should generate proper two-job structure."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        unrestricted=True,
+    ).set_mom(transition="GROUND_STATE")
+
+    result = qchem_builder.build(spec, h2o_geometry)
+
+    # Verify two-job structure
+    assert_two_job_structure(result)
+
+    # Both jobs should be present
+    job1 = extract_job(result, 1)
+    job2 = extract_job(result, 2)
+
+    assert "$molecule" in job1
+    assert "$molecule" in job2
+    assert_block_present(parse_qchem_input(job2).blocks, "occupied")
+
+
+# =============================================================================
+# INTEGRATION TESTS: MOM GROUND_STATE Workflows
+# =============================================================================
+
+
+@pytest.mark.integration
+def test_mom_ground_state_full_workflow(h2o_geometry):
+    """Full MOM workflow with GROUND_STATE transition."""
+    calc = (
+        CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="b3lyp",
+            basis_set="6-31g",
+        )
+        .set_unrestricted(True)
+        .set_mom(transition="GROUND_STATE")
+    )
+
+    result = calc.export("qchem", h2o_geometry)
+
+    # Verify structure
+    assert_two_job_structure(result)
+    job2 = extract_job(result, 2)
+    parsed = parse_qchem_input(job2)
+
+    # Verify MOM settings
+    assert_rem_value(parsed.rem_block, "MOM_START", "1")
+    assert_rem_value(parsed.rem_block, "SCF_GUESS", "read")
+    assert_block_present(parsed.blocks, "occupied")
+
+
+# =============================================================================
+# CONTRACT TESTS: MOM with TDDFT and TRNSS
+# =============================================================================
+
+
+@pytest.mark.contract
+def test_mom_with_tddft_trnss_solute_block_in_job2(qchem_builder, h2o_geometry):
+    """MOM + TDDFT + TRNSS should have $solute block in job2 only."""
+    from calcflow.common.input import TddftSpec
+
+    spec = (
+        CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="cam-b3lyp",
+            basis_set="6-31g",
+            unrestricted=True,
+            tddft=TddftSpec(nroots=5, singlets=True, triplets=False),
+        )
+        .set_mom(transition="HOMO->LUMO")
+        .set_options(reduced_excitation_space_orbitals=[3, 4, 5, 6, 7])
+    )
+
+    result = qchem_builder.build(spec, h2o_geometry)
+
+    # Job1 should NOT have $solute block (no TDDFT in job1)
+    job1 = extract_job(result, 1)
+    parsed_job1 = parse_qchem_input(job1)
+    assert_block_not_present(parsed_job1.blocks, "solute")
+
+    # Job2 should have $solute block
+    job2 = extract_job(result, 2)
+    parsed_job2 = parse_qchem_input(job2)
+    assert_block_present(parsed_job2.blocks, "solute")
+
+    # Verify TRNSS keywords in job2
+    assert_rem_value(parsed_job2.rem_block, "TRNSS", True)
+    assert_rem_value(parsed_job2.rem_block, "N_SOL", 5)
+
+
+@pytest.mark.contract
+def test_mom_without_trnss_no_solute_block(qchem_builder, h2o_geometry):
+    """MOM + TDDFT without TRNSS should NOT have $solute block."""
+    from calcflow.common.input import TddftSpec
+
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="cam-b3lyp",
+        basis_set="6-31g",
+        unrestricted=True,
+        tddft=TddftSpec(nroots=5, singlets=True, triplets=False),
+    ).set_mom(transition="HOMO->LUMO")
+
+    result = qchem_builder.build(spec, h2o_geometry)
+
+    # Neither job should have $solute block
+    job1 = extract_job(result, 1)
+    job2 = extract_job(result, 2)
+
+    parsed_job1 = parse_qchem_input(job1)
+    parsed_job2 = parse_qchem_input(job2)
+
+    assert_block_not_present(parsed_job1.blocks, "solute")
+    assert_block_not_present(parsed_job2.blocks, "solute")
+
+
+# =============================================================================
+# INTEGRATION TESTS: MOM with TDDFT and TRNSS Workflows
+# =============================================================================
+
+
+@pytest.mark.integration
+def test_mom_tddft_trnss_full_workflow(h2o_geometry):
+    """Full MOM workflow with TDDFT and reduced excitation space."""
+    calc = (
+        CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="cam-b3lyp",
+            basis_set="6-311g(d)",
+        )
+        .set_unrestricted(True)
+        .set_mom(transition="HOMO->LUMO")
+        .set_tddft(nroots=10, singlets=True, triplets=False, use_tda=False)
+        .set_options(reduced_excitation_space_orbitals=[3, 4, 5, 6, 7, 8])
+        .set_cores(16)
+    )
+
+    result = calc.export("qchem", h2o_geometry)
+
+    # Verify two-job structure
+    assert_two_job_structure(result)
+
+    job2 = extract_job(result, 2)
+    parsed_job2 = parse_qchem_input(job2)
+
+    # Verify MOM settings
+    assert_rem_value(parsed_job2.rem_block, "MOM_START", "1")
+    assert_rem_value(parsed_job2.rem_block, "SCF_GUESS", "read")
+
+    # Verify TDDFT settings
+    assert_rem_value(parsed_job2.rem_block, "CIS_N_ROOTS", 10)
+    assert_rem_value(parsed_job2.rem_block, "RPA", True)
+
+    # Verify TRNSS settings
+    assert_rem_value(parsed_job2.rem_block, "TRNSS", True)
+    assert_rem_value(parsed_job2.rem_block, "N_SOL", 6)
+
+    # Verify blocks
+    assert_block_present(parsed_job2.blocks, "occupied")
+    assert_block_present(parsed_job2.blocks, "solute")
+
+
+@pytest.mark.integration
+def test_mom_tddft_trnss_with_solvation(h2o_geometry):
+    """MOM + TDDFT + TRNSS + solvation should work together."""
+    calc = (
+        CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="cam-b3lyp",
+            basis_set="6-31g",
+        )
+        .set_unrestricted(True)
+        .set_mom(transition="HOMO->LUMO")
+        .set_tddft(nroots=5, singlets=True, triplets=False)
+        .set_solvation("smd", "water")
+        .set_options(reduced_excitation_space_orbitals=[4, 5, 6])
+    )
+
+    result = calc.export("qchem", h2o_geometry)
+
+    # Verify two-job structure
+    assert_two_job_structure(result)
+
+    job1 = extract_job(result, 1)
+    job2 = extract_job(result, 2)
+
+    parsed_job1 = parse_qchem_input(job1)
+    parsed_job2 = parse_qchem_input(job2)
+
+    # Both jobs should have solvation
+    assert "smx" in parsed_job1.blocks
+    assert "smx" in parsed_job2.blocks
+
+    # Only job2 should have TDDFT, TRNSS, and $solute
+    assert_rem_value(parsed_job2.rem_block, "CIS_N_ROOTS", 5)
+    assert_rem_value(parsed_job2.rem_block, "TRNSS", True)
+    assert_block_present(parsed_job2.blocks, "solute")
+    assert_block_present(parsed_job2.blocks, "occupied")
+
+
+# =============================================================================
 # PYTEST FIXTURES
 # =============================================================================
 
