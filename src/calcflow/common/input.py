@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field, replace
+from importlib.metadata import version
 from typing import Any, Literal, TypeVar
 
 from calcflow.common.exceptions import ConfigurationError, ValidationError
@@ -11,6 +12,9 @@ from calcflow.io.qchem.builder import QchemBuilder
 
 T_CalculationInput = TypeVar("T_CalculationInput", bound="CalculationInput")
 type TASK_TYPES = Literal["energy", "geometry", "frequency"]
+
+# cache version at module load to avoid repeated filesystem lookups
+_CALCFLOW_VERSION = version("calcflow")
 
 # lazy-loaded registry to prevent circular imports.
 BUILDERS = {"orca": OrcaBuilder(), "qchem": QchemBuilder()}
@@ -363,9 +367,11 @@ class CalculationInput:
         serializes the calculation input to a dictionary.
 
         nested spec objects are also converted to dicts for clean json serialization.
+        includes calcflow_version for tracking which version created this spec.
         """
         data = asdict(self)
         # asdict already recursively converts nested dataclasses
+        data["calcflow_version"] = _CALCFLOW_VERSION
         return data
 
     @classmethod
@@ -374,9 +380,13 @@ class CalculationInput:
         deserializes a calculation input from a dictionary.
 
         reconstructs nested spec objects from their dict representations.
+        ignores calcflow_version field for backward compatibility.
         """
         # create a copy to avoid mutating the input
         data = dict(data)
+
+        # remove version metadata (not a dataclass field)
+        data.pop("calcflow_version", None)
 
         # reconstruct nested specs if present
         if data.get("tddft") is not None:
