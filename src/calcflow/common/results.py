@@ -27,6 +27,9 @@ from typing import Any, Literal, TypeVar, Union, get_args, get_origin
 from calcflow.common.exceptions import ValidationError
 from calcflow.constants.ptable import ELEMENT_DATA
 
+# cache version at module load to avoid repeated filesystem lookups
+_CALCFLOW_VERSION = get_version("calcflow")
+
 # =============================================================================
 # §0. BASE MODEL FOR SERIALIZATION & DESERIALIZATION
 # =============================================================================
@@ -538,7 +541,7 @@ class CalculationResult(FrozenModel):
         Includes calcflow_version for tracking which version created this result."""
         data = super().to_dict()
         data.pop("raw_output", None)
-        data["calcflow_version"] = get_version("calcflow")
+        data["calcflow_version"] = _CALCFLOW_VERSION
         return data
 
     @classmethod

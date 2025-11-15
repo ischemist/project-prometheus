@@ -13,6 +13,9 @@ from calcflow.io.qchem.builder import QchemBuilder
 T_CalculationInput = TypeVar("T_CalculationInput", bound="CalculationInput")
 type TASK_TYPES = Literal["energy", "geometry", "frequency"]
 
+# cache version at module load to avoid repeated filesystem lookups
+_CALCFLOW_VERSION = version("calcflow")
+
 # lazy-loaded registry to prevent circular imports.
 BUILDERS = {"orca": OrcaBuilder(), "qchem": QchemBuilder()}
 
@@ -368,7 +371,7 @@ class CalculationInput:
         """
         data = asdict(self)
         # asdict already recursively converts nested dataclasses
-        data["calcflow_version"] = version("calcflow")
+        data["calcflow_version"] = _CALCFLOW_VERSION
         return data
 
     @classmethod
