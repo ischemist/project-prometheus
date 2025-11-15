@@ -20,6 +20,7 @@ import dataclasses
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from importlib.metadata import version as get_version
 from types import UnionType
 from typing import Any, Literal, TypeVar, Union, get_args, get_origin
 
@@ -533,16 +534,21 @@ class CalculationResult(FrozenModel):
     program_specific: Mapping[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        """Converts to dictionary, excluding raw_output to save space."""
+        """Converts to dictionary, excluding raw_output to save space.
+        Includes calcflow_version for tracking which version created this result."""
         data = super().to_dict()
         data.pop("raw_output", None)
+        data["calcflow_version"] = get_version("calcflow")
         return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "CalculationResult":
-        """Reconstructs from dictionary, setting raw_output to empty string."""
+        """Reconstructs from dictionary, setting raw_output to empty string.
+        Ignores calcflow_version field for backward compatibility."""
+        data = {**data}  # copy to avoid mutating input
+        data.pop("calcflow_version", None)  # remove version metadata
         if "raw_output" not in data:
-            data = {**data, "raw_output": ""}
+            data["raw_output"] = ""
         return super().from_dict(data)
 
     @classmethod
