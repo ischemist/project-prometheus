@@ -42,11 +42,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-uv-
 
-      - name: Create and activate virtual environment
-        run: |
-          uv venv
-          echo "$PWD/.venv/bin" >> $GITHUB_PATH
-
       - name: Install dependencies
         run: uv sync
 
