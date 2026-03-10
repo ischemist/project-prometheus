@@ -11,6 +11,7 @@ import logging
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
+from calcflow.common.exceptions import ValidationError
 from calcflow.common.results import ExcitedState
 
 if TYPE_CHECKING:
@@ -29,6 +30,8 @@ def make_energy_grid(
     import numpy as np
 
     energies = [s.excitation_energy_ev for s in states]
+    if not energies:
+        raise ValidationError("states must not be empty; cannot construct energy grid without at least one state")
     return np.linspace(min(energies) - padding, max(energies) + padding, n_points)
 
 
@@ -69,6 +72,8 @@ def lorentzian_spectrum(
     import numpy as np
 
     grid = np.asarray(energy_grid, dtype=np.float64)
+    if fwhm <= 0.0:
+        raise ValidationError(f"fwhm must be positive, got {fwhm}")
     hwhm = fwhm / 2.0  # half-width at half maximum; Lorentzian parameter γ = FWHM/2
 
     peak_energies_ev: list[float] = []
