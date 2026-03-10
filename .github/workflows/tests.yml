@@ -42,19 +42,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-uv-
 
-      - name: Create and activate virtual environment
-        run: |
-          uv venv
-          echo "$PWD/.venv/bin" >> $GITHUB_PATH
-
       - name: Install dependencies
         run: uv sync
 
       - name: run tests and generate coverage report
         id: coverage
         run: |
-          report=$(pytest --cov=calcflow --cov-report=term-missing)
-          coverage json -o coverage.json # create the json artifact
+          report=$(uv run pytest --cov=calcflow --cov-report=term-missing)
+          uv run coverage json -o coverage.json # create the json artifact
 
           # this is some bash magic to make the multiline report available to next steps
           echo "report<<EOF" >> $GITHUB_OUTPUT

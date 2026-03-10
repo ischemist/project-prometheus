@@ -16,6 +16,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 
+[project.optional-dependencies]
+numpy = ["numpy>=1.24"]
+
 [project.urls]
 Homepage = "https://github.com/ischemist/project-prometheus"
 Issues = "https://github.com/ischemist/project-prometheus/issues"
@@ -33,6 +36,7 @@ local_scheme = "no-local-version"
 
 [dependency-groups]
 dev = [
+    "numpy>=1.24",
     "prek>=0.2.11",
     "pytest>=8.4.2",
     "pytest-cov>=7.0.0",
