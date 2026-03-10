@@ -25,6 +25,7 @@ from types import UnionType
 from typing import Any, Literal, TypeVar, Union, get_args, get_origin
 
 from calcflow.common.exceptions import ValidationError
+from calcflow.common.types import Matrix3x3
 from calcflow.constants.ptable import ELEMENT_DATA
 
 # cache version at module load to avoid repeated filesystem lookups
@@ -491,7 +492,105 @@ class TddftResults(FrozenModel):
 
 
 # =============================================================================
-# §4. TOP-LEVEL RESULT MODELS
+# §4. ADC MODELS
+# =============================================================================
+
+
+@dataclass(frozen=True)
+class TwoPhotonAbsorption(FrozenModel):
+    """Two-photon absorption data for a single excited state."""
+
+    cross_section_au: float
+    matrix_au: Matrix3x3  # 3x3 TPA tensor in atomic units
+
+
+@dataclass(frozen=True)
+class AdcAmplitude(FrozenModel):
+    """A single amplitude contribution in an ADC excited state."""
+
+    occ_i: int  # occupied orbital index (1-based as in output)
+    vir_a: int  # virtual orbital index (1-based as in output)
+    amplitude: float
+    spin: str | None = None  # "A" (alpha) or "B" (beta) for the occ_i/vir_a pair
+    occ_j: int | None = None  # second occupied index for 2p2h configurations
+    vir_b: int | None = None  # second virtual index for 2p2h configurations
+
+
+@dataclass(frozen=True)
+class AdcGroundState(FrozenModel):
+    """Ground state (HF + MP2) data from an ADC calculation."""
+
+    hf_energy_au: float
+    mp2_correlation_energy_au: float
+    total_energy_au: float  # HF + MP2 correlation
+    # Natural orbital analysis of the ground-state density matrix
+    nos_alpha: NaturalOrbitals | None = None
+    nos_beta: NaturalOrbitals | None = None
+    nos_spin_traced: NaturalOrbitals | None = None
+    # Mulliken population analysis
+    mulliken: AtomicCharges | None = None
+    # Multipole
+    dipole_moment_debye: float | None = None
+    dipole_components_debye: tuple[float, float, float] | None = None
+    # Exciton analysis of the difference density matrix
+    exciton_total: ExcitonAnalysis | None = None
+    exciton_alpha: ExcitonAnalysis | None = None
+    exciton_beta: ExcitonAnalysis | None = None
+
+
+@dataclass(frozen=True)
+class AdcExcitedState(FrozenModel):
+    """All data for a single ADC(2) excited state."""
+
+    state_number: int
+    total_energy_au: float
+    excitation_energy_ev: float
+    oscillator_strength: float | None = None
+    trans_dip_moment_au: tuple[float, float, float] | None = None
+    r2_au: tuple[float, float, float] | None = None
+    two_photon_absorption: TwoPhotonAbsorption | None = None
+    dip_moment_au: tuple[float, float, float] | None = None
+    total_dipole_debye: float | None = None
+    v1_squared: float | None = None
+    v2_squared: float | None = None
+    amplitudes: Sequence[AdcAmplitude] = field(default_factory=list)
+    # Density matrix analysis (difference DM)
+    nos_alpha: NaturalOrbitals | None = None
+    nos_beta: NaturalOrbitals | None = None
+    nos_spin_traced: NaturalOrbitals | None = None
+    mulliken: AtomicCharges | None = None
+    dipole_dm_debye: float | None = None
+    dipole_dm_components_debye: tuple[float, float, float] | None = None
+    exciton_diff_total: ExcitonAnalysis | None = None
+    exciton_diff_alpha: ExcitonAnalysis | None = None
+    exciton_diff_beta: ExcitonAnalysis | None = None
+    # CT numbers (transition DM)
+    ct_omega: float | None = None
+    ct_omega_alpha: float | None = None
+    ct_omega_beta: float | None = None
+    ct_phe: float | None = None
+    ct_phe_alpha: float | None = None
+    ct_phe_beta: float | None = None
+    # Exciton analysis of the transition DM
+    exciton_trans_total: ExcitonAnalysis | None = None
+    exciton_trans_alpha: ExcitonAnalysis | None = None
+    exciton_trans_beta: ExcitonAnalysis | None = None
+    # NTO decomposition (state-averaged)
+    nto_alpha: Sequence[NTOContribution] | None = None
+    nto_beta: Sequence[NTOContribution] | None = None
+
+
+@dataclass(frozen=True)
+class AdcResults(FrozenModel):
+    """Container for all ADC(2) parsed data."""
+
+    method: str  # e.g. "adc(2)"
+    ground_state: AdcGroundState | None = None
+    excited_states: Sequence[AdcExcitedState] = field(default_factory=list)
+
+
+# =============================================================================
+# §5. TOP-LEVEL RESULT MODELS
 # =============================================================================
 
 
@@ -529,6 +628,7 @@ class CalculationResult(FrozenModel):
     multipole: MultipoleResults | None = None
     smd: SmdResults | None = None
     tddft: TddftResults | None = None
+    adc: AdcResults | None = None
     dispersion: DispersionCorrection | None = None
     timing: TimingResults | None = None
     atomic_charges: Sequence[AtomicCharges] = field(default_factory=list)

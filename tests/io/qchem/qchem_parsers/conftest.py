@@ -19,6 +19,8 @@ FIXTURE_FILES = {
     "parsed_qchem_54_h2o_uks_tddft_data": "qchem/h2o/5.4-uks-tddft.out",
     "parsed_qchem_62_h2o_uks_tddft_data": "qchem/h2o/6.2-uks-tddft.out",
     "parsed_qchem_62_h2o_rks_tddft_data": "qchem/h2o/6.2-rks-tddft.out",
+    "parsed_qchem_54_h2o_adc_svp_data": "qchem/h2o/5.4-adc-svp.out",
+    "parsed_qchem_54_h2o_adc_svp_smd_data": "qchem/h2o/5.4-adc-svp-smd.out",
 }
 
 # Multi-job fixtures - parsed with parse_qchem_multi_job_output()
@@ -170,6 +172,15 @@ FIXTURE_SPECS = {
         "parsed_qchem_62_h2o_mom_sp_job2",
         "parsed_qchem_54_h2o_mom_xas_job2",
         "parsed_qchem_62_h2o_mom_xas_job2",
+    ],
+    # ADC blocks
+    "adc_ground_state": [
+        "parsed_qchem_54_h2o_adc_svp_data",
+        "parsed_qchem_54_h2o_adc_svp_smd_data",
+    ],
+    "adc_excited_states": [
+        "parsed_qchem_54_h2o_adc_svp_data",
+        "parsed_qchem_54_h2o_adc_svp_smd_data",
     ],
     # Timing block (present in all fixtures)
     "timing": [
