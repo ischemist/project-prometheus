@@ -49,7 +49,7 @@ jobs:
         id: coverage
         run: |
           report=$(uv run pytest --cov=calcflow --cov-report=term-missing)
-          coverage json -o coverage.json # create the json artifact
+          uv run coverage json -o coverage.json # create the json artifact
 
           # this is some bash magic to make the multiline report available to next steps
           echo "report<<EOF" >> $GITHUB_OUTPUT
