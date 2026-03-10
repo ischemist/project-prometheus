@@ -22,7 +22,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from importlib.metadata import version as get_version
 from types import UnionType
-from typing import Any, Literal, TypeVar, Union, get_args, get_origin
+from typing import Any, Literal, TypeAliasType, TypeVar, Union, get_args, get_origin
 
 from calcflow.common.exceptions import ValidationError
 from calcflow.common.types import Matrix3x3
@@ -68,6 +68,9 @@ class FrozenModel:
         if value is None:
             return None
 
+        if isinstance(target_type, TypeAliasType):
+            return FrozenModel._convert_value(value, target_type.__value__)
+
         origin = get_origin(target_type)
         args = get_args(target_type)
 
@@ -85,12 +88,25 @@ class FrozenModel:
             item_type = args[0]
             return [FrozenModel._convert_value(item, item_type) for item in value]
 
+        if origin is tuple and isinstance(value, (list, tuple)):
+            if len(args) == 2 and args[1] is Ellipsis:
+                return tuple(FrozenModel._convert_value(item, args[0]) for item in value)
+            return tuple(
+                FrozenModel._convert_value(item, item_type) for item, item_type in zip(value, args, strict=False)
+            )
+
         if origin in (dict, Mapping) and isinstance(value, dict):
             key_type, val_type = args
             return {
                 FrozenModel._convert_value(k, key_type): FrozenModel._convert_value(v, val_type)
                 for k, v in value.items()
             }
+
+        if target_type in (int, float, str, bool) and not isinstance(value, target_type):
+            try:
+                return target_type(value)
+            except (TypeError, ValueError):
+                return value
 
         return value
 
