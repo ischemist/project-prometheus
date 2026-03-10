@@ -136,31 +136,24 @@ class AdcExcitedStatesParser(BlockParser):
         nto_alpha: list[NTOContribution] = []
         nto_beta: list[NTOContribution] = []
         current_nto_spin: str | None = None  # "alpha" or "beta"
+        in_nto_section = False
 
-        past_nto = False  # True once we've seen the NTO decomposition section
-        for line in iterator:
+        while True:
+            if line_buffer is not None:
+                line = line_buffer
+                line_buffer = None
+            else:
+                try:
+                    line = next(iterator)
+                except StopIteration:
+                    break
+
             # Termination: END pattern or next state header — return line as buffer
             if _END_PAT.search(line):
-                line_buffer = line  # caller will detect this and buffer it
+                line_buffer = line
                 break
             if _STATE_HEADER_PAT.match(line):
                 line_buffer = line
-                break
-            # State separator line (end of this state's block): long "----" after NTO section.
-            # We only use this as terminator AFTER the NTO decomposition, to avoid
-            # false-positive matches on the amplitude table and Mulliken separators.
-            stripped_line = line.strip()
-            if past_nto and stripped_line and re.fullmatch(r"-{5,}", stripped_line):
-                line_buffer = None
-                # Peek for next meaningful line (state header or END)
-                for next_line in iterator:
-                    if _END_PAT.search(next_line):
-                        line_buffer = next_line
-                        break
-                    if _STATE_HEADER_PAT.match(next_line):
-                        line_buffer = next_line
-                        break
-                    # skip blanks and banner lines between states
                 break
 
             stripped = line.strip()
@@ -231,41 +224,41 @@ class AdcExcitedStatesParser(BlockParser):
 
             # --- Density matrix analysis ---
             elif "NOs" in line and "Density matrix analysis" not in line and "Decomposition" not in line:
-                nos_data, _ = self._parse_nos_section(iterator, line)
+                nos_data, line_buffer = self._parse_nos_section(iterator, line)
                 data.update(nos_data)
 
             elif "Mulliken Population Analysis" in line:
-                mulliken, _ = self._parse_mulliken_section(iterator)
+                mulliken, line_buffer = self._parse_mulliken_section(iterator)
                 data["mulliken"] = mulliken
 
             elif "Multipole moment analysis" in line:
-                mp_data, _ = self._parse_multipole_section(iterator)
+                mp_data, line_buffer = self._parse_multipole_section(iterator)
                 data.update(mp_data)
 
             elif "Exciton analysis of the difference density matrix" in line:
-                exciton_data, _ = self._parse_exciton_section(iterator, prefix="exciton_diff")
+                exciton_data, line_buffer = self._parse_exciton_section(iterator, prefix="exciton_diff")
                 data.update(exciton_data)
 
             elif "Transition density matrix analysis:" in line:
-                ct_data, _ = self._parse_ct_section(iterator)
+                ct_data, line_buffer = self._parse_ct_section(iterator)
                 data.update(ct_data)
 
             elif "Exciton analysis of the transition density matrix" in line:
-                exciton_trans, _ = self._parse_exciton_section(iterator, prefix="exciton_trans")
+                exciton_trans, line_buffer = self._parse_exciton_section(iterator, prefix="exciton_trans")
                 data.update(exciton_trans)
 
             # --- NTO decomposition ---
             elif "Decomposition into state-averaged NTOs" in line:
                 current_nto_spin = None
-                past_nto = True
+                in_nto_section = True
 
-            elif "Alpha spin:" in line and current_nto_spin is None:
+            elif in_nto_section and "Alpha spin:" in line and current_nto_spin is None:
                 current_nto_spin = "alpha"
 
-            elif "Beta spin:" in line and current_nto_spin in (None, "alpha"):
+            elif in_nto_section and "Beta spin:" in line and current_nto_spin in (None, "alpha"):
                 current_nto_spin = "beta"
 
-            elif current_nto_spin is not None:
+            elif in_nto_section and current_nto_spin is not None:
                 nm = _NTO_LINE_PAT.search(line)
                 if nm:
                     hole_offset = -int(nm.group(1))

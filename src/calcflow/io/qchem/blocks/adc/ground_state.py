@@ -65,7 +65,19 @@ class AdcGroundStateParser(BlockParser):
         logger.debug("Parsing ADC ground state block.")
         data: dict[str, Any] = {}
 
-        for line in chain([start_line], iterator):
+        line_source = chain([start_line], iterator)
+        line_buffer: str | None = None
+
+        while True:
+            if line_buffer is not None:
+                line = line_buffer
+                line_buffer = None
+            else:
+                try:
+                    line = next(line_source)
+                except StopIteration:
+                    break
+
             if self.DAVIDSON_PAT.search(line):
                 state.buffered_line = line
                 break
@@ -74,32 +86,39 @@ class AdcGroundStateParser(BlockParser):
                 m = re.search(r"Energy:\s+([-\d.]+)\s+a\.u\.", line)
                 if m:
                     data["hf_energy_au"] = float(m.group(1))
+                continue
 
-            elif "MP energy contribution:" in line:
+            if "MP energy contribution:" in line:
                 m = re.search(r"MP energy contribution:\s+([-\d.]+)\s+a\.u\.", line)
                 if m:
                     data["mp2_correlation_energy_au"] = float(m.group(1))
+                continue
 
-            elif "Total energy:" in line and "mp2_correlation_energy_au" in data and "total_energy_au" not in data:
+            if "Total energy:" in line and "mp2_correlation_energy_au" in data and "total_energy_au" not in data:
                 m = re.search(r"Total energy:\s+([-\d.]+)\s+a\.u\.", line)
                 if m:
                     data["total_energy_au"] = float(m.group(1))
+                continue
 
-            elif "NOs" in line and "Density matrix analysis" not in line:
-                nos_data, _ = self._parse_nos_section(iterator, line)
+            if "NOs" in line and "Density matrix analysis" not in line:
+                nos_data, line_buffer = self._parse_nos_section(iterator, line)
                 data.update(nos_data)
+                continue
 
-            elif "Mulliken Population Analysis" in line:
-                mulliken, _ = self._parse_mulliken_section(iterator)
+            if "Mulliken Population Analysis" in line:
+                mulliken, line_buffer = self._parse_mulliken_section(iterator)
                 data["mulliken"] = mulliken
+                continue
 
-            elif "Multipole moment analysis" in line:
-                mp_data, _ = self._parse_multipole_section(iterator)
+            if "Multipole moment analysis" in line:
+                mp_data, line_buffer = self._parse_multipole_section(iterator)
                 data.update(mp_data)
+                continue
 
-            elif "Exciton analysis of the difference density matrix" in line:
-                exciton_data, _ = self._parse_exciton_section(iterator)
+            if "Exciton analysis of the difference density matrix" in line:
+                exciton_data, line_buffer = self._parse_exciton_section(iterator)
                 data.update(exciton_data)
+                continue
 
         try:
             gs = AdcGroundState.from_dict(data)
