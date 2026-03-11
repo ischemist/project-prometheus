@@ -45,11 +45,13 @@ def _adc_state(
     oscillator_strength: float | None = 1.0,
     tpa_cross_section: float | None = None,
 ) -> AdcExcitedState:
-    tpa = (
-        TwoPhotonAbsorption(cross_section_au=tpa_cross_section, matrix_au=((0.0,) * 3,) * 3)
-        if tpa_cross_section is not None
-        else None
-    )  # type: ignore[arg-type]
+    if tpa_cross_section is not None:
+        tpa = TwoPhotonAbsorption(
+            cross_section_au=tpa_cross_section,
+            matrix_au=((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+        )
+    else:
+        tpa = None
     return AdcExcitedState(
         state_number=state_number,
         total_energy_au=-100.0,

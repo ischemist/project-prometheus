@@ -162,6 +162,9 @@ def opa_spectrum_from_adc_states(
         energy_grid:   Energy axis in eV.
         fwhm:          Full width at half maximum in eV.
         energy_shift:  Rigid shift applied to all state energies, in eV.
+
+    Returns:
+        1-D array of broadened spectral intensities on the energy grid.
     """
     energies: list[float] = []
     weights: list[float] = []
@@ -191,6 +194,9 @@ def tpa_spectrum_from_adc_states(
         energy_grid:   Energy axis in eV.
         fwhm:          Full width at half maximum in eV.
         energy_shift:  Rigid shift applied to all state energies, in eV.
+
+    Returns:
+        1-D array of broadened spectral intensities on the energy grid.
     """
     energies: list[float] = []
     weights: list[float] = []
