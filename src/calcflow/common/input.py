@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field, is_dataclass, replace
-from importlib.metadata import version
 from typing import Any, Literal, TypeVar, cast
 
 from calcflow._version import __version__ as _CALCFLOW_VERSION
