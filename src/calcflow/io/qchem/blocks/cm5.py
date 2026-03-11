@@ -1,0 +1,60 @@
+"""
+Parser for QChem CM5 (Charge Model 5) atomic charges.
+
+Handles the "Charge Model 5" section, which is printed when CM5=True is set
+in the $rem block. CM5 charges apply empirical corrections to Hirshfeld charges
+to better reproduce experimental charge distributions; they always follow a
+Hirshfeld block since CM5 is derived from the Hirshfeld partitioning.
+"""
+
+import re
+from collections.abc import Iterator
+
+from calcflow.common.results import AtomicCharges
+from calcflow.io.state import ParseState
+from calcflow.utils import logger
+
+CM5_START_PAT = re.compile(r"Charge Model 5")
+
+# Same tabular format as Hirshfeld/Mulliken
+CHARGE_LINE_PAT = re.compile(r"^\s*(\d+)\s+([A-Za-z]+)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
+
+SUM_LINE_PAT = re.compile(r"Sum of atomic charges")
+
+
+class Cm5Parser:
+    """
+    Parses CM5 atomic charges from QChem output.
+
+    CM5 always follows a Hirshfeld block in Q-Chem output (CM5 requires
+    HIRSHFELD=True). The table format is identical to Hirshfeld.
+    """
+
+    def matches(self, line: str, state: ParseState) -> bool:
+        return bool(CM5_START_PAT.search(line)) and not state.parsed_cm5
+
+    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+        logger.debug("Parsing QChem CM5 charges block.")
+
+        charges: dict[int, float] = {}
+
+        for line in iterator:
+            if SUM_LINE_PAT.search(line):
+                break
+
+            match = CHARGE_LINE_PAT.match(line)
+            if match:
+                try:
+                    atom_idx_0based = int(match.group(1)) - 1
+                    charge = float(match.group(3))
+                    charges[atom_idx_0based] = charge
+                except (ValueError, IndexError) as e:
+                    state.parsing_warnings.append(f"Could not parse CM5 charge line: {line.strip()} ({e})")
+
+        if not charges:
+            state.parsing_warnings.append("CM5 charges block found but no charges were parsed.")
+            return
+
+        state.atomic_charges.append(AtomicCharges(method="CM5", charges=charges))
+        state.parsed_cm5 = True
+        logger.debug(f"Parsed CM5 charges for {len(charges)} atoms")

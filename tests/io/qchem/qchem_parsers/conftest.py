@@ -21,6 +21,7 @@ FIXTURE_FILES = {
     "parsed_qchem_62_h2o_rks_tddft_data": "qchem/h2o/6.2-rks-tddft.out",
     "parsed_qchem_54_h2o_adc_svp_data": "qchem/h2o/5.4-adc-svp.out",
     "parsed_qchem_54_h2o_adc_svp_smd_data": "qchem/h2o/5.4-adc-svp-smd.out",
+    "parsed_qchem_63_h2o_cm5_sp_data": "qchem/h2o/6.3-sp-cm5-smd.out",
 }
 
 # Multi-job fixtures - parsed with parse_qchem_multi_job_output()
@@ -101,10 +102,19 @@ FIXTURE_SPECS = {
     "charges": [
         "parsed_qchem_54_h2o_sp_data",
         "parsed_qchem_62_h2o_sp_data",
+        "parsed_qchem_63_h2o_cm5_sp_data",
         "parsed_qchem_54_h2o_mom_sp_job1",
         "parsed_qchem_62_h2o_mom_sp_job1",
         "parsed_qchem_54_h2o_mom_xas_job1",
         "parsed_qchem_62_h2o_mom_xas_job1",
+    ],
+    # Hirshfeld charges (only present when HIRSHFELD=True in $rem)
+    "hirshfeld": [
+        "parsed_qchem_63_h2o_cm5_sp_data",
+    ],
+    # CM5 charges (only present when CM5=True in $rem; implies HIRSHFELD=True)
+    "cm5": [
+        "parsed_qchem_63_h2o_cm5_sp_data",
     ],
     "multipole": [
         "parsed_qchem_54_h2o_sp_data",

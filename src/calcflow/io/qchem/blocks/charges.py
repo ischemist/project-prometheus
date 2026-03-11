@@ -1,5 +1,5 @@
 """
-Parser for QChem atomic charges from Mulliken population analysis.
+Parser for QChem Mulliken atomic charges.
 
 Handles the "Ground-State Mulliken Net Atomic Charges" section which lists
 charges for each atom in the system.
@@ -24,7 +24,7 @@ CHARGE_LINE_PAT = re.compile(r"^\s*(\d+)\s+([A-Za-z]+)\s+([-+]?\d*\.?\d+(?:[eE][
 SUM_LINE_PAT = re.compile(r"Sum of atomic charges")
 
 
-class ChargesParser:
+class MullikenParser:
     """
     Parses Mulliken atomic charges from QChem output.
 
@@ -36,10 +36,10 @@ class ChargesParser:
         """
         Check if this line marks the beginning of the Mulliken charges block.
 
-        Returns True only if we haven't already parsed charges and the line
+        Returns True only if we haven't already parsed Mulliken charges and the line
         contains the Mulliken charges header.
         """
-        return bool(MULLIKEN_START_PAT.search(line)) and not state.parsed_charges
+        return bool(MULLIKEN_START_PAT.search(line)) and not state.parsed_mulliken
 
     def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
         """
@@ -96,4 +96,4 @@ class ChargesParser:
         logger.debug(f"Parsed Mulliken charges for {len(charges)} atoms")
 
         # Set flag to prevent duplicate parsing
-        state.parsed_charges = True
+        state.parsed_mulliken = True
