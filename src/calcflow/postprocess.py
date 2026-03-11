@@ -7,11 +7,12 @@ Two-layer API:
       lorentzian_broadening()   Lorentzian convolution of arbitrary (energy, weight) pairs
 
   Layer 2 (typed wrappers) — extract energies/weights from calcflow result objects:
-      energy_grid_from_excited_states()   TDDFT ExcitedState → grid
-      energy_grid_from_adc_states()       ADC  AdcExcitedState → grid
       spectrum_from_excited_states()      TDDFT, oscillator-strength weighted
       opa_spectrum_from_adc_states()      ADC,  oscillator-strength weighted
       tpa_spectrum_from_adc_states()      ADC,  TPA cross-section weighted
+
+  For energy grids, call make_energy_grid([s.excitation_energy_ev for s in states], ...)
+  directly — the extraction is a trivial one-liner not worth a dedicated wrapper.
 
 Rendering (Plotly, matplotlib) stays in the calling application.
 """
@@ -105,17 +106,6 @@ def lorentzian_broadening(
 # =============================================================================
 
 
-def energy_grid_from_excited_states(
-    states: Sequence[ExcitedState],
-    padding: float = 5.0,
-    n_points: int = 2000,
-) -> npt.NDArray[np.float64]:
-    """Uniform energy grid spanning the excitation energies of *states* ± padding (eV)."""
-    if not states:
-        raise ValidationError("states must not be empty; cannot construct energy grid without at least one state")
-    return make_energy_grid([s.excitation_energy_ev for s in states], padding=padding, n_points=n_points)
-
-
 def spectrum_from_excited_states(
     states: Sequence[ExcitedState],
     energy_grid: Sequence[float] | npt.NDArray[np.float64],
@@ -154,17 +144,6 @@ def spectrum_from_excited_states(
 # =============================================================================
 # Layer 2: typed wrappers — ADC AdcExcitedState
 # =============================================================================
-
-
-def energy_grid_from_adc_states(
-    states: Sequence[AdcExcitedState],
-    padding: float = 5.0,
-    n_points: int = 2000,
-) -> npt.NDArray[np.float64]:
-    """Uniform energy grid spanning the excitation energies of ADC *states* ± padding (eV)."""
-    if not states:
-        raise ValidationError("states must not be empty; cannot construct energy grid without at least one state")
-    return make_energy_grid([s.excitation_energy_ev for s in states], padding=padding, n_points=n_points)
 
 
 def opa_spectrum_from_adc_states(

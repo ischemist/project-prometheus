@@ -12,8 +12,6 @@ import pytest
 from calcflow.common.exceptions import ValidationError
 from calcflow.common.results import AdcExcitedState, ExcitedState, TwoPhotonAbsorption
 from calcflow.postprocess import (
-    energy_grid_from_adc_states,
-    energy_grid_from_excited_states,
     lorentzian_broadening,
     make_energy_grid,
     opa_spectrum_from_adc_states,
@@ -141,46 +139,6 @@ def test_lorentzian_broadening_intensity_positive():
     grid = np.linspace(3.0, 18.0, 1000)
     spectrum = lorentzian_broadening([8.0, 10.0, 12.0], [0.5, 0.5, 0.5], grid, fwhm=0.5)
     assert np.all(spectrum >= 0.0)
-
-
-# ---------------------------------------------------------------------------
-# energy_grid_from_excited_states
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.unit
-def test_energy_grid_from_excited_states_span():
-    states = [_state(1, 10.0), _state(2, 15.0)]
-    grid = energy_grid_from_excited_states(states, padding=2.0, n_points=500)
-    assert grid[0] == pytest.approx(8.0)
-    assert grid[-1] == pytest.approx(17.0)
-    assert len(grid) == 500
-
-
-@pytest.mark.unit
-def test_energy_grid_from_excited_states_empty_raises():
-    with pytest.raises(ValidationError, match="states must not be empty"):
-        energy_grid_from_excited_states([])
-
-
-# ---------------------------------------------------------------------------
-# energy_grid_from_adc_states
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.unit
-def test_energy_grid_from_adc_states_span():
-    states = [_adc_state(1, 10.0), _adc_state(2, 15.0)]
-    grid = energy_grid_from_adc_states(states, padding=2.0, n_points=500)
-    assert grid[0] == pytest.approx(8.0)
-    assert grid[-1] == pytest.approx(17.0)
-    assert len(grid) == 500
-
-
-@pytest.mark.unit
-def test_energy_grid_from_adc_states_empty_raises():
-    with pytest.raises(ValidationError, match="states must not be empty"):
-        energy_grid_from_adc_states([])
 
 
 # ---------------------------------------------------------------------------

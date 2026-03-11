@@ -12,8 +12,6 @@ from calcflow.geometry.trajectory import Trajectory
 from calcflow.io.orca import parse_orca_output
 from calcflow.io.qchem import parse_qchem_multi_job_output, parse_qchem_output
 from calcflow.postprocess import (
-    energy_grid_from_adc_states,
-    energy_grid_from_excited_states,
     lorentzian_broadening,
     make_energy_grid,
     opa_spectrum_from_adc_states,
@@ -28,8 +26,6 @@ __all__ = [
     "CalculationInput",
     "Geometry",
     "Trajectory",
-    "energy_grid_from_adc_states",
-    "energy_grid_from_excited_states",
     "lorentzian_broadening",
     "make_energy_grid",
     "opa_spectrum_from_adc_states",
