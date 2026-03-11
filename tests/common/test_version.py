@@ -21,9 +21,10 @@ def test_version_falls_back_without_package_metadata(monkeypatch: pytest.MonkeyP
     def _raise_package_not_found(_: str) -> str:
         raise PackageNotFoundError
 
-    with monkeypatch.context() as context:
-        context.setattr(metadata, "version", _raise_package_not_found)
-        reloaded_module = importlib.reload(version_module)
-        assert reloaded_module.__version__ == "0.0.0.dev0+unknown"
-
-    importlib.reload(version_module)
+    try:
+        with monkeypatch.context() as context:
+            context.setattr(metadata, "version", _raise_package_not_found)
+            reloaded_module = importlib.reload(version_module)
+            assert reloaded_module.__version__ == "0.0.0.dev0+unknown"
+    finally:
+        importlib.reload(version_module)
