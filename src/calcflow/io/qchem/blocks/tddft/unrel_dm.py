@@ -21,7 +21,6 @@ from calcflow.common.results import (
     AtomicCharges,
     ExcitonAnalysis,
     NaturalOrbitals,
-    TddftResults,
     UnrelaxedDensityMatrix,
 )
 from calcflow.io.core import BlockParser, ParseState
@@ -52,7 +51,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
     END_PAT: ClassVar[re.Pattern] = re.compile(r"^\s*-{5,}\s*$")
 
     def matches(self, line: str, state: ParseState) -> bool:
-        if state.tddft and state.tddft.unrelaxed_density_matrices is not None:
+        if state.parsed_tddft_unrelaxed_dm:
             return False
         return bool(self.START_PAT.search(line))
 
@@ -97,9 +96,8 @@ class UnrelaxedDensityMatrixParser(BlockParser):
             logger.warning(msg)
             return
 
-        existing_tddft = state.tddft.to_dict() if state.tddft else {}
-        existing_tddft["unrelaxed_density_matrices"] = all_analyses
-        state.tddft = TddftResults.from_dict(existing_tddft)
+        state.parsed_tddft_unrelaxed_dm = True
+        state.tddft_unrelaxed_density_matrices = all_analyses
         logger.debug("Finished parsing 'Analysis of Unrelaxed Density Matrices'.")
 
     def _parse_single_state_block(

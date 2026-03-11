@@ -21,7 +21,6 @@ from typing import Any, ClassVar
 from calcflow.common.results import (
     AtomicCharges,
     ExcitonAnalysis,
-    TddftResults,
     TransitionDensityMatrix,
 )
 from calcflow.io.core import BlockParser, ParseState
@@ -52,7 +51,7 @@ class TransitionDensityMatrixParser(BlockParser):
     END_PAT: ClassVar[re.Pattern] = re.compile(r"^\s*-{5,}\s*$")
 
     def matches(self, line: str, state: ParseState) -> bool:
-        if state.tddft and state.tddft.transition_density_matrices is not None:
+        if state.parsed_tddft_trans_dm:
             return False
         return bool(self.START_PAT.search(line))
 
@@ -97,9 +96,8 @@ class TransitionDensityMatrixParser(BlockParser):
             logger.warning(msg)
             return
 
-        existing_tddft = state.tddft.to_dict() if state.tddft else {}
-        existing_tddft["transition_density_matrices"] = all_analyses
-        state.tddft = TddftResults.from_dict(existing_tddft)
+        state.parsed_tddft_trans_dm = True
+        state.tddft_transition_density_matrices = all_analyses
         logger.debug("Finished parsing 'Transition Density Matrix Analysis'.")
 
     def _parse_single_state_block(

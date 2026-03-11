@@ -8,18 +8,25 @@ from collections.abc import Sequence
 from typing import Literal
 
 from calcflow.common.results import (
+    AdcExcitedState,
+    AdcGroundState,
     AdcResults,
     Atom,
     AtomicCharges,
     CalculationMetadata,
     CalculationResult,
     DispersionCorrection,
+    ExcitedState,
+    GroundStateReference,
     MultipoleResults,
+    NTOStateAnalysis,
     OrbitalsSet,
     ScfResults,
     SmdResults,
     TddftResults,
     TimingResults,
+    TransitionDensityMatrix,
+    UnrelaxedDensityMatrix,
 )
 
 
@@ -48,10 +55,21 @@ class ParseState:
         self.atomic_charges: list[AtomicCharges] = []
         self.multipole: MultipoleResults | None = None
         self.smd: SmdResults | None = None
-        self.tddft: TddftResults | None = None
-        self.adc: AdcResults | None = None
         self.dispersion: DispersionCorrection | None = None
         self.timing: TimingResults | None = None
+
+        # --- ADC sub-results (assembled into AdcResults in to_calculation_result) ---
+        self.adc_method: str = "adc(2)"
+        self.adc_ground_state: AdcGroundState | None = None
+        self.adc_excited_states: list[AdcExcitedState] = []
+
+        # --- TDDFT sub-results (assembled into TddftResults in to_calculation_result) ---
+        self.tddft_tda_states: list[ExcitedState] = []
+        self.tddft_tddft_states: list[ExcitedState] = []
+        self.tddft_nto_analyses: list[NTOStateAnalysis] = []
+        self.tddft_ground_state_ref: GroundStateReference | None = None
+        self.tddft_unrelaxed_density_matrices: list[UnrelaxedDensityMatrix] = []
+        self.tddft_transition_density_matrices: list[TransitionDensityMatrix] = []
 
         # --- Parser Control Flags ---
         self.parsed_metadata: bool = False
@@ -67,6 +85,7 @@ class ParseState:
         self.parsed_tddft_full: bool = False
         self.parsed_tddft_gs_ref: bool = False
         self.parsed_tddft_unrelaxed_dm: bool = False
+        self.parsed_tddft_trans_dm: bool = False
         self.parsed_nto: bool = False
         self.parsed_adc_gs: bool = False
         self.parsed_adc_excited: bool = False
@@ -82,6 +101,37 @@ class ParseState:
         Constructs the final, immutable CalculationResult from the current state.
         This should be the last step of a successful parsing run.
         """
+        # Assemble AdcResults only if any ADC data was parsed.
+        adc: AdcResults | None = None
+        if self.adc_ground_state is not None or self.adc_excited_states:
+            adc = AdcResults(
+                method=self.adc_method,
+                ground_state=self.adc_ground_state,
+                excited_states=self.adc_excited_states,
+            )
+
+        # Assemble TddftResults only if any TDDFT data was parsed.
+        # Convert empty lists to None to preserve the "None means not parsed" convention.
+        tddft: TddftResults | None = None
+        if any(
+            [
+                self.tddft_tda_states,
+                self.tddft_tddft_states,
+                self.tddft_nto_analyses,
+                self.tddft_ground_state_ref is not None,
+                self.tddft_unrelaxed_density_matrices,
+                self.tddft_transition_density_matrices,
+            ]
+        ):
+            tddft = TddftResults(
+                tda_states=self.tddft_tda_states or None,
+                tddft_states=self.tddft_tddft_states or None,
+                nto_analyses=self.tddft_nto_analyses or None,
+                ground_state_ref=self.tddft_ground_state_ref,
+                unrelaxed_density_matrices=self.tddft_unrelaxed_density_matrices or None,
+                transition_density_matrices=self.tddft_transition_density_matrices or None,
+            )
+
         return CalculationResult(
             raw_output=self.raw_output,
             metadata=self.metadata,
@@ -95,8 +145,8 @@ class ParseState:
             atomic_charges=self.atomic_charges,
             multipole=self.multipole,
             smd=self.smd,
-            tddft=self.tddft,
-            adc=self.adc,
+            tddft=tddft,
+            adc=adc,
             dispersion=self.dispersion,
             timing=self.timing,
         )

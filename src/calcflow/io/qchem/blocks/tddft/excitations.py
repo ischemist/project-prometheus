@@ -17,7 +17,7 @@ import re
 from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
-from calcflow.common.results import ExcitedState, OrbitalTransition, TddftResults
+from calcflow.common.results import ExcitedState, OrbitalTransition
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -179,18 +179,10 @@ class ExcitationsParser:
         # Determine which field to populate based on block type
         if is_tda:
             state.parsed_tddft_tda = True
-            if state.tddft is None:
-                state.tddft = TddftResults(tda_states=excited_states)
-            else:
-                # Merge with existing TDDFT states if present
-                state.tddft = TddftResults(tda_states=excited_states, tddft_states=state.tddft.tddft_states)
+            state.tddft_tda_states = excited_states
         else:  # is_tddft
             state.parsed_tddft_full = True
-            if state.tddft is None:
-                state.tddft = TddftResults(tddft_states=excited_states)
-            else:
-                # Merge with existing TDA states if present
-                state.tddft = TddftResults(tda_states=state.tddft.tda_states, tddft_states=excited_states)
+            state.tddft_tddft_states = excited_states
 
         logger.debug(f"Parsed {len(excited_states)} excited states.")
 
