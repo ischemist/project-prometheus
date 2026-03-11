@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 from calcflow.common.results import (
+    RESULT_SCHEMA_VERSION,
     AdcAmplitude,
     AdcExcitedState,
     AdcGroundState,
@@ -415,6 +416,19 @@ class TestCalculationResultSerialization:
         assert isinstance(data["calcflow_version"], str)
         assert data["calcflow_version"]
 
+    def test_to_dict_includes_schema_version(self):
+        result = CalculationResult(
+            termination_status="NORMAL",
+            metadata=CalculationMetadata(software_name="ORCA", software_version="5.0.3"),
+            raw_output="output",
+            final_energy=-75.313506,
+        )
+
+        data = result.to_dict()
+        assert "schema_version" in data
+        assert isinstance(data["schema_version"], int)
+        assert data["schema_version"] == RESULT_SCHEMA_VERSION
+
     def test_from_dict_ignores_calcflow_version(self):
         data = {
             "termination_status": "NORMAL",
@@ -439,6 +453,64 @@ class TestCalculationResultSerialization:
         result = CalculationResult.from_dict(data)
         assert result.termination_status == "NORMAL"
         assert result.raw_output == ""
+
+    def test_from_dict_strips_schema_version(self):
+        """schema_version is consumed by from_dict, not passed to the constructor."""
+        data = {
+            "termination_status": "NORMAL",
+            "metadata": {"software_name": "ORCA", "software_version": "5.0.3"},
+            "final_energy": -75.313506,
+            "schema_version": RESULT_SCHEMA_VERSION,
+        }
+
+        result = CalculationResult.from_dict(data)
+        assert result.termination_status == "NORMAL"
+        assert not hasattr(result, "schema_version")
+
+    def test_from_dict_defaults_missing_schema_version_to_1(self):
+        """old dumps without schema_version are treated as version 1."""
+        data = {
+            "termination_status": "NORMAL",
+            "metadata": {"software_name": "ORCA", "software_version": "5.0.3"},
+            "final_energy": -75.313506,
+            # no schema_version key at all — simulates a pre-versioning dump
+        }
+
+        result = CalculationResult.from_dict(data)
+        assert result.termination_status == "NORMAL"
+        assert result.final_energy == -75.313506
+
+    def test_from_dict_logs_warning_on_old_schema(self, caplog):
+        """migration from an older schema version emits a warning."""
+        import logging
+
+        data = {
+            "termination_status": "NORMAL",
+            "metadata": {"software_name": "ORCA"},
+            "final_energy": -75.0,
+            "schema_version": 0,  # older than current
+        }
+
+        with caplog.at_level(logging.WARNING, logger="calcflow.common.results"):
+            CalculationResult.from_dict(data)
+
+        assert "Migrating CalculationResult" in caplog.text
+
+    def test_from_dict_logs_warning_on_future_schema(self, caplog):
+        """loading a dump from a newer schema version emits a warning."""
+        import logging
+
+        data = {
+            "termination_status": "NORMAL",
+            "metadata": {"software_name": "ORCA"},
+            "final_energy": -75.0,
+            "schema_version": RESULT_SCHEMA_VERSION + 1,
+        }
+
+        with caplog.at_level(logging.WARNING, logger="calcflow.common.results"):
+            CalculationResult.from_dict(data)
+
+        assert "only understands version" in caplog.text
 
     def test_to_dict_excludes_raw_output(self):
         result = CalculationResult(
