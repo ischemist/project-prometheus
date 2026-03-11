@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 
-from calcflow.common.exceptions import NotSupportedError
+from calcflow.common.exceptions import NotSupportedError, ValidationError
 from calcflow.common.input import CalculationInput, SolvationSpec
 from calcflow.io.qchem.builder import QchemBuilder
 from tests.io.qchem.qchem_builders.conftest import (
@@ -440,6 +440,131 @@ def test_solvation_multiple_solvents_workflow(h2o_geometry):
         parsed = parse_qchem_input(result)
 
         assert_block_present(parsed.blocks, "smx")
+
+
+# =============================================================================
+# CUSTOM DIELECTRIC TESTS
+# =============================================================================
+
+
+@pytest.mark.unit
+def test_pcm_custom_dielectric_generates_solvent_block(qchem_builder, h2o_geometry):
+    """PCM with custom dielectric should produce $solvent block with Dielectric keyword."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        solvation=SolvationSpec(model="pcm", dielectric=33.0),
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    assert "$solvent" in result
+    assert "Dielectric 33.0" in result
+    assert "SolventName" not in result
+
+
+@pytest.mark.unit
+def test_pcm_custom_dielectric_with_optical(qchem_builder, h2o_geometry):
+    """PCM with both dielectric constants should emit both in $solvent block."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        solvation=SolvationSpec(model="pcm", dielectric=33.0, optical_dielectric=1.33),
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    assert "Dielectric 33.0" in result
+    assert "OpticalDielectric 1.33" in result
+
+
+@pytest.mark.unit
+def test_solvation_requires_solvent_or_dielectric():
+    """SolvationSpec without solvent name and without dielectric should raise."""
+    with pytest.raises(ValidationError, match="dielectric"):
+        CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="b3lyp",
+            basis_set="6-31g",
+            solvation=SolvationSpec(model="pcm"),  # no solvent or dielectric
+        )
+
+
+@pytest.mark.contract
+def test_pcm_custom_dielectric_sets_solvent_method_in_rem(qchem_builder, h2o_geometry):
+    """Custom dielectric PCM should still set SOLVENT_METHOD = pcm in $rem."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        solvation=SolvationSpec(model="pcm", dielectric=33.0, optical_dielectric=1.33),
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert_rem_value(parsed.rem_block, "SOLVENT_METHOD", "pcm")
+    assert_block_present(parsed.blocks, "solvent")
+
+
+@pytest.mark.contract
+def test_pcm_named_solvent_unaffected_by_dielectric_fields(qchem_builder, h2o_geometry):
+    """Named solvent PCM should still use SolventName (dielectric fields absent)."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        solvation=SolvationSpec(model="pcm", solvent="water"),
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    assert "SolventName water" in result
+    assert "Dielectric" not in result
+
+
+@pytest.mark.integration
+def test_set_custom_solvation_workflow(h2o_geometry):
+    """set_custom_solvation() fluent method should produce correct $solvent block."""
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="wb97x-d3",
+        basis_set="def2-tzvp",
+    ).set_custom_solvation("pcm", dielectric=33.0, optical_dielectric=1.33)
+
+    result = calc.export("qchem", h2o_geometry)
+    assert "Dielectric 33.0" in result
+    assert "OpticalDielectric 1.33" in result
+    assert "SolventName" not in result
+
+
+@pytest.mark.regression
+def test_custom_dielectric_full_structure(qchem_builder, h2o_geometry):
+    """Custom dielectric PCM should produce complete, valid input structure."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="wb97x-d3",
+        basis_set="def2-tzvp",
+        unrestricted=True,
+        solvation=SolvationSpec(model="pcm", dielectric=33.0, optical_dielectric=1.33),
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    parsed = parse_qchem_input(result)
+
+    assert_rem_value(parsed.rem_block, "METHOD", "wb97x-d3")
+    assert_rem_value(parsed.rem_block, "SOLVENT_METHOD", "pcm")
+    assert_rem_value(parsed.rem_block, "UNRESTRICTED", True)
+    assert_block_present(parsed.blocks, "solvent")
+    assert "Dielectric 33.0" in parsed.blocks["solvent"]
+    assert "OpticalDielectric 1.33" in parsed.blocks["solvent"]
 
 
 # =============================================================================

@@ -101,6 +101,12 @@ class QchemBuilder:
         if spec.mom and not spec.unrestricted:
             raise ConfigurationError("mom requires an unrestricted calculation. use .set_unrestricted()")
 
+        # standard (non-iterative) hirshfeld on charged systems is unreliable
+        if spec.charges and spec.charges.hirshfeld and not spec.charges.hirshiter and spec.charge != 0:
+            raise ConfigurationError(
+                "standard Hirshfeld charges are unreliable for charged systems. use hirshiter=True for Hirshfeld-I."
+            )
+
         # program_options validation (for backward compatibility during transition)
         opts = spec.program_options
         if opts.get("run_mom", False):
@@ -180,6 +186,27 @@ class QchemBuilder:
         if spec.solvation:
             rem_vars["SOLVENT_METHOD"] = spec.solvation.model
 
+        # --- charges / population analysis ---
+        if spec.charges:
+            if not spec.charges.mulliken:
+                rem_vars["POP_MULLIKEN"] = 0
+            if spec.charges.hirshfeld:
+                rem_vars["HIRSHFELD"] = True
+            if spec.charges.cm5:
+                rem_vars["CM5"] = True
+            if spec.charges.hirshiter:
+                rem_vars["HIRSHITER"] = True
+
+        # --- scf convergence ---
+        if spec.scf:
+            rem_vars["SCF_ALGORITHM"] = spec.scf.algorithm
+            rem_vars["SCF_MAX_CYCLES"] = spec.scf.max_cycles
+            rem_vars["SCF_CONVERGENCE"] = spec.scf.convergence
+
+        # --- memory ---
+        if spec.total_memory_mb is not None:
+            rem_vars["MEM_TOTAL"] = spec.total_memory_mb
+
         # --- format block ---
         lines = ["$rem"]
         max_key_len = max(len(k) for k in rem_vars) if rem_vars else 0
@@ -203,6 +230,12 @@ class QchemBuilder:
         if not spec.solvation:
             return ""
         if spec.solvation.model == "pcm":
+            if spec.solvation.dielectric is not None:
+                lines = ["$solvent", f"    Dielectric {spec.solvation.dielectric}"]
+                if spec.solvation.optical_dielectric is not None:
+                    lines.append(f"    OpticalDielectric {spec.solvation.optical_dielectric}")
+                lines.append("$end")
+                return "\n".join(lines)
             return f"$solvent\n    SolventName {spec.solvation.solvent}\n$end"
         if spec.solvation.model == "smd":
             return f"$smx\n    solvent {spec.solvation.solvent}\n$end"

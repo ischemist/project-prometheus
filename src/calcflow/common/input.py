@@ -49,7 +49,9 @@ class SolvationSpec:
     """specification for an implicit solvation model."""
 
     model: str  # e.g., 'smd', 'cpcm'
-    solvent: str  # e.g., 'water', 'acetonitrile'
+    solvent: str = ""  # named solvent (e.g., 'water'). empty when using custom dielectrics.
+    dielectric: float | None = None  # static dielectric constant (overrides named solvent for pcm)
+    optical_dielectric: float | None = None  # high-frequency dielectric constant
 
     def to_dict(self) -> dict[str, Any]:
         """serializes to a dictionary."""
@@ -57,6 +59,48 @@ class SolvationSpec:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SolvationSpec:
+        """deserializes from a dictionary."""
+        return cls(**data)
+
+
+@dataclass(frozen=True)
+class ChargesSpec:
+    """which charge partitioning schemes to compute."""
+
+    mulliken: bool = True
+    hirshfeld: bool = False
+    cm5: bool = False
+    hirshiter: bool = False  # Hirshfeld-I (iterative)
+
+    def __post_init__(self) -> None:
+        # cm5 requires hirshfeld — auto-enable it rather than silently producing wrong output
+        if self.cm5 and not self.hirshfeld:
+            object.__setattr__(self, "hirshfeld", True)
+
+    def to_dict(self) -> dict[str, Any]:
+        """serializes to a dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ChargesSpec:
+        """deserializes from a dictionary."""
+        return cls(**data)
+
+
+@dataclass(frozen=True)
+class ScfSpec:
+    """scf convergence parameters."""
+
+    algorithm: str = "diis"
+    max_cycles: int = 100
+    convergence: int = 8  # threshold exponent: scf converges when error < 10^-N
+
+    def to_dict(self) -> dict[str, Any]:
+        """serializes to a dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ScfSpec:
         """deserializes from a dictionary."""
         return cls(**data)
 
@@ -140,11 +184,15 @@ class CalculationInput:
     n_cores: int = 1
     memory_per_core_mb: int = 4000
 
+    total_memory_mb: int | None = None  # program-level memory (e.g., Q-Chem MEM_TOTAL)
+
     # optional, modular components of the calculation
     tddft: TddftSpec | None = None
     solvation: SolvationSpec | None = None
     optimization: OptimizationSpec | None = None
     mom: MomSpec | None = None
+    charges: ChargesSpec | None = None
+    scf: ScfSpec | None = None
     frequency_after_optimization: bool = False
 
     # the escape hatch for anything program-specific that doesn't fit the generic model.
@@ -159,8 +207,10 @@ class CalculationInput:
             raise ValidationError("number of cores must be a positive integer.")
         if self.tddft and self.tddft.nroots < 1:
             raise ValidationError("tddft nroots must be a positive integer.")
-        if self.solvation and (not self.solvation.model or not self.solvation.solvent):
-            raise ValidationError("solvation model and solvent must both be specified.")
+        if self.solvation and not self.solvation.model:
+            raise ValidationError("solvation model must be specified.")
+        if self.solvation and not self.solvation.solvent and self.solvation.dielectric is None:
+            raise ValidationError("solvation requires either a named solvent or a dielectric constant.")
         if self.mom:
             if not self.unrestricted:
                 raise ValidationError("mom requires an unrestricted calculation.")
@@ -248,6 +298,43 @@ class CalculationInput:
         if self.task != "geometry":
             raise ConfigurationError("frequency calculation can only follow a 'geometry' task.")
         return replace(self, frequency_after_optimization=True)
+
+    def set_custom_solvation(
+        self: T_CalculationInput,
+        model: str,
+        dielectric: float,
+        optical_dielectric: float | None = None,
+    ) -> T_CalculationInput:
+        """adds or updates pcm solvation with explicit dielectric constants (no named solvent)."""
+        solv_spec = SolvationSpec(
+            model=model.lower(),
+            dielectric=dielectric,
+            optical_dielectric=optical_dielectric,
+        )
+        return replace(self, solvation=solv_spec)
+
+    def set_charges(
+        self: T_CalculationInput,
+        mulliken: bool = True,
+        hirshfeld: bool = False,
+        cm5: bool = False,
+        hirshiter: bool = False,
+    ) -> T_CalculationInput:
+        """configures charge partitioning schemes. cm5=True auto-enables hirshfeld."""
+        return replace(self, charges=ChargesSpec(mulliken=mulliken, hirshfeld=hirshfeld, cm5=cm5, hirshiter=hirshiter))
+
+    def set_scf(
+        self: T_CalculationInput,
+        algorithm: str = "diis",
+        max_cycles: int = 100,
+        convergence: int = 8,
+    ) -> T_CalculationInput:
+        """sets scf convergence parameters."""
+        return replace(self, scf=ScfSpec(algorithm=algorithm, max_cycles=max_cycles, convergence=convergence))
+
+    def set_total_memory(self: T_CalculationInput, mb: int) -> T_CalculationInput:
+        """sets the total program memory allocation in megabytes (e.g., Q-Chem MEM_TOTAL)."""
+        return replace(self, total_memory_mb=mb)
 
     def set_mom(
         self: T_CalculationInput,
@@ -397,6 +484,10 @@ class CalculationInput:
             data["optimization"] = OptimizationSpec.from_dict(data["optimization"])
         if data.get("mom") is not None:
             data["mom"] = MomSpec.from_dict(data["mom"])
+        if data.get("charges") is not None:
+            data["charges"] = ChargesSpec.from_dict(data["charges"])
+        if data.get("scf") is not None:
+            data["scf"] = ScfSpec.from_dict(data["scf"])
 
         return cls(**data)
 
