@@ -35,6 +35,7 @@ from calcflow.common.results import (
     NTOContribution,
     TwoPhotonAbsorption,
 )
+from calcflow.common.types import SpinChannel
 from calcflow.io.core import BlockParser, ParseState
 
 logger = logging.getLogger(__name__)
@@ -128,7 +129,7 @@ class AdcExcitedStatesParser(BlockParser):
         in_amplitudes = False
         nto_alpha: list[NTOContribution] = []
         nto_beta: list[NTOContribution] = []
-        current_nto_spin: str | None = None  # "alpha" or "beta"
+        current_nto_spin: SpinChannel | None = None
         in_nto_section = False
 
         while True:

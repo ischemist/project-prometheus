@@ -11,6 +11,7 @@ from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import Orbital, OrbitalsSet
+from calcflow.common.types import SpinChannel
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -53,7 +54,7 @@ class OrbitalsParser:
         beta_virtual_energies: list[float] = []
 
         # State machine variables
-        current_spin: str | None = None  # "alpha" or "beta"
+        current_spin: SpinChannel | None = None
         current_section: str | None = None  # "occupied" or "virtual"
 
         # Skip the initial separator line

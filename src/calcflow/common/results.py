@@ -25,7 +25,7 @@ from types import UnionType
 from typing import Any, Literal, TypeAliasType, TypeVar, Union, get_args, get_origin
 
 from calcflow.common.exceptions import ValidationError
-from calcflow.common.types import Matrix3x3
+from calcflow.common.types import AdcSpin, Matrix3x3
 from calcflow.constants.ptable import ELEMENT_DATA
 
 # cache version at module load to avoid repeated filesystem lookups
@@ -92,7 +92,7 @@ class FrozenModel:
             if len(args) == 2 and args[1] is Ellipsis:
                 return tuple(FrozenModel._convert_value(item, args[0]) for item in value)
             return tuple(
-                FrozenModel._convert_value(item, item_type) for item, item_type in zip(value, args, strict=False)
+                FrozenModel._convert_value(item, item_type) for item, item_type in zip(value, args, strict=True)
             )
 
         if origin in (dict, Mapping) and isinstance(value, dict):
@@ -527,7 +527,7 @@ class AdcAmplitude(FrozenModel):
     occ_i: int  # occupied orbital index (1-based as in output)
     vir_a: int  # virtual orbital index (1-based as in output)
     amplitude: float
-    spin: str | None = None  # "A" (alpha) or "B" (beta) for the occ_i/vir_a pair
+    spin: AdcSpin | None = None  # "A" (alpha) or "B" (beta) for the occ_i/vir_a pair
     occ_j: int | None = None  # second occupied index for 2p2h configurations
     vir_b: int | None = None  # second virtual index for 2p2h configurations
 

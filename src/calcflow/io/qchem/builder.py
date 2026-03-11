@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from calcflow.common.exceptions import ConfigurationError, NotSupportedError, ValidationError
+from calcflow.common.types import SpinChannel
 from calcflow.geometry.static import Geometry
 
 if TYPE_CHECKING:
@@ -322,7 +323,9 @@ class QchemBuilder:
         else:  # LUMO
             return initial_homo + 1 + offset if operator == "+" else initial_homo + 1
 
-    def _apply_ionization(self, source_idx: int, spin: str | None, alpha_occ: set[int], beta_occ: set[int]) -> None:
+    def _apply_ionization(
+        self, source_idx: int, spin: SpinChannel | None, alpha_occ: set[int], beta_occ: set[int]
+    ) -> None:
         """
         removes an electron from the specified orbital for ionization transitions (e.g., "HOMO->vac").
 
@@ -359,9 +362,9 @@ class QchemBuilder:
     def _apply_excitation(
         self,
         source_idx: int,
-        source_spin: str | None,
+        source_spin: SpinChannel | None,
         target_idx: int,
-        target_spin: str | None,
+        target_spin: SpinChannel | None,
         alpha_occ: set[int],
         beta_occ: set[int],
         initial_homo: int,
@@ -386,14 +389,14 @@ class QchemBuilder:
         else:
             beta_occ.add(target_idx)
 
-    def _parse_spin_specification(self, orbital_spec: str) -> tuple[str, str | None]:
+    def _parse_spin_specification(self, orbital_spec: str) -> tuple[str, SpinChannel | None]:
         """parses '5(beta)' into ('5', 'beta')."""
         match = re.match(r"^(.+?)\((\w+)\)$", orbital_spec.strip(), re.IGNORECASE)
         if match:
             orb, spin = match.group(1).strip(), match.group(2).lower()
             if spin not in ("alpha", "beta"):
                 raise ValidationError(f"invalid spin '{spin}'. must be 'alpha' or 'beta'.")
-            return orb, spin
+            return orb, cast("SpinChannel", spin)
         return orbital_spec.strip(), None
 
     def _format_occupation_set(self, occupied: set[int]) -> str:
