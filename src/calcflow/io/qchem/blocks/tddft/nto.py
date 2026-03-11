@@ -13,8 +13,10 @@ Format:
 
 import re
 from collections.abc import Iterator
+from typing import cast
 
 from calcflow.common.results import NTOContribution, NTOStateAnalysis
+from calcflow.common.types import SpinChannel
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -67,7 +69,7 @@ class NTOParser:
 
         nto_states: list[NTOStateAnalysis] = []
         current_state: dict | None = None
-        current_spin: str | None = None  # Track 'alpha' or 'beta' for UKS
+        current_spin: SpinChannel | None = None
         last_state_number = 0  # Track expected state sequence
 
         for line in iterator:
@@ -142,7 +144,7 @@ class NTOParser:
             if current_state.get("is_uks"):
                 spin_match = SPIN_SECTION_PAT.search(line)
                 if spin_match:
-                    current_spin = spin_match.group(1).lower()
+                    current_spin = cast("SpinChannel", spin_match.group(1).lower())
                     continue
 
             # --- Parse NTO contribution ---

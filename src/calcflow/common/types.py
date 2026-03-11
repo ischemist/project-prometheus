@@ -1,6 +1,7 @@
 """common, non-pydantic type aliases used throughout the library."""
 
 from collections.abc import Iterator
+from typing import Literal
 
 # an iterator that yields lines from a file or text block.
 # used extensively by all parsers.
@@ -13,3 +14,9 @@ type AtomCoords = tuple[str, Coord3d]
 # a 3x3 matrix stored as a tuple of three row tuples.
 # used for two-photon absorption matrices and similar tensor quantities.
 type Matrix3x3 = tuple[Coord3d, Coord3d, Coord3d]
+
+# spin channel discriminant used in parsers and the job builder.
+type SpinChannel = Literal["alpha", "beta"]
+
+# single-character ADC amplitude spin label as it appears in Q-Chem output.
+type AdcSpin = Literal["A", "B"]
