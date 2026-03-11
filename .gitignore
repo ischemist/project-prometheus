@@ -18,3 +18,5 @@ docs/
 .ignore
 ex-*.md
 h2o_calc_spec.json
+*.md
+*.csv

@@ -235,6 +235,14 @@ class AtomicCharges(FrozenModel):
     trans_charges: Mapping[int, float] | None = None  # "Trans. (e)" column
     del_q: Mapping[int, float] | None = None  # "Del q" column
 
+    def to_array(self, n_atoms: int) -> list[float]:
+        """Returns charges as a list of length n_atoms, indexed by atom position.
+
+        Missing indices (sparse charges) default to 0.0. n_atoms must be provided
+        explicitly since AtomicCharges has no geometry reference.
+        """
+        return [self.charges.get(i, 0.0) for i in range(n_atoms)]
+
 
 @dataclass(frozen=True)
 class DipoleMoment(FrozenModel):
@@ -716,6 +724,14 @@ class CalculationResult(FrozenModel):
             )
         # --- future migrations go here ---
         return data
+
+    def get_charges(self, method: str) -> "AtomicCharges | None":
+        """Returns the AtomicCharges for the given population analysis method, or None.
+
+        Method names are case-sensitive and match how parsers store them
+        (e.g. "Mulliken", "Hirshfeld", "CM5", "Loewdin").
+        """
+        return next((ac for ac in self.atomic_charges if ac.method == method), None)
 
     @classmethod
     def get_schema(cls) -> str:
