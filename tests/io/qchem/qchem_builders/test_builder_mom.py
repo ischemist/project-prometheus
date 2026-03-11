@@ -85,12 +85,13 @@ def test_resolve_orbital_index_numeric():
     "homo_offset,expected",
     [
         ("HOMO", 5),  # HOMO itself
+        ("HOMO+1", 6),  # one above HOMO
         ("HOMO-1", 4),  # one below HOMO
         ("HOMO-2", 3),  # two below HOMO
     ],
 )
 def test_resolve_orbital_index_homo(homo_offset, expected):
-    """_resolve_orbital_index should resolve HOMO and HOMO-n notation."""
+    """_resolve_orbital_index should resolve HOMO, HOMO+n, and HOMO-n notation."""
     builder = QchemBuilder()
     idx = builder._resolve_orbital_index(homo_offset, initial_homo=5)
     assert idx == expected
@@ -101,12 +102,13 @@ def test_resolve_orbital_index_homo(homo_offset, expected):
     "lumo_offset,expected",
     [
         ("LUMO", 6),  # LUMO (HOMO+1)
+        ("LUMO-1", 5),  # one below LUMO
         ("LUMO+1", 7),  # LUMO+1
         ("LUMO+2", 8),  # LUMO+2
     ],
 )
 def test_resolve_orbital_index_lumo(lumo_offset, expected):
-    """_resolve_orbital_index should resolve LUMO and LUMO+n notation."""
+    """_resolve_orbital_index should resolve LUMO, LUMO+n, and LUMO-n notation."""
     builder = QchemBuilder()
     idx = builder._resolve_orbital_index(lumo_offset, initial_homo=5)
     assert idx == expected
@@ -889,14 +891,3 @@ def test_mom_tddft_trnss_with_solvation(h2o_geometry):
     assert_rem_value(parsed_job2.rem_block, "TRNSS", True)
     assert_block_present(parsed_job2.blocks, "solute")
     assert_block_present(parsed_job2.blocks, "occupied")
-
-
-# =============================================================================
-# PYTEST FIXTURES
-# =============================================================================
-
-
-@pytest.fixture
-def qchem_builder():
-    """Q-Chem builder instance for testing."""
-    return QchemBuilder()

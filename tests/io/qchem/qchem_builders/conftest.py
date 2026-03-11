@@ -4,6 +4,16 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
+import pytest
+
+from calcflow.io.qchem.builder import QchemBuilder
+
+
+@pytest.fixture
+def qchem_builder() -> QchemBuilder:
+    """Q-Chem builder instance for testing."""
+    return QchemBuilder()
+
 
 class QchemInputComponents(NamedTuple):
     """Parsed components of a Q-Chem input file."""

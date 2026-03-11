@@ -6,8 +6,7 @@ from dataclasses import replace
 
 import pytest
 
-from calcflow.common.input import CalculationInput
-from calcflow.io.qchem.builder import QchemBuilder
+from calcflow.common.input import CalculationInput, ScfSpec, SolvationSpec
 
 from .conftest import (
     assert_block_present,
@@ -17,13 +16,6 @@ from .conftest import (
     assert_rem_value,
     parse_qchem_input,
 )
-
-
-@pytest.fixture
-def qchem_builder() -> QchemBuilder:
-    """Q-Chem builder instance."""
-    return QchemBuilder()
-
 
 # ============================================================================
 # UNIT TESTS: Test individual methods in isolation
@@ -242,8 +234,6 @@ class TestBuildSolvationBlocks:
     @pytest.mark.unit
     def test_pcm_solvation_block(self, qchem_builder, minimal_spec):
         """PCM solvation should generate $solvent block."""
-        from calcflow.common.input import SolvationSpec
-
         spec = replace(minimal_spec, solvation=SolvationSpec(model="pcm", solvent="water"))
         result = qchem_builder._build_solvation_blocks(spec)
         assert "$solvent" in result
@@ -253,8 +243,6 @@ class TestBuildSolvationBlocks:
     @pytest.mark.unit
     def test_smd_solvation_block(self, qchem_builder, minimal_spec):
         """SMD solvation should generate $smx block."""
-        from calcflow.common.input import SolvationSpec
-
         spec = replace(minimal_spec, solvation=SolvationSpec(model="smd", solvent="water"))
         result = qchem_builder._build_solvation_blocks(spec)
         assert "$smx" in result
@@ -456,8 +444,6 @@ class TestSolvationStructure:
     @pytest.mark.contract
     def test_pcm_solvation_structure(self, qchem_builder, h2o_geometry):
         """PCM solvation should generate $solvent block."""
-        from calcflow.common.input import SolvationSpec
-
         spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -474,8 +460,6 @@ class TestSolvationStructure:
     @pytest.mark.contract
     def test_smd_solvation_structure(self, qchem_builder, h2o_geometry):
         """SMD solvation should generate $smx block."""
-        from calcflow.common.input import SolvationSpec
-
         spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -501,8 +485,6 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_basic_sp_workflow(self, h2o_geometry):
         """Basic SP workflow using fluent API."""
-        from calcflow.common.input import CalculationInput
-
         calc = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -520,8 +502,6 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_unrestricted_workflow(self, h2o_geometry):
         """Unrestricted calculation workflow."""
-        from calcflow.common.input import CalculationInput
-
         calc = CalculationInput(
             charge=0,
             spin_multiplicity=3,
@@ -537,8 +517,6 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_dict_basis_workflow(self, h2o_geometry):
         """Dictionary basis workflow."""
-        from calcflow.common.input import CalculationInput
-
         calc = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -556,8 +534,6 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_solvation_workflow(self, h2o_geometry):
         """Solvation workflow."""
-        from calcflow.common.input import CalculationInput
-
         calc = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -574,8 +550,6 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_tddft_workflow(self, h2o_geometry):
         """TDDFT workflow."""
-        from calcflow.common.input import CalculationInput
-
         calc = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -592,8 +566,6 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_complex_workflow(self, h2o_geometry):
         """Complex workflow combining multiple features."""
-        from calcflow.common.input import CalculationInput
-
         calc = (
             CalculationInput(
                 charge=0,
@@ -680,8 +652,6 @@ class TestRegressionSemanticValidation:
     @pytest.mark.regression
     def test_solvation_semantic_regression(self, qchem_builder, h2o_geometry):
         """Solvation semantic regression test."""
-        from calcflow.common.input import SolvationSpec
-
         spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -725,3 +695,150 @@ class TestRegressionSemanticValidation:
         components = parse_qchem_input(result)
 
         assert_rem_value(components.rem_block, "UNRESTRICTED", "True")
+
+
+# =============================================================================
+# SCF SPEC TESTS
+# =============================================================================
+
+
+@pytest.mark.unit
+def test_scf_spec_emits_algorithm(qchem_builder, h2o_geometry):
+    """ScfSpec should emit SCF_ALGORITHM in $rem."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        scf=ScfSpec(algorithm="diis", max_cycles=50, convergence=7),
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert_rem_value(parsed.rem_block, "SCF_ALGORITHM", "diis")
+
+
+@pytest.mark.unit
+def test_scf_spec_emits_max_cycles(qchem_builder, h2o_geometry):
+    """ScfSpec should emit SCF_MAX_CYCLES in $rem."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        scf=ScfSpec(max_cycles=50),
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert_rem_value(parsed.rem_block, "SCF_MAX_CYCLES", 50)
+
+
+@pytest.mark.unit
+def test_scf_spec_emits_convergence(qchem_builder, h2o_geometry):
+    """ScfSpec should emit SCF_CONVERGENCE in $rem."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        scf=ScfSpec(convergence=7),
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert_rem_value(parsed.rem_block, "SCF_CONVERGENCE", 7)
+
+
+@pytest.mark.unit
+def test_no_scf_spec_emits_no_scf_rem_vars(qchem_builder, h2o_geometry, minimal_spec):
+    """Without ScfSpec, no SCF REM vars should appear."""
+    result = qchem_builder.build(minimal_spec, h2o_geometry)
+    parsed = parse_qchem_input(result)
+    rem_lower = parsed.rem_block.lower()
+    assert "scf_algorithm" not in rem_lower
+    assert "scf_max_cycles" not in rem_lower
+    assert "scf_convergence" not in rem_lower
+
+
+@pytest.mark.unit
+def test_total_memory_mb_emits_mem_total(qchem_builder, h2o_geometry):
+    """total_memory_mb should emit MEM_TOTAL in $rem."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        total_memory_mb=64000,
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert_rem_value(parsed.rem_block, "MEM_TOTAL", 64000)
+
+
+@pytest.mark.unit
+def test_no_total_memory_emits_no_mem_total(qchem_builder, h2o_geometry, minimal_spec):
+    """Without total_memory_mb, MEM_TOTAL should not appear."""
+    result = qchem_builder.build(minimal_spec, h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert "mem_total" not in parsed.rem_block.lower()
+
+
+@pytest.mark.integration
+def test_set_scf_workflow(h2o_geometry):
+    """set_scf() fluent method should produce all three SCF REM vars."""
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+    ).set_scf(algorithm="diis", max_cycles=50, convergence=7)
+
+    result = calc.export("qchem", h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert_rem_value(parsed.rem_block, "SCF_ALGORITHM", "diis")
+    assert_rem_value(parsed.rem_block, "SCF_MAX_CYCLES", 50)
+    assert_rem_value(parsed.rem_block, "SCF_CONVERGENCE", 7)
+
+
+@pytest.mark.integration
+def test_set_total_memory_workflow(h2o_geometry):
+    """set_total_memory() fluent method should produce MEM_TOTAL."""
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+    ).set_total_memory(64000)
+
+    result = calc.export("qchem", h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert_rem_value(parsed.rem_block, "MEM_TOTAL", 64000)
+
+
+@pytest.mark.regression
+def test_scf_and_memory_full_workflow(h2o_geometry):
+    """Combined ScfSpec + total_memory_mb should produce all expected REM vars."""
+    calc = (
+        CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="wb97x-d3",
+            basis_set="def2-tzvp",
+            unrestricted=True,
+        )
+        .set_scf(algorithm="diis", max_cycles=50, convergence=7)
+        .set_total_memory(64000)
+    )
+
+    result = calc.export("qchem", h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert_rem_value(parsed.rem_block, "SCF_ALGORITHM", "diis")
+    assert_rem_value(parsed.rem_block, "SCF_MAX_CYCLES", 50)
+    assert_rem_value(parsed.rem_block, "SCF_CONVERGENCE", 7)
+    assert_rem_value(parsed.rem_block, "MEM_TOTAL", 64000)
+    assert_rem_value(parsed.rem_block, "METHOD", "wb97x-d3")

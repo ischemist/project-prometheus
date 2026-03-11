@@ -92,7 +92,7 @@ class QchemBuilder:
         ]
         return "\n\n".join(block for block in blocks if block).strip()
 
-    def _validate_spec(self, spec: CalculationInput):
+    def _validate_spec(self, spec: CalculationInput) -> None:
         """performs q-chem-specific validation on the spec."""
         if spec.solvation and spec.solvation.model not in {"pcm", "smd", "isosvp", "cpcm"}:
             raise NotSupportedError(f"q-chem builder does not support solvation model '{spec.solvation.model}'.")
@@ -100,6 +100,12 @@ class QchemBuilder:
         # mom validation (should already be caught by CalculationInput.__post_init__, but double-check)
         if spec.mom and not spec.unrestricted:
             raise ConfigurationError("mom requires an unrestricted calculation. use .set_unrestricted()")
+
+        # standard (non-iterative) hirshfeld on charged systems is unreliable
+        if spec.charges and spec.charges.hirshfeld and not spec.charges.hirshiter and spec.charge != 0:
+            raise ConfigurationError(
+                "standard Hirshfeld charges are unreliable for charged systems. use hirshiter=True for Hirshfeld-I."
+            )
 
         # program_options validation (for backward compatibility during transition)
         opts = spec.program_options
@@ -180,6 +186,28 @@ class QchemBuilder:
         if spec.solvation:
             rem_vars["SOLVENT_METHOD"] = spec.solvation.model
 
+        # --- charges / population analysis ---
+        if spec.charges:
+            if not spec.charges.mulliken:
+                rem_vars["POP_MULLIKEN"] = 0
+            if spec.charges.hirshfeld:
+                rem_vars["HIRSHFELD"] = True
+            if spec.charges.cm5:
+                rem_vars["CM5"] = True
+            if spec.charges.hirshiter:
+                rem_vars["HIRSHITER"] = True
+                rem_vars["HIRSHITER_THRESH"] = spec.charges.hirshiter_thresh
+
+        # --- scf convergence ---
+        if spec.scf:
+            rem_vars["SCF_ALGORITHM"] = spec.scf.algorithm
+            rem_vars["SCF_MAX_CYCLES"] = spec.scf.max_cycles
+            rem_vars["SCF_CONVERGENCE"] = spec.scf.convergence
+
+        # --- memory ---
+        if spec.total_memory_mb is not None:
+            rem_vars["MEM_TOTAL"] = spec.total_memory_mb
+
         # --- format block ---
         lines = ["$rem"]
         max_key_len = max(len(k) for k in rem_vars) if rem_vars else 0
@@ -203,6 +231,12 @@ class QchemBuilder:
         if not spec.solvation:
             return ""
         if spec.solvation.model == "pcm":
+            if spec.solvation.dielectric is not None:
+                lines = ["$solvent", f"    Dielectric {spec.solvation.dielectric}"]
+                if spec.solvation.optical_dielectric is not None:
+                    lines.append(f"    OpticalDielectric {spec.solvation.optical_dielectric}")
+                lines.append("$end")
+                return "\n".join(lines)
             return f"$solvent\n    SolventName {spec.solvation.solvent}\n$end"
         if spec.solvation.model == "smd":
             return f"$smx\n    solvent {spec.solvation.solvent}\n$end"
@@ -319,9 +353,14 @@ class QchemBuilder:
         orb_type, operator, offset_str = match.groups()
         offset = int(offset_str) if offset_str else 0
         if orb_type.upper() == "HOMO":
-            return initial_homo - offset if operator == "-" else initial_homo
+            if operator == "+":
+                return initial_homo + offset
+            return initial_homo - offset
         else:  # LUMO
-            return initial_homo + 1 + offset if operator == "+" else initial_homo + 1
+            lumo = initial_homo + 1
+            if operator == "-":
+                return lumo - offset
+            return lumo + offset
 
     def _apply_ionization(
         self, source_idx: int, spin: SpinChannel | None, alpha_occ: set[int], beta_occ: set[int]

@@ -12,10 +12,13 @@ import json
 
 import pytest
 
+from calcflow.common.exceptions import ValidationError
 from calcflow.common.input import (
     CalculationInput,
+    ChargesSpec,
     MomSpec,
     OptimizationSpec,
+    ScfSpec,
     SolvationSpec,
     TddftSpec,
 )
@@ -73,13 +76,103 @@ class TestSolvationSpecSerialization:
     def test_to_dict(self):
         spec = SolvationSpec(model="smd", solvent="water")
         data = spec.to_dict()
-        assert data == {"model": "smd", "solvent": "water"}
+        assert data == {"model": "smd", "solvent": "water", "dielectric": None, "optical_dielectric": None}
+
+    def test_to_dict_custom_dielectric(self):
+        spec = SolvationSpec(model="pcm", dielectric=33.0, optical_dielectric=1.33)
+        data = spec.to_dict()
+        assert data["dielectric"] == 33.0
+        assert data["optical_dielectric"] == 1.33
+        assert data["solvent"] == ""
 
     def test_from_dict(self):
         data = {"model": "cpcm", "solvent": "acetonitrile"}
         spec = SolvationSpec.from_dict(data)
         assert spec.model == "cpcm"
         assert spec.solvent == "acetonitrile"
+
+    def test_from_dict_custom_dielectric(self):
+        data = {"model": "pcm", "solvent": "", "dielectric": 33.0, "optical_dielectric": 1.33}
+        spec = SolvationSpec.from_dict(data)
+        assert spec.dielectric == 33.0
+        assert spec.optical_dielectric == 1.33
+
+
+@pytest.mark.unit
+class TestChargesSpecSerialization:
+    def test_to_dict_defaults(self):
+        """charges defaults serialize with hirshiter threshold."""
+        spec = ChargesSpec()
+        data = spec.to_dict()
+        assert data == {
+            "mulliken": True,
+            "hirshfeld": False,
+            "cm5": False,
+            "hirshiter": False,
+            "hirshiter_thresh": 5,
+        }
+
+    def test_to_dict_hirshfeld_cm5(self):
+        """cm5 serialization preserves hirshfeld auto-enable."""
+        spec = ChargesSpec(hirshfeld=True, cm5=True)
+        data = spec.to_dict()
+        assert data["hirshfeld"] is True
+        assert data["cm5"] is True
+
+    def test_from_dict(self):
+        """charges from_dict restores iterative hirshfeld settings."""
+        data = {"mulliken": True, "hirshfeld": True, "cm5": False, "hirshiter": True, "hirshiter_thresh": 9}
+        spec = ChargesSpec.from_dict(data)
+        assert spec.hirshfeld is True
+        assert spec.hirshiter is True
+        assert spec.hirshiter_thresh == 9
+
+    def test_cm5_auto_enables_hirshfeld(self):
+        """cm5 auto-enables hirshfeld."""
+        spec = ChargesSpec(cm5=True)
+        assert spec.hirshfeld is True
+
+    def test_cm5_auto_enable_preserved_through_roundtrip(self):
+        """cm5 auto-enable survives dict roundtrip."""
+        spec = ChargesSpec(cm5=True)
+        data = spec.to_dict()
+        # hirshfeld was auto-enabled, so it should be True in the dict
+        assert data["hirshfeld"] is True
+        reconstructed = ChargesSpec.from_dict(data)
+        assert reconstructed == spec
+
+    def test_hirshiter_thresh_default(self):
+        """iterative hirshfeld threshold defaults to 5."""
+        spec = ChargesSpec()
+        assert spec.hirshiter_thresh == 5
+
+    def test_hirshiter_thresh_validation(self):
+        """iterative hirshfeld threshold must be positive."""
+        with pytest.raises(ValidationError):
+            ChargesSpec(hirshiter_thresh=0)
+
+
+@pytest.mark.unit
+class TestScfSpecSerialization:
+    def test_to_dict_defaults(self):
+        """scf defaults serialize correctly."""
+        spec = ScfSpec()
+        data = spec.to_dict()
+        assert data == {"algorithm": "diis", "max_cycles": 100, "convergence": 8}
+
+    def test_to_dict_custom(self):
+        """custom scf settings serialize correctly."""
+        spec = ScfSpec(algorithm="diis_gdm", max_cycles=50, convergence=7)
+        data = spec.to_dict()
+        assert data == {"algorithm": "diis_gdm", "max_cycles": 50, "convergence": 7}
+
+    def test_from_dict(self):
+        """scf settings deserialize correctly."""
+        data = {"algorithm": "diis", "max_cycles": 50, "convergence": 7}
+        spec = ScfSpec.from_dict(data)
+        assert spec.algorithm == "diis"
+        assert spec.max_cycles == 50
+        assert spec.convergence == 7
 
 
 @pytest.mark.unit
@@ -155,10 +248,17 @@ class TestSpecRoundtrip:
             TddftSpec(nroots=20, singlets=False, triplets=True, state_to_optimize=2),
             SolvationSpec(model="smd", solvent="water"),
             SolvationSpec(model="cpcm", solvent="acetonitrile"),
+            SolvationSpec(model="pcm", dielectric=33.0, optical_dielectric=1.33),
+            SolvationSpec(model="pcm", dielectric=78.4),
             OptimizationSpec(),
             OptimizationSpec(calc_hess_initial=True, recalc_hess_freq=5),
             MomSpec(transition="HOMO->LUMO"),
             MomSpec(transition="HOMO->vac", job2_charge=1, job2_spin_multiplicity=2),
+            ChargesSpec(),
+            ChargesSpec(hirshfeld=True, cm5=True),
+            ChargesSpec(mulliken=False, hirshfeld=True, hirshiter=True),
+            ScfSpec(),
+            ScfSpec(algorithm="diis_gdm", max_cycles=50, convergence=7),
         ],
     )
     def test_spec_roundtrip(self, spec):
@@ -221,7 +321,58 @@ class TestCalculationInputSerialization:
         ).set_solvation(model="smd", solvent="water")
 
         data = calc.to_dict()
-        assert data["solvation"] == {"model": "smd", "solvent": "water"}
+        assert data["solvation"]["model"] == "smd"
+        assert data["solvation"]["solvent"] == "water"
+
+    def test_to_dict_with_custom_solvation(self):
+        calc = CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="b3lyp",
+            basis_set="6-31g*",
+        ).set_custom_solvation("pcm", dielectric=33.0, optical_dielectric=1.33)
+
+        data = calc.to_dict()
+        assert data["solvation"]["dielectric"] == 33.0
+        assert data["solvation"]["optical_dielectric"] == 1.33
+
+    def test_to_dict_with_charges(self):
+        calc = CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="b3lyp",
+            basis_set="6-31g*",
+        ).set_charges(hirshfeld=True, cm5=True)
+
+        data = calc.to_dict()
+        assert data["charges"]["hirshfeld"] is True
+        assert data["charges"]["cm5"] is True
+
+    def test_to_dict_with_scf(self):
+        calc = CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="b3lyp",
+            basis_set="6-31g*",
+        ).set_scf(algorithm="diis", max_cycles=50, convergence=7)
+
+        data = calc.to_dict()
+        assert data["scf"] == {"algorithm": "diis", "max_cycles": 50, "convergence": 7}
+
+    def test_to_dict_with_total_memory(self):
+        calc = CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="b3lyp",
+            basis_set="6-31g*",
+        ).set_total_memory(64000)
+
+        data = calc.to_dict()
+        assert data["total_memory_mb"] == 64000
 
     def test_to_dict_with_dict_basis_set(self):
         calc = CalculationInput(
@@ -282,6 +433,7 @@ class TestCalculationInputSerialization:
             "unrestricted": False,
             "n_cores": 8,
             "memory_per_core_mb": 4000,
+            "total_memory_mb": None,
             "tddft": {
                 "nroots": 10,
                 "singlets": True,
@@ -289,9 +441,11 @@ class TestCalculationInputSerialization:
                 "use_tda": True,
                 "state_to_optimize": None,
             },
-            "solvation": {"model": "smd", "solvent": "water"},
+            "solvation": {"model": "smd", "solvent": "water", "dielectric": None, "optical_dielectric": None},
             "optimization": None,
             "mom": None,
+            "charges": None,
+            "scf": None,
             "frequency_after_optimization": False,
             "program_options": {"ri_approx": "RIJCOSX"},
         }
@@ -302,6 +456,37 @@ class TestCalculationInputSerialization:
         assert isinstance(calc.solvation, SolvationSpec)
         assert calc.solvation.model == "smd"
         assert calc.program_options == {"ri_approx": "RIJCOSX"}
+
+    def test_from_dict_with_charges_and_scf(self):
+        data = {
+            "charge": 0,
+            "spin_multiplicity": 1,
+            "task": "energy",
+            "level_of_theory": "wb97x-d3",
+            "basis_set": "def2-tzvp",
+            "unrestricted": True,
+            "n_cores": 1,
+            "memory_per_core_mb": 4000,
+            "total_memory_mb": 64000,
+            "tddft": None,
+            "solvation": {"model": "pcm", "solvent": "", "dielectric": 33.0, "optical_dielectric": 1.33},
+            "optimization": None,
+            "mom": None,
+            "charges": {"mulliken": True, "hirshfeld": True, "cm5": True, "hirshiter": False, "hirshiter_thresh": 5},
+            "scf": {"algorithm": "diis", "max_cycles": 50, "convergence": 7},
+            "frequency_after_optimization": False,
+            "program_options": {},
+        }
+        calc = CalculationInput.from_dict(data)
+
+        assert isinstance(calc.charges, ChargesSpec)
+        assert calc.charges.hirshfeld is True
+        assert calc.charges.cm5 is True
+        assert isinstance(calc.scf, ScfSpec)
+        assert calc.scf.algorithm == "diis"
+        assert calc.scf.convergence == 7
+        assert calc.total_memory_mb == 64000
+        assert calc.solvation.dielectric == 33.0
 
 
 @pytest.mark.contract
@@ -370,6 +555,45 @@ class TestCalculationInputRoundtrip:
                 basis_set="def2-svp",
                 unrestricted=True,
             ).set_mom(transition="HOMO->LUMO"),
+            # with charges
+            CalculationInput(
+                charge=0,
+                spin_multiplicity=1,
+                task="energy",
+                level_of_theory="b3lyp",
+                basis_set="def2-svp",
+            ).set_charges(hirshfeld=True, cm5=True),
+            # with scf + total memory
+            CalculationInput(
+                charge=0,
+                spin_multiplicity=1,
+                task="energy",
+                level_of_theory="b3lyp",
+                basis_set="def2-svp",
+            )
+            .set_scf(algorithm="diis", max_cycles=50, convergence=7)
+            .set_total_memory(64000),
+            # with custom solvation
+            CalculationInput(
+                charge=0,
+                spin_multiplicity=1,
+                task="energy",
+                level_of_theory="wb97x-d3",
+                basis_set="def2-tzvp",
+            ).set_custom_solvation("pcm", dielectric=33.0, optical_dielectric=1.33),
+            # full combination matching target hirshfeld workflow
+            CalculationInput(
+                charge=0,
+                spin_multiplicity=1,
+                task="energy",
+                level_of_theory="wb97x-d3",
+                basis_set="def2-tzvp",
+                unrestricted=True,
+            )
+            .set_custom_solvation("pcm", dielectric=33.0, optical_dielectric=1.33)
+            .set_charges(hirshfeld=True, cm5=True)
+            .set_scf(algorithm="diis", max_cycles=50, convergence=7)
+            .set_total_memory(64000),
         ],
     )
     def test_calculation_input_dict_roundtrip(self, calc):
