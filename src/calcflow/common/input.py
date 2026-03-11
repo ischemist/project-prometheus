@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 import logging
 from dataclasses import asdict, dataclass, field, is_dataclass, replace
@@ -207,35 +208,96 @@ class CalculationInput:
     # --- Core Parameter Setters ---
 
     def set_level_of_theory(self: T_CalculationInput, lot: str) -> T_CalculationInput:
-        """updates the level of theory (method/functional)."""
+        """updates the dft functional or ab initio method.
+
+        args:
+            lot: method string, e.g. "wB97X-D3", "B3LYP", "PBE0", "MP2", "CCSD(T)".
+
+        example:
+            calc.set_level_of_theory("wB97X-D3")
+        """
         return replace(self, level_of_theory=lot)
 
     def set_basis_set(self: T_CalculationInput, basis: str | dict[str, str]) -> T_CalculationInput:
-        """updates the basis set."""
+        """updates the basis set for all elements uniformly.
+
+        for element-specific basis sets use .set_basis() instead.
+
+        args:
+            basis: uniform basis set string, e.g. "def2-tzvp", "6-31G*", "cc-pvtz".
+
+        example:
+            calc.set_basis_set("def2-tzvp")
+        """
         return replace(self, basis_set=basis)
 
     def set_task(self: T_CalculationInput, task: TASK_TYPES) -> T_CalculationInput:
-        """updates the main calculation task."""
+        """updates the main calculation task type.
+
+        args:
+            task: one of "energy" (single-point), "geometry" (optimization), "frequency".
+
+        example:
+            calc.set_task("geometry")
+        """
         return replace(self, task=task)
 
     def set_unrestricted(self: T_CalculationInput, unrestricted: bool = True) -> T_CalculationInput:
-        """sets the calculation to be unrestricted (uks/uhf) or restricted (rks/rhf)."""
+        """switches to unrestricted (uks/uhf) or back to restricted (rks/rhf) wavefunctions.
+
+        required for open-shell systems and any mom calculation.
+
+        args:
+            unrestricted: True to use UKS/UHF, False to use RKS/RHF (default True).
+
+        example:
+            calc.set_unrestricted()           # enable
+            calc.set_unrestricted(False)      # disable
+        """
         return replace(self, unrestricted=unrestricted)
 
     # --- Computational Resource Setters ---
 
     def set_cores(self: T_CalculationInput, n_cores: int) -> T_CalculationInput:
-        """sets the number of cpu cores to use."""
+        """sets the number of cpu cores to request for parallel execution.
+
+        args:
+            n_cores: positive integer, e.g. 8, 16, 32.
+
+        example:
+            calc.set_cores(16)
+        """
         return replace(self, n_cores=n_cores)
 
     def set_memory_per_core(self: T_CalculationInput, mb: int) -> T_CalculationInput:
-        """sets the memory per core in megabytes."""
+        """sets per-core memory allocation in megabytes.
+
+        total memory used will be n_cores * mb. default is 4000 MB per core.
+
+        args:
+            mb: megabytes per core, e.g. 4000, 8000.
+
+        example:
+            calc.set_memory_per_core(8000)
+        """
         return replace(self, memory_per_core_mb=mb)
 
     # --- Calculation Component Setters ---
 
     def set_solvation(self: T_CalculationInput, model: str, solvent: str) -> T_CalculationInput:
-        """adds or updates the implicit solvation model."""
+        """adds implicit solvation using a named solvent.
+
+        for pcm with explicit dielectric constants use set_custom_solvation() instead.
+
+        args:
+            model: solvation model, case-insensitive. common: "smd", "cpcm", "pcm", "cosmo".
+            solvent: named solvent, case-insensitive. common: "water", "acetonitrile",
+                     "dmso", "methanol", "acetone", "thf", "chloroform".
+
+        example:
+            calc.set_solvation("smd", "water")
+            calc.set_solvation("cpcm", "acetonitrile")
+        """
         solv_spec = SolvationSpec(model=model.lower(), solvent=solvent.lower())
         return replace(self, solvation=solv_spec)
 
@@ -247,7 +309,21 @@ class CalculationInput:
         use_tda: bool = True,
         state_to_optimize: int | None = None,
     ) -> T_CalculationInput:
-        """adds or updates the tddft calculation parameters."""
+        """configures time-dependent dft for excited-state energies and properties.
+
+        args:
+            nroots: number of excited states to compute (>= 1).
+            singlets: include singlet excitations (default True).
+            triplets: include triplet excitations (default False).
+            use_tda: use tamm-dancoff approximation — faster, usually adequate (default True).
+            state_to_optimize: for task="geometry", which excited state to optimize
+                               (1 = S1, 2 = S2, …). leave None for ground-state geometry.
+
+        example:
+            calc.set_tddft(nroots=10)
+            calc.set_tddft(nroots=20, singlets=True, triplets=True)
+            calc.set_tddft(nroots=5, state_to_optimize=1)  # optimize S1
+        """
         if state_to_optimize and self.task != "geometry":
             raise ConfigurationError("`state_to_optimize` is only valid for 'geometry' tasks.")
         tddft_spec = TddftSpec(
@@ -264,7 +340,17 @@ class CalculationInput:
         calc_hess_initial: bool = False,
         recalc_hess_freq: int | None = None,
     ) -> T_CalculationInput:
-        """adds or updates geometry optimization parameters."""
+        """fine-tunes geometry optimization settings. only valid for task="geometry".
+
+        args:
+            calc_hess_initial: compute exact hessian before the first step (expensive but
+                               useful for tricky potential energy surfaces).
+            recalc_hess_freq: recalculate hessian every N optimization steps.
+
+        example:
+            calc.set_optimization(calc_hess_initial=True)
+            calc.set_optimization(recalc_hess_freq=5)
+        """
         if self.task != "geometry":
             raise ConfigurationError("optimization settings are only valid for 'geometry' tasks.")
         opt_spec = OptimizationSpec(
@@ -274,7 +360,15 @@ class CalculationInput:
         return replace(self, optimization=opt_spec)
 
     def run_frequency_after_opt(self: T_CalculationInput) -> T_CalculationInput:
-        """enables a frequency calculation to be run after a successful geometry optimization."""
+        """appends a frequency calculation after a successful geometry optimization.
+
+        only valid for task="geometry". the optimizer runs to convergence, then
+        the program computes vibrational frequencies at the optimized geometry —
+        confirming it is a true minimum (no imaginary frequencies).
+
+        example:
+            calc.set_task("geometry").run_frequency_after_opt()
+        """
         if self.task != "geometry":
             raise ConfigurationError("frequency calculation can only follow a 'geometry' task.")
         return replace(self, frequency_after_optimization=True)
@@ -285,7 +379,18 @@ class CalculationInput:
         dielectric: float,
         optical_dielectric: float | None = None,
     ) -> T_CalculationInput:
-        """adds or updates pcm solvation with explicit dielectric constants (no named solvent)."""
+        """adds pcm solvation with explicit dielectric constants instead of a named solvent.
+
+        only supports model="pcm". use set_solvation() for named solvents with smd/cpcm.
+
+        args:
+            model: must be "pcm".
+            dielectric: static (low-frequency) dielectric constant, e.g. 78.39 for water.
+            optical_dielectric: high-frequency dielectric constant (optional).
+
+        example:
+            calc.set_custom_solvation("pcm", dielectric=78.39)
+        """
         if model.lower() != "pcm":
             raise ConfigurationError(
                 f"set_custom_solvation only supports model='pcm', got '{model}'. "
@@ -306,7 +411,21 @@ class CalculationInput:
         hirshiter: bool = False,
         hirshiter_thresh: int = 5,
     ) -> T_CalculationInput:
-        """configures charge partitioning schemes. cm5=True auto-enables hirshfeld."""
+        """configures which atomic charge partitioning schemes to compute.
+
+        cm5=True automatically enables hirshfeld (required). hirshiter=True also
+        requires hirshfeld and auto-enables it.
+
+        args:
+            mulliken: compute mulliken charges (default True).
+            hirshfeld: compute hirshfeld charges.
+            cm5: compute cm5 charges (requires and auto-enables hirshfeld).
+            hirshiter: compute iterative hirshfeld-I charges.
+            hirshiter_thresh: convergence threshold exponent for hirshfeld-I.
+
+        example:
+            calc.set_charges(mulliken=True, hirshfeld=True, cm5=True)
+        """
         return replace(
             self,
             charges=ChargesSpec(
@@ -324,11 +443,30 @@ class CalculationInput:
         max_cycles: int = 100,
         convergence: int = 8,
     ) -> T_CalculationInput:
-        """sets scf convergence parameters."""
+        """overrides scf convergence parameters when defaults are insufficient.
+
+        args:
+            algorithm: convergence accelerator, e.g. "diis", "gdm" (default "diis").
+            max_cycles: maximum scf iterations before giving up (default 100).
+            convergence: threshold exponent — scf converges when error < 10^-N (default 8).
+
+        example:
+            calc.set_scf(max_cycles=200, convergence=9)
+        """
         return replace(self, scf=ScfSpec(algorithm=algorithm, max_cycles=max_cycles, convergence=convergence))
 
     def set_total_memory(self: T_CalculationInput, mb: int) -> T_CalculationInput:
-        """sets the total program memory allocation in megabytes (e.g., Q-Chem MEM_TOTAL)."""
+        """sets total program-level memory in megabytes, e.g. Q-Chem's MEM_TOTAL.
+
+        distinct from set_memory_per_core() which sets per-thread allocation. use this
+        when the program expects a single total memory budget rather than per-core.
+
+        args:
+            mb: total memory in megabytes, e.g. 64000.
+
+        example:
+            calc.set_total_memory(64000)
+        """
         return replace(self, total_memory_mb=mb)
 
     def set_mom(
@@ -380,9 +518,16 @@ class CalculationInput:
     # program-specific features, but just call `set_options` under the hood.
 
     def enable_ri_for_orca(self: T_CalculationInput, approx: str, aux_basis: str) -> T_CalculationInput:
-        """
-        convenience method to enable ri approximation for orca.
-        this is a wrapper around `set_options`.
+        """enables a resolution-of-identity (ri) approximation in orca to speed up coulomb/exchange.
+
+        wrapper around set_options(ri_approx=..., aux_basis=...).
+
+        args:
+            approx: ri variant, e.g. "RIJCOSX" (hybrid dft), "RIJK" (pure exchange), "RI".
+            aux_basis: auxiliary basis set, e.g. "def2/j", "def2/jk", "cc-pvtz/c".
+
+        example:
+            calc.enable_ri_for_orca("RIJCOSX", "def2/j")
         """
         return self.set_options(ri_approx=approx.upper(), aux_basis=aux_basis)
 
@@ -536,22 +681,154 @@ class CalculationInput:
         return cls.from_dict(json.loads(json_str))
 
     @classmethod
+    def get_quick_ref(cls) -> str:
+        """returns a compact constructor + chaining reference — start here.
+
+        shows required/optional constructor fields derived from the actual dataclass,
+        followed by every public fluent method with its one-line summary and signature.
+        use get_method_docs(name) to get full details + examples for a specific method.
+        """
+        lines: list[str] = ["CalculationInput — quick reference", "=" * 50, ""]
+
+        # ---- constructor ----
+        lines.append("CONSTRUCTOR")
+        lines.append("-" * 30)
+        lines.append("from calcflow import CalculationInput, Geometry")
+        lines.append("")
+        lines.append("CalculationInput(")
+
+        sig = inspect.signature(cls.__init__)
+        for name, param in sig.parameters.items():
+            if name in ("self", "cls"):
+                continue
+            annotation = param.annotation
+            ann_str = annotation if isinstance(annotation, str) else getattr(annotation, "__name__", repr(annotation))
+            if param.default is inspect.Parameter.empty:
+                lines.append(f"    {name}: {ann_str},         # required")
+            else:
+                default = repr(param.default)
+                lines.append(f"    {name}: {ann_str} = {default},")
+        lines.append(")")
+        lines.append("")
+
+        # ---- fluent methods table ----
+        lines.append("FLUENT METHODS  (each returns a new CalculationInput)")
+        lines.append("-" * 30)
+        _skip = {
+            "get_quick_ref",
+            "get_method_docs",
+            "get_api_docs",
+            "export",
+            "to_dict",
+            "to_json",
+            "from_dict",
+            "from_json",
+            "requires_multiple_jobs",
+        }
+        for name, method in inspect.getmembers(cls, predicate=inspect.isfunction):
+            if name.startswith("_") or name in _skip:
+                continue
+            doc = inspect.getdoc(method) or ""
+            first_line = doc.splitlines()[0] if doc else "(no description)"
+            try:
+                msig = inspect.signature(method)
+                params = [p for p in msig.parameters if p not in ("self", "cls")]
+                param_str = ", ".join(params) if params else ""
+                lines.append(f"  .{name}({param_str})")
+            except (ValueError, TypeError):
+                lines.append(f"  .{name}(...)")
+            lines.append(f"      {first_line}")
+            lines.append("")
+
+        # ---- export / serialization ----
+        lines.append("EXPORT & SERIALIZATION")
+        lines.append("-" * 30)
+        lines.append("  .export(program, geometry) -> str    # 'orca' or 'qchem'")
+        lines.append("  .to_json() -> str                    # save spec")
+        lines.append("  .from_json(json_str) -> Self         # load spec")
+        lines.append("  .to_dict() / .from_dict(d)           # dict roundtrip")
+        lines.append("")
+
+        # ---- quick example ----
+        lines.append("MINIMAL EXAMPLE")
+        lines.append("-" * 30)
+        lines.append("calc = (")
+        lines.append("    CalculationInput(charge=0, spin_multiplicity=1,")
+        lines.append('        task="energy", level_of_theory="wB97X-D3", basis_set="def2-tzvp")')
+        lines.append("    .set_tddft(nroots=10)")
+        lines.append('    .set_solvation("smd", "water")')
+        lines.append(")")
+        lines.append("geom = Geometry.from_xyz_file('molecule.xyz')")
+        lines.append("input_str = calc.export('qchem', geom)")
+        lines.append("")
+        lines.append("# for details on any method:")
+        lines.append("# CalculationInput.get_method_docs('set_tddft')")
+
+        return "\n".join(lines)
+
+    @classmethod
+    def get_method_docs(cls, method: str | None = None) -> str:
+        """returns full signature + docstring for one method, or a catalogue of all methods.
+
+        args:
+            method: name of the method (e.g. "set_tddft"). if None, lists all public
+                    methods with their one-line summaries so you can pick one.
+
+        example:
+            CalculationInput.get_method_docs()             # catalogue
+            CalculationInput.get_method_docs("set_tddft")  # full detail
+        """
+        _internal = {"get_quick_ref", "get_method_docs", "get_api_docs"}
+
+        if method is None:
+            lines = ["CalculationInput — all public methods", "=" * 50, ""]
+            for name, fn in inspect.getmembers(cls, predicate=inspect.isfunction):
+                if name.startswith("_") or name in _internal:
+                    continue
+                doc = inspect.getdoc(fn) or ""
+                first_line = doc.splitlines()[0] if doc else "(no description)"
+                lines.append(f"  {name:35s}  {first_line}")
+            lines.append("")
+            lines.append("call get_method_docs('name') for full details on any method.")
+            return "\n".join(lines)
+
+        fn = getattr(cls, method, None)
+        if not inspect.isfunction(fn):
+            available = [
+                n
+                for n, _ in inspect.getmembers(cls, inspect.isfunction)
+                if not n.startswith("_") and n not in _internal
+            ]
+            return f"no method '{method}' on CalculationInput. available: {sorted(available)}"
+
+        lines = [f"CalculationInput.{method}", "=" * 50, ""]
+        try:
+            sig = inspect.signature(fn)
+            lines.append(f"signature: {method}{sig}")
+        except (ValueError, TypeError):
+            pass
+        lines.append("")
+        doc = inspect.getdoc(fn)
+        if doc:
+            lines.append(doc)
+        else:
+            lines.append("(no docstring)")
+        return "\n".join(lines)
+
+    @classmethod
     def get_api_docs(cls) -> str:
+        """compatibility alias — returns quick ref + full method catalogue.
+
+        prefer get_quick_ref() for a concise overview, or get_method_docs(name)
+        for details on a specific method.
         """
-        returns comprehensive api documentation for llm-assisted code generation.
+        return cls.get_quick_ref() + "\n\n" + cls.get_method_docs()
 
-        this method provides a complete reference of all available fields, methods,
-        and usage patterns without requiring access to source code. ideal for sharing
-        with llms when you want them to generate code using calcflow.
+    # ---------- legacy full-text docs (kept for reference, not called by default) ----------
 
-        usage:
-            # print documentation for llm consumption
-            print(CalculationInput.get_api_docs())
-
-            # save to file
-            with open("calcflow_api.txt", "w") as f:
-                f.write(CalculationInput.get_api_docs())
-        """
+    @classmethod
+    def _get_full_docs(cls) -> str:
+        """returns the original verbose hardcoded reference (legacy, prefer get_quick_ref)."""
         return """
 CalculationInput API Reference
 ==============================

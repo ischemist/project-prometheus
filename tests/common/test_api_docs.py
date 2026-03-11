@@ -1,242 +1,212 @@
-"""tests for the get_api_docs method."""
+"""tests for the auto-generated api documentation methods."""
 
 from calcflow.common.input import CalculationInput
 from calcflow.common.results import CalculationResult
 
-
-def test_get_api_docs_returns_string():
-    """test that get_api_docs returns a non-empty string."""
-    docs = CalculationInput.get_api_docs()
-    assert isinstance(docs, str)
-    assert len(docs) > 1000
+# =============================================================================
+# CalculationInput.get_quick_ref()
+# =============================================================================
 
 
-def test_get_api_docs_contains_key_sections():
-    """test that documentation contains all major sections."""
-    docs = CalculationInput.get_api_docs()
-
-    # check for main sections
-    assert "CalculationInput API Reference" in docs
-    assert "DESCRIPTION" in docs
-    assert "CONSTRUCTOR" in docs
-    assert "FLUENT API METHODS" in docs
-    assert "USAGE EXAMPLES" in docs
-    assert "VALIDATION" in docs
+def test_get_quick_ref_returns_string():
+    ref = CalculationInput.get_quick_ref()
+    assert isinstance(ref, str)
+    assert len(ref) > 200
 
 
-def test_get_api_docs_describes_core_methods():
-    """test that all core fluent api methods are documented."""
-    docs = CalculationInput.get_api_docs()
-
-    # check for key methods
-    assert ".set_tddft(" in docs
-    assert ".set_solvation(" in docs
-    assert ".set_mom(" in docs
-    assert ".set_optimization(" in docs
-    assert ".run_frequency_after_opt(" in docs
-    assert ".set_level_of_theory(" in docs
-    assert ".set_basis_set(" in docs
-    assert ".set_unrestricted(" in docs
-    assert ".export(" in docs
-    assert ".to_json(" in docs
-    assert ".from_json(" in docs
+def test_get_quick_ref_has_constructor_section():
+    ref = CalculationInput.get_quick_ref()
+    assert "CONSTRUCTOR" in ref
+    # required fields must appear
+    assert "charge" in ref
+    assert "spin_multiplicity" in ref
+    assert "task" in ref
+    assert "level_of_theory" in ref
+    assert "basis_set" in ref
 
 
-def test_get_api_docs_contains_usage_examples():
-    """test that documentation includes practical usage examples."""
-    docs = CalculationInput.get_api_docs()
-
-    # check for import statements in examples
-    assert "from calcflow.common.input import CalculationInput" in docs
-    assert "from calcflow.geometry.static import Geometry" in docs
-
-    # check for example patterns
-    assert "Geometry.from_xyz_file" in docs
-    assert ".export(" in docs
-    assert "with open(" in docs
-
-
-def test_get_api_docs_describes_all_specs():
-    """test that all spec classes are documented."""
-    docs = CalculationInput.get_api_docs()
-
-    assert "TddftSpec" in docs
-    assert "SolvationSpec" in docs
-    assert "OptimizationSpec" in docs
-    assert "MomSpec" in docs
+def test_get_quick_ref_has_fluent_methods_section():
+    ref = CalculationInput.get_quick_ref()
+    assert "FLUENT METHODS" in ref
+    # all key methods must be listed
+    for method in (
+        "set_tddft",
+        "set_solvation",
+        "set_mom",
+        "set_optimization",
+        "run_frequency_after_opt",
+        "set_level_of_theory",
+        "set_basis_set",
+        "set_unrestricted",
+        "set_cores",
+        "set_memory_per_core",
+        "enable_ri_for_orca",
+    ):
+        assert method in ref, f"method '{method}' missing from get_quick_ref()"
 
 
-def test_get_api_docs_includes_mom_transition_examples():
-    """test that mom transition notation examples are documented."""
-    docs = CalculationInput.get_api_docs()
+def test_get_quick_ref_has_export_section():
+    ref = CalculationInput.get_quick_ref()
+    assert "export" in ref
+    assert "to_json" in ref
+    assert "from_json" in ref
 
-    # check for various mom transition notations
+
+def test_get_quick_ref_has_minimal_example():
+    ref = CalculationInput.get_quick_ref()
+    assert "Geometry.from_xyz_file" in ref
+    assert "CalculationInput(" in ref
+
+
+# =============================================================================
+# CalculationInput.get_method_docs()
+# =============================================================================
+
+
+def test_get_method_docs_catalogue():
+    """calling with no argument returns a method catalogue."""
+    catalogue = CalculationInput.get_method_docs()
+    assert isinstance(catalogue, str)
+    assert "set_tddft" in catalogue
+    assert "set_solvation" in catalogue
+    assert "set_mom" in catalogue
+
+
+def test_get_method_docs_specific_method():
+    """calling with a method name returns that method's full docs."""
+    docs = CalculationInput.get_method_docs("set_tddft")
+    assert "set_tddft" in docs
+    # should contain signature info
+    assert "nroots" in docs
+    # should contain docstring content
+    assert "singlets" in docs or "triplets" in docs
+
+
+def test_get_method_docs_mom_includes_transition_notation():
+    docs = CalculationInput.get_method_docs("set_mom")
     assert "HOMO->LUMO" in docs
-    assert "HOMO-1->LUMO" in docs
-    assert "HOMO->vac" in docs  # ionization example
-    assert "5->6" in docs  # numeric notation
+    assert "HOMO->vac" in docs
+    assert "5->6" in docs
 
 
-def test_get_api_docs_includes_validation_info():
-    """test that validation requirements are documented."""
+def test_get_method_docs_unknown_method():
+    result = CalculationInput.get_method_docs("nonexistent_method")
+    assert "no method" in result.lower() or "nonexistent" in result
+
+
+def test_get_method_docs_includes_validation_context():
+    """set_mom docstring covers unrestricted requirement."""
+    docs = CalculationInput.get_method_docs("set_mom")
+    assert "unrestricted" in docs
+
+
+# =============================================================================
+# CalculationInput.get_api_docs() — compatibility alias
+# =============================================================================
+
+
+def test_get_api_docs_is_nonempty_string():
     docs = CalculationInput.get_api_docs()
-
-    assert "spin_multiplicity must be >= 1" in docs
-    assert "mom requires unrestricted=True" in docs
-
-
-# --- CalculationResult tests ---
+    assert isinstance(docs, str)
+    assert len(docs) > 500
 
 
-def test_results_get_api_docs_returns_string():
-    """test that get_api_docs returns a non-empty string."""
+def test_get_api_docs_covers_key_methods():
+    """alias output still mentions all fluent methods."""
+    docs = CalculationInput.get_api_docs()
+    for method in ("set_tddft", "set_solvation", "set_mom", "export"):
+        assert method in docs, f"'{method}' missing from get_api_docs()"
+
+
+# =============================================================================
+# CalculationResult.get_schema()
+# =============================================================================
+
+
+def test_get_schema_returns_string():
+    schema = CalculationResult.get_schema()
+    assert isinstance(schema, str)
+    assert len(schema) > 500
+
+
+def test_get_schema_has_parse_functions():
+    schema = CalculationResult.get_schema()
+    assert "parse_qchem_output" in schema
+    assert "parse_orca_output" in schema
+    assert "parse_qchem_multi_job_output" in schema
+
+
+def test_get_schema_has_top_level_fields():
+    schema = CalculationResult.get_schema()
+    for field in (
+        "termination_status",
+        "final_energy",
+        "scf",
+        "orbitals",
+        "tddft",
+        "dispersion",
+        "atomic_charges",
+        "raw_output",
+    ):
+        assert field in schema, f"field '{field}' missing from get_schema()"
+
+
+def test_get_schema_recurses_into_nested_models():
+    schema = CalculationResult.get_schema()
+    # ScfResults fields should appear
+    assert "n_iterations" in schema or "converged" in schema
+    # ExcitedState fields
+    assert "excitation_energy_ev" in schema
+    assert "oscillator_strength" in schema
+    # Atom fields
+    assert "symbol" in schema
+
+
+def test_get_schema_shows_types():
+    schema = CalculationResult.get_schema()
+    assert "float" in schema
+    assert "int" in schema
+    assert "str" in schema
+    assert "bool" in schema
+    assert "None" in schema
+
+
+def test_get_schema_mentions_units():
+    schema = CalculationResult.get_schema()
+    assert "Hartree" in schema
+    assert "Angstrom" in schema
+    assert "Debye" in schema
+    assert "eV" in schema
+
+
+def test_get_schema_mentions_raw_output_exclusion():
+    schema = CalculationResult.get_schema()
+    assert "raw_output" in schema
+    # should note it's excluded from serialization
+    assert "excludes" in schema.lower() or "excluded" in schema.lower()
+
+
+def test_get_schema_mentions_index_conventions():
+    schema = CalculationResult.get_schema()
+    assert "0-based" in schema
+    assert "1-based" in schema
+
+
+def test_get_schema_has_orbital_fields():
+    schema = CalculationResult.get_schema()
+    assert "alpha_orbitals" in schema or "alpha_homo_index" in schema
+
+
+# =============================================================================
+# CalculationResult.get_api_docs() — compatibility alias
+# =============================================================================
+
+
+def test_results_get_api_docs_is_alias_for_get_schema():
+    assert CalculationResult.get_api_docs() == CalculationResult.get_schema()
+
+
+def test_results_get_api_docs_nonempty():
     docs = CalculationResult.get_api_docs()
     assert isinstance(docs, str)
-    assert len(docs) > 2000
-
-
-def test_results_get_api_docs_contains_key_sections():
-    """test that documentation contains all major sections."""
-    docs = CalculationResult.get_api_docs()
-
-    # check for main sections
-    assert "CalculationResult API Reference" in docs
-    assert "DESCRIPTION" in docs
-    assert "TOP-LEVEL MODEL: CalculationResult" in docs
-    assert "FUNDAMENTAL MODELS" in docs
-    assert "SCF (SELF-CONSISTENT FIELD) MODELS" in docs
-    assert "MOLECULAR ORBITALS MODEL" in docs
-    assert "PROPERTY MODELS" in docs
-    assert "TDDFT & EXCITED STATE MODELS" in docs
-    assert "SERIALIZATION METHODS" in docs
-    assert "USAGE EXAMPLES" in docs
-    assert "IMPORTANT NOTES" in docs
-
-
-def test_results_get_api_docs_describes_core_models():
-    """test that all core result models are documented."""
-    docs = CalculationResult.get_api_docs()
-
-    # fundamental models
-    assert "Atom:" in docs
-    assert "Orbital:" in docs
-
-    # scf models
-    assert "ScfIteration:" in docs
-    assert "ScfEnergyComponents:" in docs
-    assert "ScfResults:" in docs
-
-    # orbital model
-    assert "OrbitalsSet:" in docs
-
-    # property models
-    assert "AtomicCharges:" in docs
-    assert "DipoleMoment:" in docs
-    assert "MultipoleResults:" in docs
-    assert "DispersionCorrection:" in docs
-    assert "SmdResults:" in docs
-    assert "TimingResults:" in docs
-
-    # tddft models
-    assert "ExcitedState:" in docs
-    assert "OrbitalTransition:" in docs
-    assert "NTOContribution:" in docs
-    assert "NTOStateAnalysis:" in docs
-    assert "TddftResults:" in docs
-    assert "ExcitonAnalysis:" in docs
-    assert "UnrelaxedDensityMatrix:" in docs
-    assert "TransitionDensityMatrix:" in docs
-
-    # metadata
-    assert "CalculationMetadata:" in docs
-
-
-def test_results_get_api_docs_describes_serialization_methods():
-    """test that all serialization methods are documented."""
-    docs = CalculationResult.get_api_docs()
-
-    assert ".to_dict()" in docs
-    assert ".from_dict(" in docs
-    assert ".to_json(" in docs
-    assert ".from_json(" in docs
-
-
-def test_results_get_api_docs_contains_usage_examples():
-    """test that documentation includes practical usage examples."""
-    docs = CalculationResult.get_api_docs()
-
-    # check for import statements
-    assert "from calcflow.io.qchem import parse_qchem_output" in docs
-    assert "from calcflow.io.orca import parse_orca_output" in docs
-
-    # check for common parsing patterns
-    assert "parse_qchem_output" in docs
-    assert "parse_orca_output" in docs
-    assert 'termination_status == "NORMAL"' in docs
-
-    # check for result access patterns
-    assert "result.scf" in docs
-    assert "result.orbitals" in docs
-    assert "result.tddft" in docs
-    assert "result.final_energy" in docs
-
-
-def test_results_get_api_docs_describes_field_types():
-    """test that field types are documented."""
-    docs = CalculationResult.get_api_docs()
-
-    # check for type annotations
-    assert "Literal[" in docs
-    assert "Sequence[" in docs
-    assert "Mapping[" in docs
-    assert "| None" in docs or "None" in docs
-    assert "float" in docs
-    assert "int" in docs
-    assert "str" in docs
-    assert "bool" in docs
-
-
-def test_results_get_api_docs_mentions_units():
-    """test that units are documented."""
-    docs = CalculationResult.get_api_docs()
-
-    assert "Hartree" in docs
-    assert "Angstrom" in docs
-    assert "Debye" in docs
-    assert "eV" in docs
-
-
-def test_results_get_api_docs_mentions_raw_output_exclusion():
-    """test that raw_output exclusion is documented."""
-    docs = CalculationResult.get_api_docs()
-
-    assert "raw_output" in docs
-    assert "exclude" in docs.lower() or "excluded" in docs.lower()
-
-
-def test_results_get_api_docs_includes_tddft_examples():
-    """test that tddft analysis examples are documented."""
-    docs = CalculationResult.get_api_docs()
-
-    assert "tddft_states" in docs
-    assert "excited" in docs.lower()
-    assert "excitation_energy_ev" in docs
-    assert "oscillator_strength" in docs
-
-
-def test_results_get_api_docs_includes_orbital_examples():
-    """test that orbital analysis examples are documented."""
-    docs = CalculationResult.get_api_docs()
-
-    assert "HOMO" in docs
-    assert "LUMO" in docs
-    assert "alpha_orbitals" in docs
-
-
-def test_results_get_api_docs_includes_important_notes():
-    """test that important notes about usage are documented."""
-    docs = CalculationResult.get_api_docs()
-
-    assert "immutable" in docs.lower() or "frozen" in docs.lower()
-    assert "0-based" in docs  # for indices
-    assert "1-based" in docs  # for state numbers
+    assert len(docs) > 500
