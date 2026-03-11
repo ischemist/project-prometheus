@@ -114,14 +114,14 @@ class ParseState:
         # Convert empty lists to None to preserve the "None means not parsed" convention.
         tddft: TddftResults | None = None
         if any(
-            [
+            (
                 self.tddft_tda_states,
                 self.tddft_tddft_states,
                 self.tddft_nto_analyses,
                 self.tddft_ground_state_ref is not None,
                 self.tddft_unrelaxed_density_matrices,
                 self.tddft_transition_density_matrices,
-            ]
+            )
         ):
             tddft = TddftResults(
                 tda_states=self.tddft_tda_states or None,
