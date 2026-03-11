@@ -794,7 +794,11 @@ class CalculationInput:
 
         fn = getattr(cls, method, None)
         if not inspect.isfunction(fn):
-            available = [n for n, _ in inspect.getmembers(cls, inspect.isfunction) if not n.startswith("_") and n not in _internal]
+            available = [
+                n
+                for n, _ in inspect.getmembers(cls, inspect.isfunction)
+                if not n.startswith("_") and n not in _internal
+            ]
             return f"no method '{method}' on CalculationInput. available: {sorted(available)}"
 
         lines = [f"CalculationInput.{method}", "=" * 50, ""]

@@ -745,19 +745,13 @@ class CalculationResult(FrozenModel):
                 parts = " | ".join(_type_str(a) for a in non_none)
                 return parts + (" | None" if has_none else "")
             # Sequence / list / tuple
-            if (
-                (
-                    origin is not None
-                    and getattr(origin, "__name__", "") in ("Sequence", "List")
-                )
-                or origin in (list, tuple)
+            if (origin is not None and getattr(origin, "__name__", "") in ("Sequence", "List")) or origin in (
+                list,
+                tuple,
             ):
                 return f"list[{_type_str(args[0])}]" if args else "list"
             # Mapping / dict
-            if (
-                (origin is not None and getattr(origin, "__name__", "") in ("Mapping", "Dict"))
-                or origin is dict
-            ):
+            if (origin is not None and getattr(origin, "__name__", "") in ("Mapping", "Dict")) or origin is dict:
                 k = _type_str(args[0]) if args else "?"
                 v = _type_str(args[1]) if len(args) > 1 else "?"
                 return f"dict[{k}, {v}]"
