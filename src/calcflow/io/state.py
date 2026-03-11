@@ -76,7 +76,9 @@ class ParseState:
         self.parsed_geometry: bool = False
         self.parsed_scf: bool = False
         self.parsed_orbitals: bool = False
-        self.parsed_charges: bool = False
+        self.parsed_mulliken: bool = False
+        self.parsed_hirshfeld: bool = False
+        self.parsed_cm5: bool = False
         self.parsed_dipole: bool = False
         self.parsed_dispersion: bool = False
         self.parsed_multipole: bool = False

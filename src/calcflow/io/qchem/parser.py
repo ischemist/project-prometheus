@@ -10,9 +10,11 @@ from calcflow.common.results import CalculationResult
 from calcflow.io.core import BlockParser, core_parse
 from calcflow.io.qchem.blocks.adc.excited_states import AdcExcitedStatesParser
 from calcflow.io.qchem.blocks.adc.ground_state import AdcGroundStateParser
-from calcflow.io.qchem.blocks.charges import ChargesParser
+from calcflow.io.qchem.blocks.charges import MullikenParser
+from calcflow.io.qchem.blocks.cm5 import Cm5Parser
 from calcflow.io.qchem.blocks.finalization import TerminationParser
 from calcflow.io.qchem.blocks.geometry import GeometryParser
+from calcflow.io.qchem.blocks.hirshfeld import HirshfeldParser
 from calcflow.io.qchem.blocks.metadata import MetadataParser
 from calcflow.io.qchem.blocks.multipole import MultipoleParser
 from calcflow.io.qchem.blocks.orbitals import OrbitalsParser
@@ -30,7 +32,9 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     MetadataParser(),
     GeometryParser(),
     ScfParser(),
-    ChargesParser(),
+    MullikenParser(),
+    HirshfeldParser(),
+    Cm5Parser(),
     OrbitalsParser(),
     MultipoleParser(),
     ExcitationsParser(),

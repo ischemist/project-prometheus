@@ -110,4 +110,4 @@ class ChargesParser:
 
         # Set flag after successfully parsing any charges method.
         # This allows supporting files with only Mulliken, only Loewdin, or both.
-        state.parsed_charges = True
+        state.parsed_mulliken = True

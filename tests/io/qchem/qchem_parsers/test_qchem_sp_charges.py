@@ -14,7 +14,7 @@ Test hierarchy:
 import pytest
 
 from calcflow.common.results import AtomicCharges, CalculationResult
-from calcflow.io.qchem.blocks.charges import ChargesParser
+from calcflow.io.qchem.blocks.charges import MullikenParser
 from calcflow.io.state import ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
@@ -33,14 +33,14 @@ CHARGE_TOL = 1e-5
 
 
 # =============================================================================
-# UNIT TESTS: ChargesParser.matches() behavior
+# UNIT TESTS: MullikenParser.matches() behavior
 # =============================================================================
 
 
 @pytest.mark.unit
-def test_charges_parser_matches_start_line():
-    """Unit test: verify ChargesParser.matches() recognizes charges block start."""
-    parser = ChargesParser()
+def test_mulliken_parser_matches_start_line():
+    """Unit test: verify MullikenParser.matches() recognizes charges block start."""
+    parser = MullikenParser()
     state = ParseState(raw_output="")
 
     start_line = "Ground-State Mulliken Net Atomic Charges"
@@ -48,9 +48,9 @@ def test_charges_parser_matches_start_line():
 
 
 @pytest.mark.unit
-def test_charges_parser_matches_with_leading_whitespace():
-    """Unit test: verify ChargesParser.matches() handles leading whitespace."""
-    parser = ChargesParser()
+def test_mulliken_parser_matches_with_leading_whitespace():
+    """Unit test: verify MullikenParser.matches() handles leading whitespace."""
+    parser = MullikenParser()
     state = ParseState(raw_output="")
 
     start_line = "    Ground-State Mulliken Net Atomic Charges"
@@ -58,46 +58,45 @@ def test_charges_parser_matches_with_leading_whitespace():
 
 
 @pytest.mark.unit
-def test_charges_parser_does_not_match_non_charges_lines():
-    """Unit test: verify ChargesParser.matches() rejects non-charges lines."""
-    parser = ChargesParser()
+def test_mulliken_parser_does_not_match_non_charges_lines():
+    """Unit test: verify MullikenParser.matches() rejects non-charges lines."""
+    parser = MullikenParser()
     state = ParseState(raw_output="")
 
-    # Random lines from QChem output
     assert parser.matches("SCF time:   CPU 0.32s  wall 0.00s", state) is False
     assert parser.matches("Atom          Charge", state) is False
+    assert parser.matches("Hirshfeld Atomic Charges", state) is False
+    assert parser.matches("Charge Model 5", state) is False
     assert parser.matches("Random calculation output", state) is False
 
 
 @pytest.mark.unit
-def test_charges_parser_skips_if_already_parsed():
-    """Unit test: verify ChargesParser.matches() returns False when already parsed."""
-    parser = ChargesParser()
+def test_mulliken_parser_skips_if_already_parsed():
+    """Unit test: verify MullikenParser.matches() returns False when already parsed."""
+    parser = MullikenParser()
     state = ParseState(raw_output="")
-    state.parsed_charges = True
+    state.parsed_mulliken = True
 
-    start_line = " Mulliken charges:"
+    start_line = "Ground-State Mulliken Net Atomic Charges"
     assert parser.matches(start_line, state) is False
 
 
 @pytest.mark.unit
-def test_charges_parser_does_not_mutate_state_in_matches():
+def test_mulliken_parser_does_not_mutate_state_in_matches():
     """
     Unit test: verify that matches() is read-only and does not mutate state.
     Critical for parser-spec compliance.
     """
-    parser = ChargesParser()
+    parser = MullikenParser()
     state = ParseState(raw_output="")
 
-    # Call matches() multiple times
     line = "Ground-State Mulliken Net Atomic Charges"
     result1 = parser.matches(line, state)
     result2 = parser.matches(line, state)
 
-    # State should be identical after calling matches()
     assert result1 is True
     assert result2 is True
-    assert state.parsed_charges is False  # Should NOT be set
+    assert state.parsed_mulliken is False  # Should NOT be set
     assert state.atomic_charges == []  # Should NOT be populated
 
 
@@ -129,7 +128,6 @@ def test_charges_list_is_sequence(parsed_qchem_data: CalculationResult) -> None:
 )
 def test_mulliken_charges_present(parsed_qchem_data: CalculationResult) -> None:
     """Contract test: verify Mulliken charges are present in parsed data."""
-    # Find the Mulliken charges entry
     mulliken_charges = None
     for charges in parsed_qchem_data.atomic_charges:
         if charges.method == "Mulliken":
@@ -158,7 +156,6 @@ def test_mulliken_charges_has_values(parsed_qchem_data: CalculationResult) -> No
     assert isinstance(mulliken_charges.charges, dict)
     assert len(mulliken_charges.charges) > 0
 
-    # All values should be floats, not None
     for idx, charge_value in mulliken_charges.charges.items():
         assert isinstance(idx, int), f"Key should be int, got {type(idx)}"
         assert isinstance(charge_value, float), f"Value should be float, got {type(charge_value)}"
@@ -189,14 +186,10 @@ def test_charges_structure_has_three_atoms(parsed_qchem_data: CalculationResult)
 
 @pytest.mark.integration
 def test_charges_parsed_alongside_geometry(parsed_qchem_62_h2o_sp_data: CalculationResult):
-    """
-    Integration test: verify charges parser works with geometry parser.
-    All should be present in final result.
-    """
+    """Integration test: verify charges parser works alongside geometry parser."""
     assert parsed_qchem_62_h2o_sp_data.input_geometry is not None
     assert len(parsed_qchem_62_h2o_sp_data.input_geometry) == 3  # H2O
 
-    # Charges should also be parsed
     mulliken_charges = None
     for charges in parsed_qchem_62_h2o_sp_data.atomic_charges:
         if charges.method == "Mulliken":
@@ -206,12 +199,8 @@ def test_charges_parsed_alongside_geometry(parsed_qchem_62_h2o_sp_data: Calculat
 
 
 @pytest.mark.integration
-def test_charges_completion_flag_set(parsed_qchem_62_h2o_sp_data: CalculationResult):
-    """
-    Integration test: verify that the charges parser sets its completion flag.
-    This is critical for the parser-spec contract.
-    """
-    # The parsed result should have charges data, indicating the flag was set
+def test_mulliken_completion_flag_set(parsed_qchem_62_h2o_sp_data: CalculationResult):
+    """Integration test: verify that Mulliken charges appear in the result (flag was set)."""
     mulliken_charges = None
     for charges in parsed_qchem_62_h2o_sp_data.atomic_charges:
         if charges.method == "Mulliken":
@@ -222,10 +211,7 @@ def test_charges_completion_flag_set(parsed_qchem_62_h2o_sp_data: CalculationRes
 
 @pytest.mark.integration
 def test_charges_parsed_alongside_scf(parsed_qchem_62_h2o_sp_data: CalculationResult):
-    """
-    Integration test: verify both charges and SCF results are present.
-    These are complementary results from the same calculation.
-    """
+    """Integration test: verify both Mulliken charges and SCF results are present."""
     assert parsed_qchem_62_h2o_sp_data.scf is not None
 
     mulliken_charges = None
