@@ -793,9 +793,9 @@ class CalculationInput:
             return "\n".join(lines)
 
         fn = getattr(cls, method, None)
-        if fn is None:
-            available = [n for n in dir(cls) if not n.startswith("_") and n not in _internal]
-            return f"no method '{method}' on CalculationInput. available: {available}"
+        if not inspect.isfunction(fn):
+            available = [n for n, _ in inspect.getmembers(cls, inspect.isfunction) if not n.startswith("_") and n not in _internal]
+            return f"no method '{method}' on CalculationInput. available: {sorted(available)}"
 
         lines = [f"CalculationInput.{method}", "=" * 50, ""]
         try:
