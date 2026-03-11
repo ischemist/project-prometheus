@@ -236,6 +236,27 @@ class TestMomSpecSerialization:
         assert spec.beta_occupation == "1-4"
 
 
+@pytest.mark.unit
+class TestSpecFromDictStrictness:
+    @pytest.mark.parametrize(
+        ("spec_cls", "valid_data"),
+        [
+            (TddftSpec, {"nroots": 10}),
+            (SolvationSpec, {"model": "smd", "solvent": "water"}),
+            (ChargesSpec, {"mulliken": True}),
+            (ScfSpec, {"algorithm": "diis"}),
+            (OptimizationSpec, {"calc_hess_initial": True}),
+            (MomSpec, {"transition": "HOMO->LUMO"}),
+        ],
+    )
+    def test_from_dict_raises_on_unknown_key(self, spec_cls, valid_data):
+        """spec from_dict remains strict and rejects unknown keys."""
+        data_with_unknown = {**valid_data, "unknown_key": "unexpected"}
+
+        with pytest.raises(TypeError, match="unknown_key"):
+            spec_cls.from_dict(data_with_unknown)
+
+
 # --- contract tests: roundtrip fidelity ---
 
 
@@ -273,6 +294,58 @@ class TestSpecRoundtrip:
 
 @pytest.mark.contract
 class TestCalculationInputSerialization:
+    def test_to_dict_includes_calcflow_version(self):
+        calc = CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="b3lyp",
+            basis_set="6-31g*",
+        )
+
+        data = calc.to_dict()
+        assert "calcflow_version" in data
+        assert isinstance(data["calcflow_version"], str)
+        assert data["calcflow_version"]
+
+    def test_from_dict_ignores_calcflow_version(self):
+        data = {
+            "charge": 0,
+            "spin_multiplicity": 1,
+            "task": "energy",
+            "level_of_theory": "b3lyp",
+            "basis_set": "6-31g*",
+            "unrestricted": False,
+            "n_cores": 1,
+            "memory_per_core_mb": 4000,
+            "tddft": None,
+            "solvation": None,
+            "optimization": None,
+            "mom": None,
+            "charges": None,
+            "scf": None,
+            "frequency_after_optimization": False,
+            "program_options": {},
+            "calcflow_version": "0.0.0-test",
+        }
+
+        calc = CalculationInput.from_dict(data)
+        assert calc.charge == 0
+        assert calc.task == "energy"
+
+    def test_from_dict_raises_on_unknown_top_level_key(self):
+        data = {
+            "charge": 0,
+            "spin_multiplicity": 1,
+            "task": "energy",
+            "level_of_theory": "b3lyp",
+            "basis_set": "6-31g*",
+            "unknown_key": "unexpected",
+        }
+
+        with pytest.raises(TypeError, match="unknown_key"):
+            CalculationInput.from_dict(data)
+
     def test_to_dict_minimal(self):
         calc = CalculationInput(
             charge=0,
