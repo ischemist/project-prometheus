@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 
-from calcflow.common.exceptions import NotSupportedError, ValidationError
+from calcflow.common.exceptions import ConfigurationError, NotSupportedError, ValidationError
 from calcflow.common.input import CalculationInput, SolvationSpec
 from tests.io.qchem.qchem_builders.conftest import (
     assert_block_present,
@@ -471,6 +471,20 @@ def test_solvation_requires_solvent_or_dielectric():
         )
 
 
+@pytest.mark.unit
+def test_custom_dielectric_requires_pcm_model():
+    """Custom dielectric constants should be rejected for non-PCM solvation models."""
+    with pytest.raises(ConfigurationError, match="only supported for the 'pcm' model"):
+        CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="b3lyp",
+            basis_set="6-31g",
+            solvation=SolvationSpec(model="cpcm", dielectric=33.0),
+        )
+
+
 @pytest.mark.contract
 def test_pcm_custom_dielectric_sets_solvent_method_in_rem(qchem_builder, h2o_geometry):
     """Custom dielectric PCM should still set SOLVENT_METHOD = pcm in $rem."""
@@ -519,6 +533,20 @@ def test_set_custom_solvation_workflow(h2o_geometry):
     assert "Dielectric 33.0" in result
     assert "OpticalDielectric 1.33" in result
     assert "SolventName" not in result
+
+
+@pytest.mark.integration
+def test_set_custom_solvation_rejects_non_pcm_model():
+    """set_custom_solvation() should reject non-PCM models."""
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="wb97x-d3",
+        basis_set="def2-tzvp",
+    )
+    with pytest.raises(ConfigurationError, match="only supports model='pcm'"):
+        calc.set_custom_solvation("cpcm", dielectric=33.0)
 
 
 @pytest.mark.regression

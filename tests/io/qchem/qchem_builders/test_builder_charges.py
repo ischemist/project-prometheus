@@ -166,6 +166,14 @@ def test_cm5_without_hirshfeld_auto_enables_hirshfeld():
 
 
 @pytest.mark.contract
+def test_hirshiter_without_hirshfeld_auto_enables_hirshfeld():
+    """ChargesSpec should auto-enable hirshfeld when hirshiter=True."""
+    spec = ChargesSpec(hirshiter=True)
+    assert spec.hirshfeld is True
+    assert spec.hirshiter is True
+
+
+@pytest.mark.contract
 def test_cm5_with_explicit_hirshfeld_unchanged():
     """ChargesSpec with cm5=True and hirshfeld=True should be stable."""
     spec = ChargesSpec(hirshfeld=True, cm5=True)

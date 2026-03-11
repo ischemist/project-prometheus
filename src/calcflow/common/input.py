@@ -79,6 +79,9 @@ class ChargesSpec:
         # cm5 requires hirshfeld — auto-enable it rather than silently producing wrong output
         if self.cm5 and not self.hirshfeld:
             object.__setattr__(self, "hirshfeld", True)
+        # Hirshfeld-I (hirshiter) also requires Hirshfeld to be active
+        if self.hirshiter and not self.hirshfeld:
+            object.__setattr__(self, "hirshfeld", True)
 
     def to_dict(self) -> dict[str, Any]:
         """serializes to a dictionary."""
@@ -214,6 +217,10 @@ class CalculationInput:
             raise ValidationError("solvation model must be specified.")
         if self.solvation and not self.solvation.solvent and self.solvation.dielectric is None:
             raise ValidationError("solvation requires either a named solvent or a dielectric constant.")
+        if self.solvation and self.solvation.dielectric is not None and self.solvation.model.lower() != "pcm":
+            raise ConfigurationError(
+                f"custom dielectric constants are only supported for the 'pcm' model, got '{self.solvation.model}'."
+            )
         if self.mom:
             if not self.unrestricted:
                 raise ValidationError("mom requires an unrestricted calculation.")
@@ -309,6 +316,11 @@ class CalculationInput:
         optical_dielectric: float | None = None,
     ) -> T_CalculationInput:
         """adds or updates pcm solvation with explicit dielectric constants (no named solvent)."""
+        if model.lower() != "pcm":
+            raise ConfigurationError(
+                f"set_custom_solvation only supports model='pcm', got '{model}'. "
+                "Use set_solvation() for named-solvent non-PCM models."
+            )
         solv_spec = SolvationSpec(
             model=model.lower(),
             dielectric=dielectric,
