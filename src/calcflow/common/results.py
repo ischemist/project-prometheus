@@ -735,6 +735,9 @@ class CalculationResult(FrozenModel):
             """compact representation of a type annotation."""
             origin = get_origin(t)
             args = get_args(t)
+            # Literal["A", "B"] → Literal["A", "B"]
+            if origin is Literal:
+                return "Literal[" + ", ".join(repr(a) for a in args) + "]"
             # handle X | Y (python 3.10+ UnionType) and Union[X, Y]
             if isinstance(t, UnionType) or origin is Union:
                 non_none = [a for a in args if a is not type(None)]
@@ -820,9 +823,20 @@ class CalculationResult(FrozenModel):
             "  result = parse_orca_output(Path('calc.out').read_text())",
             "  jobs   = parse_qchem_multi_job_output(text)  # list[CalculationResult]",
             "",
+            "gzip-compressed files (.json.gz):",
+            "  import gzip, json",
+            "  raw = json.loads(gzip.decompress(Path('result.json.gz').read_bytes()))",
+            "  # single result:     result = CalculationResult.from_dict(raw)",
+            "  # list of results:   jobs   = [CalculationResult.from_dict(j) for j in raw]",
+            "",
             "serialization:",
-            "  result.to_json()              # save (excludes raw_output)",
-            "  CalculationResult.from_json(s)  # load",
+            "  result.to_json()                  # str; save with Path('out.json').write_text(...)",
+            "  CalculationResult.from_json(s)    # load from json string",
+            "  CalculationResult.from_dict(d)    # load from dict",
+            "  # multi-job list roundtrip:",
+            "  import json",
+            "  json.dumps([r.to_dict() for r in jobs])          # serialize list",
+            "  [CalculationResult.from_dict(d) for d in data]   # deserialize list",
             "",
             "CalculationResult",
         ]
