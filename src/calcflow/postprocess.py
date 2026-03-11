@@ -1,7 +1,18 @@
 """
-Post-processing utilities for TDDFT stick spectra.
+Post-processing utilities for stick spectra from quantum chemistry calculations.
 
-Operates on parsed ExcitedState sequences; returns plain numpy arrays.
+Two-layer API:
+  Layer 1 (core)  — array-based, type-agnostic:
+      make_energy_grid()        uniform grid from plain energy values
+      lorentzian_broadening()   Lorentzian convolution of arbitrary (energy, weight) pairs
+
+  Layer 2 (typed wrappers) — extract energies/weights from calcflow result objects:
+      energy_grid_from_excited_states()   TDDFT ExcitedState → grid
+      energy_grid_from_adc_states()       ADC  AdcExcitedState → grid
+      spectrum_from_excited_states()      TDDFT, oscillator-strength weighted
+      opa_spectrum_from_adc_states()      ADC,  oscillator-strength weighted
+      tpa_spectrum_from_adc_states()      ADC,  TPA cross-section weighted
+
 Rendering (Plotly, matplotlib) stays in the calling application.
 """
 
@@ -12,7 +23,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from calcflow.common.exceptions import ValidationError
-from calcflow.common.results import ExcitedState
+from calcflow.common.results import AdcExcitedState, ExcitedState
 
 if TYPE_CHECKING:
     import numpy as np
@@ -21,77 +32,193 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# =============================================================================
+# Layer 1: core, array-based
+# =============================================================================
+
+
 def make_energy_grid(
-    states: Sequence[ExcitedState],
+    energies: Sequence[float],
     padding: float = 5.0,
     n_points: int = 2000,
 ) -> npt.NDArray[np.float64]:
-    """Return a uniform energy grid spanning the state energies ± padding (eV)."""
+    """Return a uniform energy grid spanning *energies* ± padding (eV).
+
+    Args:
+        energies:  Excitation energies in eV.
+        padding:   Extra range added on each side of the min/max energy, in eV.
+        n_points:  Number of grid points.
+    """
     import numpy as np
 
-    energies = [s.excitation_energy_ev for s in states]
     if not energies:
-        raise ValidationError("states must not be empty; cannot construct energy grid without at least one state")
+        raise ValidationError("energies must not be empty; cannot construct energy grid without at least one value")
     return np.linspace(min(energies) - padding, max(energies) + padding, n_points)
 
 
-def lorentzian_spectrum(
-    states: Sequence[ExcitedState],
+def lorentzian_broadening(
+    energies: Sequence[float],
+    weights: Sequence[float],
     energy_grid: Sequence[float] | npt.NDArray[np.float64],
     fwhm: float,
     energy_shift: float = 0.0,
-    only_singlets: bool = False,
 ) -> npt.NDArray[np.float64]:
-    """Return the Lorentzian-broadened absorption spectrum on energy_grid.
+    """Return a Lorentzian-broadened spectrum on *energy_grid*.
 
-    Each excited state contributes a Lorentzian centred at its excitation energy,
-    weighted by its oscillator strength:
+    Each (energy, weight) pair contributes a Lorentzian centred at its energy,
+    scaled by its weight:
 
-        I(E) = Σ_i  f_i · (1/π) · hwhm / ((E - E_i)² + hwhm²)
+        I(E) = Σ_i  w_i · (1/π) · hwhm / ((E - E_i)² + hwhm²)
 
-    The Lorentzian (1/π) · hwhm / ((E - E₀)² + hwhm²) integrates to 1 over all E,
-    so each state contributes area = f_i to the total spectrum.
-    hwhm = fwhm / 2 (half-width at half maximum); at E = E₀ ± hwhm the Lorentzian
-    drops to half its peak value, which is how FWHM is defined.
+    The Lorentzian integrates to 1 over all E, so each peak contributes
+    area = w_i to the total spectrum.  hwhm = fwhm / 2.
 
     Args:
-        states:        Parsed excited states (pass tddft.tda_states directly).
+        energies:      Peak positions in eV.
+        weights:       Intensity weights (oscillator strengths, TPA cross sections, …).
         energy_grid:   Energy axis in eV at which to evaluate the spectrum.
-        fwhm:          Full width at half maximum of each Lorentzian, in eV.
-        energy_shift:  Rigid shift applied to all state energies before broadening,
-                       in eV. Use to align calculated energies with experiment.
-        only_singlets: When True, triplet states are excluded from the sum.
+        fwhm:          Full width at half maximum in eV.
+        energy_shift:  Rigid shift applied to all energies before broadening, in eV.
 
     Returns:
-        Spectrum intensities (same length as energy_grid). All-zeros if every
-        state is filtered out or has oscillator_strength=None.
-
-    Notes:
-        States with oscillator_strength=None are skipped and logged as warnings.
+        Spectrum intensities (same length as energy_grid).
+        All-zeros when *energies* / *weights* are empty.
     """
     import numpy as np
 
     grid = np.asarray(energy_grid, dtype=np.float64)
     if fwhm <= 0.0:
         raise ValidationError(f"fwhm must be positive, got {fwhm}")
-    hwhm = fwhm / 2.0  # half-width at half maximum; Lorentzian parameter γ = FWHM/2
+    if len(energies) != len(weights):
+        raise ValidationError(f"energies and weights must have the same length, got {len(energies)} vs {len(weights)}")
+    if not energies:
+        return np.zeros_like(grid)
 
-    peak_energies_ev: list[float] = []
-    oscillator_strengths: list[float] = []
+    hwhm = fwhm / 2.0
+    peak_e = np.array(energies, dtype=np.float64)[:, np.newaxis] + energy_shift  # (N, 1)
+    w = np.array(weights, dtype=np.float64)[:, np.newaxis]  # (N, 1)
+    return np.sum(w * (1.0 / np.pi) * hwhm / ((grid - peak_e) ** 2 + hwhm**2), axis=0)
+
+
+# =============================================================================
+# Layer 2: typed wrappers — TDDFT ExcitedState
+# =============================================================================
+
+
+def energy_grid_from_excited_states(
+    states: Sequence[ExcitedState],
+    padding: float = 5.0,
+    n_points: int = 2000,
+) -> npt.NDArray[np.float64]:
+    """Uniform energy grid spanning the excitation energies of *states* ± padding (eV)."""
+    if not states:
+        raise ValidationError("states must not be empty; cannot construct energy grid without at least one state")
+    return make_energy_grid([s.excitation_energy_ev for s in states], padding=padding, n_points=n_points)
+
+
+def spectrum_from_excited_states(
+    states: Sequence[ExcitedState],
+    energy_grid: Sequence[float] | npt.NDArray[np.float64],
+    fwhm: float,
+    energy_shift: float = 0.0,
+    only_singlets: bool = False,
+) -> npt.NDArray[np.float64]:
+    """Lorentzian-broadened absorption spectrum from TDDFT excited states.
+
+    Each state is weighted by its oscillator strength.
+
+    Args:
+        states:        Parsed TDDFT excited states.
+        energy_grid:   Energy axis in eV.
+        fwhm:          Full width at half maximum in eV.
+        energy_shift:  Rigid shift applied to all state energies, in eV.
+        only_singlets: When True, triplet states are excluded.
+
+    Returns:
+        Spectrum intensities (same length as energy_grid). All-zeros if every
+        state is filtered out or has oscillator_strength=None.
+    """
+    energies: list[float] = []
+    weights: list[float] = []
     for state in states:
         if only_singlets and state.multiplicity != "Singlet":
             continue
         if state.oscillator_strength is None:
             logger.warning("state %d has oscillator_strength=None, skipping", state.state_number)
             continue
-        peak_energies_ev.append(state.excitation_energy_ev + energy_shift)
-        oscillator_strengths.append(state.oscillator_strength)
+        energies.append(state.excitation_energy_ev)
+        weights.append(state.oscillator_strength)
+    return lorentzian_broadening(energies, weights, energy_grid, fwhm=fwhm, energy_shift=energy_shift)
 
-    if not peak_energies_ev:
-        return np.zeros_like(grid)
 
-    # Evaluate each Lorentzian on the full grid and sum over states.
-    # (N_states, 1) broadcasts against grid (N_grid,) → (N_states, N_grid); sum axis=0 → (N_grid,).
-    peak_energies = np.array(peak_energies_ev, dtype=np.float64)[:, np.newaxis]  # (N_states, 1)
-    strengths = np.array(oscillator_strengths, dtype=np.float64)[:, np.newaxis]  # (N_states, 1)
-    return np.sum(strengths * (1.0 / np.pi) * hwhm / ((grid - peak_energies) ** 2 + hwhm**2), axis=0)
+# =============================================================================
+# Layer 2: typed wrappers — ADC AdcExcitedState
+# =============================================================================
+
+
+def energy_grid_from_adc_states(
+    states: Sequence[AdcExcitedState],
+    padding: float = 5.0,
+    n_points: int = 2000,
+) -> npt.NDArray[np.float64]:
+    """Uniform energy grid spanning the excitation energies of ADC *states* ± padding (eV)."""
+    if not states:
+        raise ValidationError("states must not be empty; cannot construct energy grid without at least one state")
+    return make_energy_grid([s.excitation_energy_ev for s in states], padding=padding, n_points=n_points)
+
+
+def opa_spectrum_from_adc_states(
+    states: Sequence[AdcExcitedState],
+    energy_grid: Sequence[float] | npt.NDArray[np.float64],
+    fwhm: float,
+    energy_shift: float = 0.0,
+) -> npt.NDArray[np.float64]:
+    """Lorentzian-broadened OPA spectrum from ADC excited states.
+
+    Each state is weighted by its oscillator strength.  States with
+    oscillator_strength=None are skipped with a warning.
+
+    Args:
+        states:        Parsed ADC excited states.
+        energy_grid:   Energy axis in eV.
+        fwhm:          Full width at half maximum in eV.
+        energy_shift:  Rigid shift applied to all state energies, in eV.
+    """
+    energies: list[float] = []
+    weights: list[float] = []
+    for state in states:
+        if state.oscillator_strength is None:
+            logger.warning("ADC state %d has oscillator_strength=None, skipping", state.state_number)
+            continue
+        energies.append(state.excitation_energy_ev)
+        weights.append(state.oscillator_strength)
+    return lorentzian_broadening(energies, weights, energy_grid, fwhm=fwhm, energy_shift=energy_shift)
+
+
+def tpa_spectrum_from_adc_states(
+    states: Sequence[AdcExcitedState],
+    energy_grid: Sequence[float] | npt.NDArray[np.float64],
+    fwhm: float,
+    energy_shift: float = 0.0,
+) -> npt.NDArray[np.float64]:
+    """Lorentzian-broadened TPA spectrum from ADC excited states.
+
+    Each state is weighted by its two-photon absorption cross section
+    (two_photon_absorption.cross_section_au).  States where
+    two_photon_absorption is None are skipped with a warning.
+
+    Args:
+        states:        Parsed ADC excited states.
+        energy_grid:   Energy axis in eV.
+        fwhm:          Full width at half maximum in eV.
+        energy_shift:  Rigid shift applied to all state energies, in eV.
+    """
+    energies: list[float] = []
+    weights: list[float] = []
+    for state in states:
+        if state.two_photon_absorption is None:
+            logger.warning("ADC state %d has two_photon_absorption=None, skipping", state.state_number)
+            continue
+        energies.append(state.excitation_energy_ev)
+        weights.append(state.two_photon_absorption.cross_section_au)
+    return lorentzian_broadening(energies, weights, energy_grid, fwhm=fwhm, energy_shift=energy_shift)
