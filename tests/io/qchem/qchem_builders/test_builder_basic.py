@@ -6,8 +6,7 @@ from dataclasses import replace
 
 import pytest
 
-from calcflow.common.input import CalculationInput, ScfSpec
-from calcflow.io.qchem.builder import QchemBuilder
+from calcflow.common.input import CalculationInput, ScfSpec, SolvationSpec
 
 from .conftest import (
     assert_block_present,
@@ -17,13 +16,6 @@ from .conftest import (
     assert_rem_value,
     parse_qchem_input,
 )
-
-
-@pytest.fixture
-def qchem_builder() -> QchemBuilder:
-    """Q-Chem builder instance."""
-    return QchemBuilder()
-
 
 # ============================================================================
 # UNIT TESTS: Test individual methods in isolation
@@ -242,8 +234,6 @@ class TestBuildSolvationBlocks:
     @pytest.mark.unit
     def test_pcm_solvation_block(self, qchem_builder, minimal_spec):
         """PCM solvation should generate $solvent block."""
-        from calcflow.common.input import SolvationSpec
-
         spec = replace(minimal_spec, solvation=SolvationSpec(model="pcm", solvent="water"))
         result = qchem_builder._build_solvation_blocks(spec)
         assert "$solvent" in result
@@ -253,8 +243,6 @@ class TestBuildSolvationBlocks:
     @pytest.mark.unit
     def test_smd_solvation_block(self, qchem_builder, minimal_spec):
         """SMD solvation should generate $smx block."""
-        from calcflow.common.input import SolvationSpec
-
         spec = replace(minimal_spec, solvation=SolvationSpec(model="smd", solvent="water"))
         result = qchem_builder._build_solvation_blocks(spec)
         assert "$smx" in result
@@ -456,8 +444,6 @@ class TestSolvationStructure:
     @pytest.mark.contract
     def test_pcm_solvation_structure(self, qchem_builder, h2o_geometry):
         """PCM solvation should generate $solvent block."""
-        from calcflow.common.input import SolvationSpec
-
         spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -474,8 +460,6 @@ class TestSolvationStructure:
     @pytest.mark.contract
     def test_smd_solvation_structure(self, qchem_builder, h2o_geometry):
         """SMD solvation should generate $smx block."""
-        from calcflow.common.input import SolvationSpec
-
         spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -501,8 +485,6 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_basic_sp_workflow(self, h2o_geometry):
         """Basic SP workflow using fluent API."""
-        from calcflow.common.input import CalculationInput
-
         calc = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -520,8 +502,6 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_unrestricted_workflow(self, h2o_geometry):
         """Unrestricted calculation workflow."""
-        from calcflow.common.input import CalculationInput
-
         calc = CalculationInput(
             charge=0,
             spin_multiplicity=3,
@@ -537,8 +517,6 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_dict_basis_workflow(self, h2o_geometry):
         """Dictionary basis workflow."""
-        from calcflow.common.input import CalculationInput
-
         calc = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -556,8 +534,6 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_solvation_workflow(self, h2o_geometry):
         """Solvation workflow."""
-        from calcflow.common.input import CalculationInput
-
         calc = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -574,8 +550,6 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_tddft_workflow(self, h2o_geometry):
         """TDDFT workflow."""
-        from calcflow.common.input import CalculationInput
-
         calc = CalculationInput(
             charge=0,
             spin_multiplicity=1,
@@ -592,8 +566,6 @@ class TestFluentApiWorkflows:
     @pytest.mark.integration
     def test_complex_workflow(self, h2o_geometry):
         """Complex workflow combining multiple features."""
-        from calcflow.common.input import CalculationInput
-
         calc = (
             CalculationInput(
                 charge=0,
@@ -680,8 +652,6 @@ class TestRegressionSemanticValidation:
     @pytest.mark.regression
     def test_solvation_semantic_regression(self, qchem_builder, h2o_geometry):
         """Solvation semantic regression test."""
-        from calcflow.common.input import SolvationSpec
-
         spec = CalculationInput(
             charge=0,
             spin_multiplicity=1,

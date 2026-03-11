@@ -12,6 +12,7 @@ import json
 
 import pytest
 
+from calcflow.common.exceptions import ValidationError
 from calcflow.common.input import (
     CalculationInput,
     ChargesSpec,
@@ -100,27 +101,39 @@ class TestSolvationSpecSerialization:
 @pytest.mark.unit
 class TestChargesSpecSerialization:
     def test_to_dict_defaults(self):
+        """charges defaults serialize with hirshiter threshold."""
         spec = ChargesSpec()
         data = spec.to_dict()
-        assert data == {"mulliken": True, "hirshfeld": False, "cm5": False, "hirshiter": False}
+        assert data == {
+            "mulliken": True,
+            "hirshfeld": False,
+            "cm5": False,
+            "hirshiter": False,
+            "hirshiter_thresh": 5,
+        }
 
     def test_to_dict_hirshfeld_cm5(self):
+        """cm5 serialization preserves hirshfeld auto-enable."""
         spec = ChargesSpec(hirshfeld=True, cm5=True)
         data = spec.to_dict()
         assert data["hirshfeld"] is True
         assert data["cm5"] is True
 
     def test_from_dict(self):
-        data = {"mulliken": True, "hirshfeld": True, "cm5": False, "hirshiter": True}
+        """charges from_dict restores iterative hirshfeld settings."""
+        data = {"mulliken": True, "hirshfeld": True, "cm5": False, "hirshiter": True, "hirshiter_thresh": 9}
         spec = ChargesSpec.from_dict(data)
         assert spec.hirshfeld is True
         assert spec.hirshiter is True
+        assert spec.hirshiter_thresh == 9
 
     def test_cm5_auto_enables_hirshfeld(self):
+        """cm5 auto-enables hirshfeld."""
         spec = ChargesSpec(cm5=True)
         assert spec.hirshfeld is True
 
     def test_cm5_auto_enable_preserved_through_roundtrip(self):
+        """cm5 auto-enable survives dict roundtrip."""
         spec = ChargesSpec(cm5=True)
         data = spec.to_dict()
         # hirshfeld was auto-enabled, so it should be True in the dict
@@ -128,20 +141,33 @@ class TestChargesSpecSerialization:
         reconstructed = ChargesSpec.from_dict(data)
         assert reconstructed == spec
 
+    def test_hirshiter_thresh_default(self):
+        """iterative hirshfeld threshold defaults to 5."""
+        spec = ChargesSpec()
+        assert spec.hirshiter_thresh == 5
+
+    def test_hirshiter_thresh_validation(self):
+        """iterative hirshfeld threshold must be positive."""
+        with pytest.raises(ValidationError):
+            ChargesSpec(hirshiter_thresh=0)
+
 
 @pytest.mark.unit
 class TestScfSpecSerialization:
     def test_to_dict_defaults(self):
+        """scf defaults serialize correctly."""
         spec = ScfSpec()
         data = spec.to_dict()
         assert data == {"algorithm": "diis", "max_cycles": 100, "convergence": 8}
 
     def test_to_dict_custom(self):
+        """custom scf settings serialize correctly."""
         spec = ScfSpec(algorithm="diis_gdm", max_cycles=50, convergence=7)
         data = spec.to_dict()
         assert data == {"algorithm": "diis_gdm", "max_cycles": 50, "convergence": 7}
 
     def test_from_dict(self):
+        """scf settings deserialize correctly."""
         data = {"algorithm": "diis", "max_cycles": 50, "convergence": 7}
         spec = ScfSpec.from_dict(data)
         assert spec.algorithm == "diis"
@@ -446,7 +472,7 @@ class TestCalculationInputSerialization:
             "solvation": {"model": "pcm", "solvent": "", "dielectric": 33.0, "optical_dielectric": 1.33},
             "optimization": None,
             "mom": None,
-            "charges": {"mulliken": True, "hirshfeld": True, "cm5": True, "hirshiter": False},
+            "charges": {"mulliken": True, "hirshfeld": True, "cm5": True, "hirshiter": False, "hirshiter_thresh": 5},
             "scf": {"algorithm": "diis", "max_cycles": 50, "convergence": 7},
             "frequency_after_optimization": False,
             "program_options": {},

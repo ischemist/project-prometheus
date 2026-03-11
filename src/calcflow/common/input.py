@@ -16,7 +16,7 @@ type TASK_TYPES = Literal["energy", "geometry", "frequency"]
 # cache version at module load to avoid repeated filesystem lookups
 _CALCFLOW_VERSION = version("calcflow")
 
-# lazy-loaded registry to prevent circular imports.
+# registry of program-specific builders.
 BUILDERS = {"orca": OrcaBuilder(), "qchem": QchemBuilder()}
 
 # --- Component Specifications ---
@@ -71,8 +71,11 @@ class ChargesSpec:
     hirshfeld: bool = False
     cm5: bool = False
     hirshiter: bool = False  # Hirshfeld-I (iterative)
+    hirshiter_thresh: int = 5
 
     def __post_init__(self) -> None:
+        if self.hirshiter_thresh < 1:
+            raise ValidationError("hirshiter_thresh must be a positive integer.")
         # cm5 requires hirshfeld — auto-enable it rather than silently producing wrong output
         if self.cm5 and not self.hirshfeld:
             object.__setattr__(self, "hirshfeld", True)
@@ -199,7 +202,7 @@ class CalculationInput:
     # e.g., for orca: {"ri_approx": "RIJCOSX", "aux_basis": "def2/j"}
     program_options: dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """basic, program-agnostic validation."""
         if self.spin_multiplicity < 1:
             raise ValidationError("spin multiplicity must be a positive integer.")
@@ -319,9 +322,19 @@ class CalculationInput:
         hirshfeld: bool = False,
         cm5: bool = False,
         hirshiter: bool = False,
+        hirshiter_thresh: int = 5,
     ) -> T_CalculationInput:
         """configures charge partitioning schemes. cm5=True auto-enables hirshfeld."""
-        return replace(self, charges=ChargesSpec(mulliken=mulliken, hirshfeld=hirshfeld, cm5=cm5, hirshiter=hirshiter))
+        return replace(
+            self,
+            charges=ChargesSpec(
+                mulliken=mulliken,
+                hirshfeld=hirshfeld,
+                cm5=cm5,
+                hirshiter=hirshiter,
+                hirshiter_thresh=hirshiter_thresh,
+            ),
+        )
 
     def set_scf(
         self: T_CalculationInput,

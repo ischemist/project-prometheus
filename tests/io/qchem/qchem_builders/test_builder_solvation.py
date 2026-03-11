@@ -16,9 +16,9 @@ import pytest
 
 from calcflow.common.exceptions import NotSupportedError, ValidationError
 from calcflow.common.input import CalculationInput, SolvationSpec
-from calcflow.io.qchem.builder import QchemBuilder
 from tests.io.qchem.qchem_builders.conftest import (
     assert_block_present,
+    assert_molecule_has_charge_mult,
     assert_rem_value,
     parse_qchem_input,
 )
@@ -50,9 +50,8 @@ def test_solvation_model_support(qchem_builder, h2o_geometry, model, solvent):
         basis_set="6-31g",
         solvation=SolvationSpec(model=model, solvent=solvent),
     )
-    # Should not raise NotSupportedError
     result = qchem_builder.build(spec, h2o_geometry)
-    assert result is not None
+    assert "$rem" in result
 
 
 @pytest.mark.unit
@@ -210,8 +209,6 @@ def test_various_solvents_supported(qchem_builder, h2o_geometry, solvent):
 @pytest.mark.integration
 def test_solvation_smd_workflow(h2o_geometry):
     """SMD solvation workflow via fluent API."""
-    from calcflow.common.input import CalculationInput
-
     calc = CalculationInput(
         charge=0,
         spin_multiplicity=1,
@@ -230,8 +227,6 @@ def test_solvation_smd_workflow(h2o_geometry):
 @pytest.mark.integration
 def test_solvation_pcm_workflow(h2o_geometry):
     """PCM solvation workflow via fluent API."""
-    from calcflow.common.input import CalculationInput
-
     calc = CalculationInput(
         charge=0,
         spin_multiplicity=1,
@@ -249,8 +244,6 @@ def test_solvation_pcm_workflow(h2o_geometry):
 @pytest.mark.integration
 def test_solvation_with_tddft_workflow(h2o_geometry):
     """Solvation combined with TDDFT should work correctly."""
-    from calcflow.common.input import CalculationInput
-
     calc = (
         CalculationInput(
             charge=0,
@@ -274,8 +267,6 @@ def test_solvation_with_tddft_workflow(h2o_geometry):
 @pytest.mark.integration
 def test_solvation_with_optimization_workflow(h2o_geometry):
     """Solvation combined with geometry optimization."""
-    from calcflow.common.input import CalculationInput
-
     calc = CalculationInput(
         charge=0,
         spin_multiplicity=1,
@@ -294,8 +285,6 @@ def test_solvation_with_optimization_workflow(h2o_geometry):
 @pytest.mark.integration
 def test_solvation_with_unrestricted_workflow(h2o_geometry):
     """Solvation with unrestricted calculation."""
-    from calcflow.common.input import CalculationInput
-
     calc = (
         CalculationInput(
             charge=1,
@@ -367,22 +356,22 @@ def test_solvation_models_produce_valid_input(qchem_builder, h2o_geometry, model
 
 
 @pytest.mark.regression
-def test_solvation_with_different_functionals(qchem_builder, h2o_geometry):
+@pytest.mark.parametrize("functional", ["b3lyp", "pbe0", "m06", "cam-b3lyp"])
+def test_solvation_with_different_functionals(qchem_builder, h2o_geometry, functional):
     """Solvation should work with different functionals."""
-    for functional in ["b3lyp", "pbe0", "m06", "cam-b3lyp"]:
-        spec = CalculationInput(
-            charge=0,
-            spin_multiplicity=1,
-            task="energy",
-            level_of_theory=functional,
-            basis_set="6-31g",
-            solvation=SolvationSpec(model="smd", solvent="water"),
-        )
-        result = qchem_builder.build(spec, h2o_geometry)
-        parsed = parse_qchem_input(result)
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory=functional,
+        basis_set="6-31g",
+        solvation=SolvationSpec(model="smd", solvent="water"),
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    parsed = parse_qchem_input(result)
 
-        assert_rem_value(parsed.rem_block, "METHOD", functional)
-        assert_block_present(parsed.blocks, "smx")
+    assert_rem_value(parsed.rem_block, "METHOD", functional)
+    assert_block_present(parsed.blocks, "smx")
 
 
 @pytest.mark.regression
@@ -398,15 +387,7 @@ def test_solvation_preserves_charge_multiplicity(qchem_builder, h2o_geometry):
     )
     result = qchem_builder.build(spec, h2o_geometry)
     parsed = parse_qchem_input(result)
-
-    # Check $molecule block has correct charge/mult
-    lines = [line.strip() for line in parsed.molecule_block.split("\n") if line.strip()]
-    # Second line should be "charge multiplicity"
-    if len(lines) >= 2:
-        first_content = lines[1]
-        parts = first_content.split()
-        assert int(parts[0]) == 1
-        assert int(parts[1]) == 2
+    assert_molecule_has_charge_mult(parsed.molecule_block, 1, 2)
 
 
 @pytest.mark.regression
@@ -421,25 +402,21 @@ def test_solvation_no_solvation_when_none(qchem_builder, h2o_geometry, minimal_s
 
 
 @pytest.mark.regression
-def test_solvation_multiple_solvents_workflow(h2o_geometry):
+@pytest.mark.parametrize("solvent", ["water", "acetonitrile", "dichloromethane"])
+def test_solvation_multiple_solvents_workflow(h2o_geometry, solvent):
     """Builder should work with different solvents in sequence."""
-    from calcflow.common.input import CalculationInput
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+    ).set_solvation("smd", solvent)
 
-    solvents = ["water", "acetonitrile", "dichloromethane"]
+    result = calc.export("qchem", h2o_geometry)
+    parsed = parse_qchem_input(result)
 
-    for solvent in solvents:
-        calc = CalculationInput(
-            charge=0,
-            spin_multiplicity=1,
-            task="energy",
-            level_of_theory="b3lyp",
-            basis_set="6-31g",
-        ).set_solvation("smd", solvent)
-
-        result = calc.export("qchem", h2o_geometry)
-        parsed = parse_qchem_input(result)
-
-        assert_block_present(parsed.blocks, "smx")
+    assert_block_present(parsed.blocks, "smx")
 
 
 # =============================================================================
@@ -565,14 +542,3 @@ def test_custom_dielectric_full_structure(qchem_builder, h2o_geometry):
     assert_block_present(parsed.blocks, "solvent")
     assert "Dielectric 33.0" in parsed.blocks["solvent"]
     assert "OpticalDielectric 1.33" in parsed.blocks["solvent"]
-
-
-# =============================================================================
-# PYTEST FIXTURES
-# =============================================================================
-
-
-@pytest.fixture
-def qchem_builder():
-    """Q-Chem builder instance for testing."""
-    return QchemBuilder()

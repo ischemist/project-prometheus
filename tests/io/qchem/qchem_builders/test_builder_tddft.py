@@ -17,7 +17,6 @@ import pytest
 
 from calcflow.common.exceptions import ValidationError
 from calcflow.common.input import CalculationInput, TddftSpec
-from calcflow.io.qchem.builder import QchemBuilder
 from tests.io.qchem.qchem_builders.conftest import (
     assert_block_not_present,
     assert_block_present,
@@ -698,14 +697,3 @@ def test_tddft_trnss_complete_output_structure(qchem_builder, h2o_geometry):
     assert_rem_value(parsed.rem_block, "TRNSS", True)
     assert_rem_value(parsed.rem_block, "TRTYPE", 3)
     assert_rem_value(parsed.rem_block, "N_SOL", 5)
-
-
-# =============================================================================
-# PYTEST FIXTURES
-# =============================================================================
-
-
-@pytest.fixture
-def qchem_builder():
-    """Q-Chem builder instance for testing."""
-    return QchemBuilder()

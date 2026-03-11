@@ -6,13 +6,6 @@ import pytest
 
 from calcflow.common.exceptions import ConfigurationError, NotSupportedError, ValidationError
 from calcflow.common.input import CalculationInput, TddftSpec
-from calcflow.io.qchem.builder import QchemBuilder
-
-
-@pytest.fixture
-def qchem_builder() -> QchemBuilder:
-    """Q-Chem builder instance."""
-    return QchemBuilder()
 
 
 @pytest.fixture

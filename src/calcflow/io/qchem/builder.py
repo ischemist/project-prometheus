@@ -92,7 +92,7 @@ class QchemBuilder:
         ]
         return "\n\n".join(block for block in blocks if block).strip()
 
-    def _validate_spec(self, spec: CalculationInput):
+    def _validate_spec(self, spec: CalculationInput) -> None:
         """performs q-chem-specific validation on the spec."""
         if spec.solvation and spec.solvation.model not in {"pcm", "smd", "isosvp", "cpcm"}:
             raise NotSupportedError(f"q-chem builder does not support solvation model '{spec.solvation.model}'.")
@@ -196,6 +196,7 @@ class QchemBuilder:
                 rem_vars["CM5"] = True
             if spec.charges.hirshiter:
                 rem_vars["HIRSHITER"] = True
+                rem_vars["HIRSHITER_THRESH"] = spec.charges.hirshiter_thresh
 
         # --- scf convergence ---
         if spec.scf:
@@ -352,9 +353,14 @@ class QchemBuilder:
         orb_type, operator, offset_str = match.groups()
         offset = int(offset_str) if offset_str else 0
         if orb_type.upper() == "HOMO":
-            return initial_homo - offset if operator == "-" else initial_homo
+            if operator == "+":
+                return initial_homo + offset
+            return initial_homo - offset
         else:  # LUMO
-            return initial_homo + 1 + offset if operator == "+" else initial_homo + 1
+            lumo = initial_homo + 1
+            if operator == "-":
+                return lumo - offset
+            return lumo + offset
 
     def _apply_ionization(
         self, source_idx: int, spin: SpinChannel | None, alpha_occ: set[int], beta_occ: set[int]

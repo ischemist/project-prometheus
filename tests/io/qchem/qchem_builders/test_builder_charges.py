@@ -15,7 +15,6 @@ import pytest
 
 from calcflow.common.exceptions import ConfigurationError
 from calcflow.common.input import CalculationInput, ChargesSpec
-from calcflow.io.qchem.builder import QchemBuilder
 from tests.io.qchem.qchem_builders.conftest import (
     assert_rem_value,
     assert_two_job_structure,
@@ -78,6 +77,54 @@ def test_hirshiter_emits_hirshiter_true(qchem_builder, h2o_geometry):
 
 
 @pytest.mark.unit
+def test_hirshiter_emits_default_threshold(qchem_builder, h2o_geometry):
+    """HIRSHITER_THRESH should default to 5 when hirshiter=True."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        charges=ChargesSpec(hirshfeld=True, hirshiter=True),
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert_rem_value(parsed.rem_block, "HIRSHITER_THRESH", 5)
+
+
+@pytest.mark.unit
+def test_hirshiter_emits_custom_threshold(qchem_builder, h2o_geometry):
+    """HIRSHITER_THRESH should follow explicit hirshiter_thresh."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        charges=ChargesSpec(hirshfeld=True, hirshiter=True, hirshiter_thresh=9),
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert_rem_value(parsed.rem_block, "HIRSHITER_THRESH", 9)
+
+
+@pytest.mark.unit
+def test_hirshiter_threshold_not_emitted_without_hirshiter(qchem_builder, h2o_geometry):
+    """HIRSHITER_THRESH should not appear when hirshiter=False."""
+    spec = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+        charges=ChargesSpec(hirshfeld=True, hirshiter=False, hirshiter_thresh=9),
+    )
+    result = qchem_builder.build(spec, h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert "hirshiter_thresh" not in parsed.rem_block.lower()
+
+
+@pytest.mark.unit
 def test_mulliken_false_emits_pop_mulliken_0(qchem_builder, h2o_geometry):
     """POP_MULLIKEN 0 should appear when mulliken=False."""
     spec = CalculationInput(
@@ -134,6 +181,7 @@ def test_hirshfeld_default_is_false():
     assert spec.hirshfeld is False
     assert spec.cm5 is False
     assert spec.hirshiter is False
+    assert spec.hirshiter_thresh == 5
 
 
 @pytest.mark.contract
@@ -164,9 +212,8 @@ def test_charged_system_hirshiter_does_not_raise(qchem_builder, h2o_geometry):
         unrestricted=True,
         charges=ChargesSpec(hirshfeld=True, hirshiter=True),
     )
-    # should not raise
     result = qchem_builder.build(spec, h2o_geometry)
-    assert result is not None
+    assert "$rem" in result
 
 
 @pytest.mark.contract
@@ -249,6 +296,23 @@ def test_set_charges_chaining_with_solvation(h2o_geometry):
     assert_rem_value(parsed.rem_block, "UNRESTRICTED", True)
 
 
+@pytest.mark.integration
+def test_set_charges_with_hirshiter_threshold(h2o_geometry):
+    """set_charges(hirshiter_thresh=...) should emit HIRSHITER_THRESH when hirshiter is enabled."""
+    calc = CalculationInput(
+        charge=0,
+        spin_multiplicity=1,
+        task="energy",
+        level_of_theory="b3lyp",
+        basis_set="6-31g",
+    ).set_charges(hirshfeld=True, hirshiter=True, hirshiter_thresh=9)
+
+    result = calc.export("qchem", h2o_geometry)
+    parsed = parse_qchem_input(result)
+    assert_rem_value(parsed.rem_block, "HIRSHITER", True)
+    assert_rem_value(parsed.rem_block, "HIRSHITER_THRESH", 9)
+
+
 # =============================================================================
 # REGRESSION TESTS: MOM two-job structure
 # =============================================================================
@@ -320,13 +384,3 @@ def test_hirshfeld_only_no_cm5_key(qchem_builder, h2o_geometry):
     parsed = parse_qchem_input(result)
     assert_rem_value(parsed.rem_block, "HIRSHFELD", True)
     assert "cm5" not in parsed.rem_block.lower()
-
-
-# =============================================================================
-# PYTEST FIXTURES
-# =============================================================================
-
-
-@pytest.fixture
-def qchem_builder():
-    return QchemBuilder()
