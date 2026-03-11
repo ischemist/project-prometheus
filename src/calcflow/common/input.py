@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import asdict, dataclass, field, is_dataclass, replace
 from typing import Any, Literal, TypeVar, cast
 
@@ -10,9 +11,16 @@ from calcflow.geometry.static import Geometry
 from calcflow.io.orca.builder import OrcaBuilder
 from calcflow.io.qchem.builder import QchemBuilder
 
+logger = logging.getLogger(__name__)
+
 T_CalculationInput = TypeVar("T_CalculationInput", bound="CalculationInput")
 T_SpecSerializable = TypeVar("T_SpecSerializable", bound="_SpecSerializable")
 type TASK_TYPES = Literal["energy", "geometry", "frequency"]
+
+# Schema version for CalculationInput serialization format.
+# Increment this when the serialized structure changes (field renames, removals,
+# type changes) and add a corresponding migration step in CalculationInput._migrate().
+INPUT_SCHEMA_VERSION: int = 1
 
 # registry of program-specific builders.
 BUILDERS = {"orca": OrcaBuilder(), "qchem": QchemBuilder()}
@@ -441,11 +449,15 @@ class CalculationInput:
         serializes the calculation input to a dictionary.
 
         nested spec objects are also converted to dicts for clean json serialization.
-        includes calcflow_version for tracking which version created this spec.
+
+        includes version metadata for compatibility tracking:
+        - ``calcflow_version``: package semver string (provenance/auditing).
+        - ``schema_version``: integer format version (compatibility/migration).
         """
         data = asdict(self)
         # asdict already recursively converts nested dataclasses
         data["calcflow_version"] = _CALCFLOW_VERSION
+        data["schema_version"] = INPUT_SCHEMA_VERSION
         return data
 
     @classmethod
@@ -454,13 +466,20 @@ class CalculationInput:
         deserializes a calculation input from a dictionary.
 
         reconstructs nested spec objects from their dict representations.
-        ignores calcflow_version field for backward compatibility.
+
+        handles version metadata:
+        - ``calcflow_version`` is stripped (provenance only, not a dataclass field).
+        - ``schema_version`` is read and used to apply any necessary migrations
+          before constructing the instance.  Dumps without ``schema_version``
+          (produced before this feature existed) are treated as version 1.
         """
         # create a copy to avoid mutating the input
         data = dict(data)
 
-        # remove version metadata (not a dataclass field)
+        # remove version metadata (not dataclass fields)
         data.pop("calcflow_version", None)
+        incoming_version = data.pop("schema_version", 1)
+        data = cls._migrate(data, incoming_version)
 
         # reconstruct nested specs if present
         if data.get("tddft") is not None:
@@ -477,6 +496,27 @@ class CalculationInput:
             data["scf"] = ScfSpec.from_dict(data["scf"])
 
         return cls(**data)
+
+    @staticmethod
+    def _migrate(data: dict[str, Any], from_version: int) -> dict[str, Any]:
+        """Apply sequential migrations from *from_version* to the current schema.
+
+        Each migration step transforms the dict from version *N* to *N+1*.
+        Add new migration blocks here when ``INPUT_SCHEMA_VERSION`` is bumped::
+
+            if from_version < 2:
+                data = _migrate_input_v1_to_v2(data)
+            if from_version < 3:
+                data = _migrate_input_v2_to_v3(data)
+        """
+        if from_version < INPUT_SCHEMA_VERSION:
+            logger.warning(
+                "Migrating CalculationInput from schema version %d to %d.",
+                from_version,
+                INPUT_SCHEMA_VERSION,
+            )
+        # --- future migrations go here ---
+        return data
 
     def to_json(self, indent: int = 2) -> str:
         """serializes the calculation input to a json string."""

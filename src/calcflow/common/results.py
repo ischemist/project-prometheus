@@ -18,6 +18,7 @@ Design Philosophy:
 
 import dataclasses
 import json
+import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from types import UnionType
@@ -27,6 +28,13 @@ from calcflow._version import __version__ as _CALCFLOW_VERSION
 from calcflow.common.exceptions import ValidationError
 from calcflow.common.types import AdcSpin, Matrix3x3
 from calcflow.constants.ptable import ELEMENT_DATA
+
+logger = logging.getLogger(__name__)
+
+# Schema version for CalculationResult serialization format.
+# Increment this when the serialized structure changes (field renames, removals,
+# type changes) and add a corresponding migration step in CalculationResult._migrate().
+RESULT_SCHEMA_VERSION: int = 1
 
 # =============================================================================
 # §0. BASE MODEL FOR SERIALIZATION & DESERIALIZATION
@@ -651,21 +659,55 @@ class CalculationResult(FrozenModel):
 
     def to_dict(self) -> dict[str, Any]:
         """Converts to dictionary, excluding raw_output to save space.
-        Includes calcflow_version for tracking which version created this result."""
+
+        Includes version metadata for compatibility tracking:
+        - ``calcflow_version``: package semver string (provenance/auditing).
+        - ``schema_version``: integer format version (compatibility/migration).
+        """
         data = super().to_dict()
         data.pop("raw_output", None)
         data["calcflow_version"] = _CALCFLOW_VERSION
+        data["schema_version"] = RESULT_SCHEMA_VERSION
         return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "CalculationResult":
         """Reconstructs from dictionary, setting raw_output to empty string.
-        Ignores calcflow_version field for backward compatibility."""
+
+        Handles version metadata:
+        - ``calcflow_version`` is stripped (provenance only, not a dataclass field).
+        - ``schema_version`` is read and used to apply any necessary migrations
+          before constructing the instance.  Dumps without ``schema_version``
+          (produced before this feature existed) are treated as version 1.
+        """
         data = {**data}  # copy to avoid mutating input
-        data.pop("calcflow_version", None)  # remove version metadata
+        data.pop("calcflow_version", None)
+        incoming_version = data.pop("schema_version", 1)
+        data = cls._migrate(data, incoming_version)
         if "raw_output" not in data:
             data["raw_output"] = ""
         return super().from_dict(data)
+
+    @staticmethod
+    def _migrate(data: dict[str, Any], from_version: int) -> dict[str, Any]:
+        """Apply sequential migrations from *from_version* to the current schema.
+
+        Each migration step transforms the dict from version *N* to *N+1*.
+        Add new migration blocks here when ``RESULT_SCHEMA_VERSION`` is bumped::
+
+            if from_version < 2:
+                data = _migrate_result_v1_to_v2(data)
+            if from_version < 3:
+                data = _migrate_result_v2_to_v3(data)
+        """
+        if from_version < RESULT_SCHEMA_VERSION:
+            logger.warning(
+                "Migrating CalculationResult from schema version %d to %d.",
+                from_version,
+                RESULT_SCHEMA_VERSION,
+            )
+        # --- future migrations go here ---
+        return data
 
     @classmethod
     def get_api_docs(cls) -> str:

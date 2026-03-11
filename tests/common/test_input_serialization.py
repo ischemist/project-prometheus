@@ -14,6 +14,7 @@ import pytest
 
 from calcflow.common.exceptions import ValidationError
 from calcflow.common.input import (
+    INPUT_SCHEMA_VERSION,
     CalculationInput,
     ChargesSpec,
     MomSpec,
@@ -308,6 +309,20 @@ class TestCalculationInputSerialization:
         assert isinstance(data["calcflow_version"], str)
         assert data["calcflow_version"]
 
+    def test_to_dict_includes_schema_version(self):
+        calc = CalculationInput(
+            charge=0,
+            spin_multiplicity=1,
+            task="energy",
+            level_of_theory="b3lyp",
+            basis_set="6-31g*",
+        )
+
+        data = calc.to_dict()
+        assert "schema_version" in data
+        assert isinstance(data["schema_version"], int)
+        assert data["schema_version"] == INPUT_SCHEMA_VERSION
+
     def test_from_dict_ignores_calcflow_version(self):
         data = {
             "charge": 0,
@@ -332,6 +347,54 @@ class TestCalculationInputSerialization:
         calc = CalculationInput.from_dict(data)
         assert calc.charge == 0
         assert calc.task == "energy"
+
+    def test_from_dict_strips_schema_version(self):
+        """schema_version is consumed by from_dict, not passed to the constructor."""
+        data = {
+            "charge": 0,
+            "spin_multiplicity": 1,
+            "task": "energy",
+            "level_of_theory": "b3lyp",
+            "basis_set": "6-31g*",
+            "schema_version": INPUT_SCHEMA_VERSION,
+        }
+
+        calc = CalculationInput.from_dict(data)
+        assert calc.charge == 0
+        assert not hasattr(calc, "schema_version")
+
+    def test_from_dict_defaults_missing_schema_version_to_1(self):
+        """old dumps without schema_version are treated as version 1."""
+        data = {
+            "charge": 0,
+            "spin_multiplicity": 1,
+            "task": "energy",
+            "level_of_theory": "b3lyp",
+            "basis_set": "6-31g*",
+            # no schema_version key at all — simulates a pre-versioning dump
+        }
+
+        calc = CalculationInput.from_dict(data)
+        assert calc.charge == 0
+        assert calc.level_of_theory == "b3lyp"
+
+    def test_from_dict_logs_warning_on_old_schema(self, caplog):
+        """migration from an older schema version emits a warning."""
+        import logging
+
+        data = {
+            "charge": 0,
+            "spin_multiplicity": 1,
+            "task": "energy",
+            "level_of_theory": "b3lyp",
+            "basis_set": "6-31g*",
+            "schema_version": 0,  # older than current
+        }
+
+        with caplog.at_level(logging.WARNING, logger="calcflow.common.input"):
+            CalculationInput.from_dict(data)
+
+        assert "Migrating CalculationInput" in caplog.text
 
     def test_from_dict_raises_on_unknown_top_level_key(self):
         data = {
