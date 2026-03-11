@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass, field, replace
 from importlib.metadata import version
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal, TypeVar, cast
 
 from calcflow.common.exceptions import ConfigurationError, ValidationError
 from calcflow.geometry.static import Geometry
@@ -11,6 +11,7 @@ from calcflow.io.orca.builder import OrcaBuilder
 from calcflow.io.qchem.builder import QchemBuilder
 
 T_CalculationInput = TypeVar("T_CalculationInput", bound="CalculationInput")
+T_SpecSerializable = TypeVar("T_SpecSerializable", bound="_SpecSerializable")
 type TASK_TYPES = Literal["energy", "geometry", "frequency"]
 
 # cache version at module load to avoid repeated filesystem lookups
@@ -24,8 +25,21 @@ BUILDERS = {"orca": OrcaBuilder(), "qchem": QchemBuilder()}
 # that feature is simply not requested.
 
 
+class _SpecSerializable:
+    """shared strict serialization helpers for component specs."""
+
+    def to_dict(self) -> dict[str, Any]:
+        """serializes to a dictionary."""
+        return asdict(cast(Any, self))
+
+    @classmethod
+    def from_dict(cls: type[T_SpecSerializable], data: dict[str, Any]) -> T_SpecSerializable:
+        """deserializes from a dictionary."""
+        return cls(**data)
+
+
 @dataclass(frozen=True)
-class TddftSpec:
+class TddftSpec(_SpecSerializable):
     """specification for a time-dependent dft calculation."""
 
     nroots: int
@@ -34,18 +48,9 @@ class TddftSpec:
     use_tda: bool = True  # Tamm-Dancoff Approximation is a common choice
     state_to_optimize: int | None = None  # for geometry optimization of an excited state
 
-    def to_dict(self) -> dict[str, Any]:
-        """serializes to a dictionary."""
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> TddftSpec:
-        """deserializes from a dictionary."""
-        return cls(**data)
-
 
 @dataclass(frozen=True)
-class SolvationSpec:
+class SolvationSpec(_SpecSerializable):
     """specification for an implicit solvation model."""
 
     model: str  # e.g., 'smd', 'cpcm'
@@ -53,18 +58,9 @@ class SolvationSpec:
     dielectric: float | None = None  # static dielectric constant (overrides named solvent for pcm)
     optical_dielectric: float | None = None  # high-frequency dielectric constant
 
-    def to_dict(self) -> dict[str, Any]:
-        """serializes to a dictionary."""
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> SolvationSpec:
-        """deserializes from a dictionary."""
-        return cls(**data)
-
 
 @dataclass(frozen=True)
-class ChargesSpec:
+class ChargesSpec(_SpecSerializable):
     """which charge partitioning schemes to compute."""
 
     mulliken: bool = True
@@ -83,53 +79,26 @@ class ChargesSpec:
         if self.hirshiter and not self.hirshfeld:
             object.__setattr__(self, "hirshfeld", True)
 
-    def to_dict(self) -> dict[str, Any]:
-        """serializes to a dictionary."""
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> ChargesSpec:
-        """deserializes from a dictionary."""
-        return cls(**data)
-
 
 @dataclass(frozen=True)
-class ScfSpec:
+class ScfSpec(_SpecSerializable):
     """scf convergence parameters."""
 
     algorithm: str = "diis"
     max_cycles: int = 100
     convergence: int = 8  # threshold exponent: scf converges when error < 10^-N
 
-    def to_dict(self) -> dict[str, Any]:
-        """serializes to a dictionary."""
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> ScfSpec:
-        """deserializes from a dictionary."""
-        return cls(**data)
-
 
 @dataclass(frozen=True)
-class OptimizationSpec:
+class OptimizationSpec(_SpecSerializable):
     """specification for geometry optimization tasks."""
 
     calc_hess_initial: bool = False
     recalc_hess_freq: int | None = None
 
-    def to_dict(self) -> dict[str, Any]:
-        """serializes to a dictionary."""
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> OptimizationSpec:
-        """deserializes from a dictionary."""
-        return cls(**data)
-
 
 @dataclass(frozen=True)
-class MomSpec:
+class MomSpec(_SpecSerializable):
     """
     specification for maximum overlap method (mom) calculations.
 
@@ -158,15 +127,6 @@ class MomSpec:
     # manual override for advanced users (bypasses symbolic transition parsing)
     alpha_occupation: str | None = None
     beta_occupation: str | None = None
-
-    def to_dict(self) -> dict[str, Any]:
-        """serializes to a dictionary."""
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> MomSpec:
-        """deserializes from a dictionary."""
-        return cls(**data)
 
 
 # --- Main Calculation Specification ---
