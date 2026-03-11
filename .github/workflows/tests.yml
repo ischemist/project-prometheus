@@ -14,7 +14,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
 
     steps:
@@ -45,33 +45,30 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: run tests and generate coverage report
+      - name: Run tests
+        run: uv run pytest -v
+
+      - name: generate coverage report
         id: coverage
         run: |
-          report=$(uv run pytest --cov=calcflow --cov-report=term-missing)
-          uv run coverage json -o coverage.json # create the json artifact
+          set +e  # disable exit on error temporarily
+          report=$(uv run pytest --cov=retrocast --cov-report=term-missing)
+          exit_code=$?
+          set -e  # re-enable exit on error
 
           # this is some bash magic to make the multiline report available to next steps
           echo "report<<EOF" >> $GITHUB_OUTPUT
           echo "$report" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+          exit $exit_code  # fail the step if tests failed
+
       - name: find changed files in src
         id: changed-src-files
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v44 # check for the latest version, they update a lot
+        uses: tj-actions/changed-files@v46 # check for the latest version, they update a lot
         with:
           files: src/** # or whatever your source directory is
-
-      - name: commit coverage.json
-        if: github.ref == 'refs/heads/master' # only update badge on master branch pushes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: update coverage.json"
-          file_pattern: coverage.json
-          commit_user_name: "github-actions[bot]"
-          commit_user_email: "github-actions[bot]@users.noreply.github.com"
-          skip_ci: true
 
       - name: print coverage report to logs
         run: |
