@@ -509,7 +509,15 @@ class CalculationInput:
             if from_version < 3:
                 data = _migrate_input_v2_to_v3(data)
         """
-        if from_version < INPUT_SCHEMA_VERSION:
+        if from_version > INPUT_SCHEMA_VERSION:
+            logger.warning(
+                "CalculationInput dump was created with schema version %d, "
+                "but this code only understands version %d. "
+                "Some fields may be missing or misinterpreted.",
+                from_version,
+                INPUT_SCHEMA_VERSION,
+            )
+        elif from_version < INPUT_SCHEMA_VERSION:
             logger.warning(
                 "Migrating CalculationInput from schema version %d to %d.",
                 from_version,

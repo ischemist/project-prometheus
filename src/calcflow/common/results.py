@@ -700,7 +700,15 @@ class CalculationResult(FrozenModel):
             if from_version < 3:
                 data = _migrate_result_v2_to_v3(data)
         """
-        if from_version < RESULT_SCHEMA_VERSION:
+        if from_version > RESULT_SCHEMA_VERSION:
+            logger.warning(
+                "CalculationResult dump was created with schema version %d, "
+                "but this code only understands version %d. "
+                "Some fields may be missing or misinterpreted.",
+                from_version,
+                RESULT_SCHEMA_VERSION,
+            )
+        elif from_version < RESULT_SCHEMA_VERSION:
             logger.warning(
                 "Migrating CalculationResult from schema version %d to %d.",
                 from_version,

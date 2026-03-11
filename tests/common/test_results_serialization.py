@@ -482,9 +482,6 @@ class TestCalculationResultSerialization:
 
     def test_from_dict_logs_warning_on_old_schema(self, caplog):
         """migration from an older schema version emits a warning."""
-        # This test is future-proof: once RESULT_SCHEMA_VERSION > 1,
-        # loading a v1 dump should warn.  For now with version 1, we
-        # simulate by passing from_version=0 indirectly.
         import logging
 
         data = {
@@ -498,6 +495,22 @@ class TestCalculationResultSerialization:
             CalculationResult.from_dict(data)
 
         assert "Migrating CalculationResult" in caplog.text
+
+    def test_from_dict_logs_warning_on_future_schema(self, caplog):
+        """loading a dump from a newer schema version emits a warning."""
+        import logging
+
+        data = {
+            "termination_status": "NORMAL",
+            "metadata": {"software_name": "ORCA"},
+            "final_energy": -75.0,
+            "schema_version": RESULT_SCHEMA_VERSION + 1,
+        }
+
+        with caplog.at_level(logging.WARNING, logger="calcflow.common.results"):
+            CalculationResult.from_dict(data)
+
+        assert "only understands version" in caplog.text
 
     def test_to_dict_excludes_raw_output(self):
         result = CalculationResult(

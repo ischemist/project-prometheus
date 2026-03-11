@@ -396,6 +396,24 @@ class TestCalculationInputSerialization:
 
         assert "Migrating CalculationInput" in caplog.text
 
+    def test_from_dict_logs_warning_on_future_schema(self, caplog):
+        """loading a dump from a newer schema version emits a warning."""
+        import logging
+
+        data = {
+            "charge": 0,
+            "spin_multiplicity": 1,
+            "task": "energy",
+            "level_of_theory": "b3lyp",
+            "basis_set": "6-31g*",
+            "schema_version": INPUT_SCHEMA_VERSION + 1,
+        }
+
+        with caplog.at_level(logging.WARNING, logger="calcflow.common.input"):
+            CalculationInput.from_dict(data)
+
+        assert "only understands version" in caplog.text
+
     def test_from_dict_raises_on_unknown_top_level_key(self):
         data = {
             "charge": 0,

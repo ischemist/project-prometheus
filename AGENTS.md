@@ -34,3 +34,10 @@
 - **ParseState contract**: single mutable scratchpad, parsers write results to it, control flags prevent duplicate parsing, `buffered_line` for over-reading
 - **Adding parser**: (1) identify block markers, (2) create pydantic model in `common/models.py`, (3) implement BlockParser with `matches()`/`parse()`, (4) register in parser_registry, (5) write contract test
 - **Critical**: parsers must set completion flags (e.g., `state.parsed_scf = True`), handle `buffered_line` if over-reading, raise ParsingError for critical issues
+
+## Schema Versioning (see docs/schema-versioning.md)
+- **Two version fields** in serialized dumps: `calcflow_version` (semver, provenance) and `schema_version` (integer, compatibility)
+- **Independent versions**: `RESULT_SCHEMA_VERSION` in `results.py`, `INPUT_SCHEMA_VERSION` in `input.py`
+- **Bump schema_version** when: renaming/removing/restructuring fields, changing field types, adding required fields
+- **Don't bump** when: adding optional fields with defaults, fixing parser bugs, changing default values
+- **Migrations**: sequential steps in `_migrate()` — v1→v2, then v2→v3, never skip
