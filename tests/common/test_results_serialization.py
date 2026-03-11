@@ -67,6 +67,12 @@ class TestAtomSerialization:
         reconstructed = Atom.from_dict(atom.to_dict())
         assert reconstructed == atom
 
+    def test_from_dict_ignores_unknown_keys(self):
+        # Result models are intentionally lenient for forward compatibility with
+        # parser/output schema evolution; input specs stay strict to catch typos.
+        atom = Atom.from_dict({"symbol": "H", "x": 0.0, "y": 0.0, "z": 0.96, "unknown_key": "ignored"})
+        assert atom == Atom(symbol="H", x=0.0, y=0.0, z=0.96)
+
 
 @pytest.mark.unit
 class TestOrbitalSerialization:
@@ -396,6 +402,44 @@ class TestAdcResultsSerialization:
 
 @pytest.mark.contract
 class TestCalculationResultSerialization:
+    def test_to_dict_includes_calcflow_version(self):
+        result = CalculationResult(
+            termination_status="NORMAL",
+            metadata=CalculationMetadata(software_name="ORCA", software_version="5.0.3"),
+            raw_output="output",
+            final_energy=-75.313506,
+        )
+
+        data = result.to_dict()
+        assert "calcflow_version" in data
+        assert isinstance(data["calcflow_version"], str)
+        assert data["calcflow_version"]
+
+    def test_from_dict_ignores_calcflow_version(self):
+        data = {
+            "termination_status": "NORMAL",
+            "metadata": {"software_name": "ORCA", "software_version": "5.0.3"},
+            "final_energy": -75.313506,
+            "nuclear_repulsion_energy": None,
+            "input_geometry": None,
+            "final_geometry": None,
+            "scf": None,
+            "orbitals": None,
+            "multipole": None,
+            "smd": None,
+            "tddft": None,
+            "adc": None,
+            "dispersion": None,
+            "timing": None,
+            "atomic_charges": [],
+            "program_specific": {},
+            "calcflow_version": "0.0.0-test",
+        }
+
+        result = CalculationResult.from_dict(data)
+        assert result.termination_status == "NORMAL"
+        assert result.raw_output == ""
+
     def test_to_dict_excludes_raw_output(self):
         result = CalculationResult(
             termination_status="NORMAL",
@@ -566,9 +610,10 @@ class TestRealParsedOutputSerialization:
         assert reconstructed.metadata.software_name == original_result.metadata.software_name
 
         # verify SCF data preserved
-        if original_result.scf:
-            assert reconstructed.scf.converged == original_result.scf.converged
-            assert reconstructed.scf.energy == original_result.scf.energy
+        assert original_result.scf is not None
+        assert reconstructed.scf is not None
+        assert reconstructed.scf.converged == original_result.scf.converged
+        assert reconstructed.scf.energy == original_result.scf.energy
 
         # verify raw_output was excluded
         assert "raw_output" not in json.loads(json_str)
@@ -588,16 +633,17 @@ class TestRealParsedOutputSerialization:
         reconstructed = CalculationResult.from_json(json_str)
 
         # verify TDDFT data preserved
-        if original_result.tddft and original_result.tddft.tddft_states:
-            assert reconstructed.tddft is not None
-            assert len(reconstructed.tddft.tddft_states) == len(original_result.tddft.tddft_states)
+        assert original_result.tddft is not None
+        assert original_result.tddft.tddft_states
+        assert reconstructed.tddft is not None
+        assert len(reconstructed.tddft.tddft_states) == len(original_result.tddft.tddft_states)
 
-            # check first excited state
-            orig_state = original_result.tddft.tddft_states[0]
-            recon_state = reconstructed.tddft.tddft_states[0]
-            assert recon_state.state_number == orig_state.state_number
-            assert recon_state.excitation_energy_ev == orig_state.excitation_energy_ev
-            assert recon_state.multiplicity == orig_state.multiplicity
+        # check first excited state
+        orig_state = original_result.tddft.tddft_states[0]
+        recon_state = reconstructed.tddft.tddft_states[0]
+        assert recon_state.state_number == orig_state.state_number
+        assert recon_state.excitation_energy_ev == orig_state.excitation_energy_ev
+        assert recon_state.multiplicity == orig_state.multiplicity
 
     def test_qchem_adc_roundtrip(self, test_data_dir):
         """test serialization of Q-Chem ADC output with nested tuple fields."""
