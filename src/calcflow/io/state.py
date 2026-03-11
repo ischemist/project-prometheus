@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from typing import Literal
 
 from calcflow.common.results import (
+    AdcResults,
     Atom,
     AtomicCharges,
     CalculationMetadata,
@@ -48,6 +49,7 @@ class ParseState:
         self.multipole: MultipoleResults | None = None
         self.smd: SmdResults | None = None
         self.tddft: TddftResults | None = None
+        self.adc: AdcResults | None = None
         self.dispersion: DispersionCorrection | None = None
         self.timing: TimingResults | None = None
 
@@ -66,6 +68,8 @@ class ParseState:
         self.parsed_tddft_gs_ref: bool = False
         self.parsed_tddft_unrelaxed_dm: bool = False
         self.parsed_nto: bool = False
+        self.parsed_adc_gs: bool = False
+        self.parsed_adc_excited: bool = False
         # Add more as needed for other parsers...
 
         # --- Communication & Error Handling ---
@@ -92,6 +96,7 @@ class ParseState:
             multipole=self.multipole,
             smd=self.smd,
             tddft=self.tddft,
+            adc=self.adc,
             dispersion=self.dispersion,
             timing=self.timing,
         )

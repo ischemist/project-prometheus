@@ -15,6 +15,10 @@ from pathlib import Path
 import pytest
 
 from calcflow.common.results import (
+    AdcAmplitude,
+    AdcExcitedState,
+    AdcGroundState,
+    AdcResults,
     Atom,
     AtomicCharges,
     CalculationMetadata,
@@ -22,7 +26,9 @@ from calcflow.common.results import (
     DipoleMoment,
     DispersionCorrection,
     ExcitedState,
+    ExcitonAnalysis,
     MultipoleResults,
+    NaturalOrbitals,
     NTOContribution,
     NTOStateAnalysis,
     Orbital,
@@ -35,6 +41,7 @@ from calcflow.common.results import (
     SmdResults,
     TddftResults,
     TimingResults,
+    TwoPhotonAbsorption,
 )
 from calcflow.io.orca import parse_orca_output
 from calcflow.io.qchem import parse_qchem_output
@@ -294,6 +301,96 @@ class TestCalculationMetadataSerialization:
         assert reconstructed == meta
 
 
+@pytest.mark.unit
+class TestAdcAmplitudeSerialization:
+    def test_roundtrip(self):
+        amp = AdcAmplitude(occ_i=5, vir_a=6, amplitude=0.6841, spin="B")
+        reconstructed = AdcAmplitude.from_dict(amp.to_dict())
+        assert reconstructed == amp
+
+
+@pytest.mark.unit
+class TestTwoPhotonAbsorptionSerialization:
+    def test_json_roundtrip(self):
+        tpa = TwoPhotonAbsorption(
+            cross_section_au=62.112485,
+            matrix_au=((0.0, -1.3783, 0.0), (-1.3783, 0.0, 0.0), (0.0, 0.0, 0.0)),
+        )
+        reconstructed = TwoPhotonAbsorption.from_json(tpa.to_json())
+        assert reconstructed == tpa
+        assert isinstance(reconstructed.matrix_au, tuple)
+        assert isinstance(reconstructed.matrix_au[0], tuple)
+
+
+@pytest.mark.unit
+class TestAdcGroundStateSerialization:
+    def test_json_roundtrip(self):
+        gs = AdcGroundState(
+            hf_energy_au=-76.0240201204,
+            mp2_correlation_energy_au=-0.2057717878,
+            total_energy_au=-76.2297919082,
+            nos_alpha=NaturalOrbitals(frontier_occupations=[0.0122, 0.9836], num_electrons=5.0),
+            nos_spin_traced=NaturalOrbitals(frontier_occupations=[0.0244, 1.9672], num_electrons=10.0),
+            mulliken=AtomicCharges(method="Mulliken (ADC GS)", charges={0: 0.156052}),
+            dipole_components_debye=(0.0, 0.0, 1.0),
+            exciton_total=ExcitonAnalysis(
+                r_h_ang=(0.0, 0.0, 0.0),
+                r_e_ang=(0.1, 0.1, 0.1),
+                separation_ang=0.165114,
+                hole_size_ang=1.0,
+                electron_size_ang=1.2,
+            ),
+        )
+        reconstructed = AdcGroundState.from_json(gs.to_json())
+        assert reconstructed == gs
+        assert isinstance(reconstructed.dipole_components_debye, tuple)
+
+
+@pytest.mark.unit
+class TestAdcExcitedStateSerialization:
+    def test_json_roundtrip(self):
+        state = AdcExcitedState(
+            state_number=2,
+            total_energy_au=-75.9499267478,
+            excitation_energy_ev=7.816509,
+            oscillator_strength=0.0,
+            trans_dip_moment_au=(0.0, 0.0, 0.0),
+            two_photon_absorption=TwoPhotonAbsorption(
+                cross_section_au=62.112485,
+                matrix_au=((0.0, -1.3783, 0.0), (-1.3783, 0.0, 0.0), (0.0, 0.0, 0.0)),
+            ),
+            amplitudes=[AdcAmplitude(occ_i=5, vir_a=6, amplitude=0.6841, spin="B")],
+            nto_alpha=[NTOContribution(hole_offset=0, electron_offset=0, weight_percent=47.0, is_alpha_spin=True)],
+        )
+        reconstructed = AdcExcitedState.from_json(state.to_json())
+        assert reconstructed == state
+        assert isinstance(reconstructed.trans_dip_moment_au, tuple)
+
+
+@pytest.mark.unit
+class TestAdcResultsSerialization:
+    def test_json_roundtrip(self):
+        adc = AdcResults(
+            method="adc(2)",
+            ground_state=AdcGroundState(
+                hf_energy_au=-76.0240201204,
+                mp2_correlation_energy_au=-0.2057717878,
+                total_energy_au=-76.2297919082,
+            ),
+            excited_states=[
+                AdcExcitedState(
+                    state_number=1,
+                    total_energy_au=-75.9683377442,
+                    excitation_energy_ev=7.114530,
+                    amplitudes=[AdcAmplitude(occ_i=5, vir_a=6, amplitude=0.6841, spin="B")],
+                )
+            ],
+        )
+        reconstructed = AdcResults.from_json(adc.to_json())
+        assert reconstructed == adc
+        assert len(reconstructed.excited_states) == 1
+
+
 # --- contract tests: CalculationResult serialization ---
 
 
@@ -501,6 +598,27 @@ class TestRealParsedOutputSerialization:
             assert recon_state.state_number == orig_state.state_number
             assert recon_state.excitation_energy_ev == orig_state.excitation_energy_ev
             assert recon_state.multiplicity == orig_state.multiplicity
+
+    def test_qchem_adc_roundtrip(self, test_data_dir):
+        """test serialization of Q-Chem ADC output with nested tuple fields."""
+        qchem_adc_path = test_data_dir / "qchem" / "h2o" / "5.4-adc-svp.out"
+        if not qchem_adc_path.exists():
+            pytest.skip("Q-Chem ADC test file not found")
+
+        original_result = parse_qchem_output(qchem_adc_path.read_text())
+        json_str = original_result.to_json()
+        reconstructed = CalculationResult.from_json(json_str)
+
+        assert reconstructed.adc is not None
+        assert original_result.adc is not None
+        assert reconstructed.adc.method == original_result.adc.method
+        assert reconstructed.adc.ground_state == original_result.adc.ground_state
+        assert len(reconstructed.adc.excited_states) == len(original_result.adc.excited_states)
+
+        state_1 = reconstructed.adc.excited_states[0]
+        assert state_1.two_photon_absorption is not None
+        assert isinstance(state_1.two_photon_absorption.matrix_au, tuple)
+        assert isinstance(state_1.two_photon_absorption.matrix_au[0], tuple)
 
     @pytest.mark.parametrize(
         "output_file,min_reduction_percent",

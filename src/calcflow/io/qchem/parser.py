@@ -8,6 +8,8 @@ from collections.abc import Sequence
 from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import CalculationResult
 from calcflow.io.core import BlockParser, core_parse
+from calcflow.io.qchem.blocks.adc.excited_states import AdcExcitedStatesParser
+from calcflow.io.qchem.blocks.adc.ground_state import AdcGroundStateParser
 from calcflow.io.qchem.blocks.charges import ChargesParser
 from calcflow.io.qchem.blocks.finalization import TerminationParser
 from calcflow.io.qchem.blocks.geometry import GeometryParser
@@ -36,6 +38,8 @@ PARSER_REGISTRY_SP: Sequence[BlockParser] = [
     GroundStateRefParser(),
     UnrelaxedDensityMatrixParser(),
     TransitionDensityMatrixParser(),
+    AdcGroundStateParser(),
+    AdcExcitedStatesParser(),
     TimingParser(),
     TerminationParser(),
 ]
