@@ -68,6 +68,8 @@ class TestAtomSerialization:
         assert reconstructed == atom
 
     def test_from_dict_ignores_unknown_keys(self):
+        # Result models are intentionally lenient for forward compatibility with
+        # parser/output schema evolution; input specs stay strict to catch typos.
         atom = Atom.from_dict({"symbol": "H", "x": 0.0, "y": 0.0, "z": 0.96, "unknown_key": "ignored"})
         assert atom == Atom(symbol="H", x=0.0, y=0.0, z=0.96)
 

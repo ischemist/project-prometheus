@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field, replace
+from dataclasses import asdict, dataclass, field, is_dataclass, replace
 from importlib.metadata import version
 from typing import Any, Literal, TypeVar, cast
 
@@ -26,10 +26,15 @@ BUILDERS = {"orca": OrcaBuilder(), "qchem": QchemBuilder()}
 
 
 class _SpecSerializable:
-    """shared strict serialization helpers for component specs."""
+    """Shared strict serialization helpers for user-facing input specs.
+
+    Unknown keys are rejected in ``from_dict`` to catch misspelled user options early.
+    """
 
     def to_dict(self) -> dict[str, Any]:
         """serializes to a dictionary."""
+        if not is_dataclass(self):
+            raise TypeError(f"{type(self).__name__} must be a dataclass to use _SpecSerializable.")
         return asdict(cast(Any, self))
 
     @classmethod
