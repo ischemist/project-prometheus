@@ -4,8 +4,7 @@ This package provides a robust, Pythonic interface for preparing inputs and pars
 outputs for quantum chemistry software like Q-Chem and ORCA.
 """
 
-from importlib.metadata import version
-
+from calcflow._version import __version__
 from calcflow.common.input import CalculationInput
 from calcflow.geometry.static import Geometry
 from calcflow.geometry.trajectory import Trajectory
@@ -18,8 +17,6 @@ from calcflow.postprocess import (
     spectrum_from_excited_states,
     tpa_spectrum_from_adc_states,
 )
-
-__version__ = version("calcflow")
 
 __all__ = [
     "__version__",

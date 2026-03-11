@@ -20,16 +20,13 @@ import dataclasses
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from importlib.metadata import version as get_version
 from types import UnionType
 from typing import Any, Literal, TypeAliasType, TypeVar, Union, get_args, get_origin
 
+from calcflow._version import __version__ as _CALCFLOW_VERSION
 from calcflow.common.exceptions import ValidationError
 from calcflow.common.types import AdcSpin, Matrix3x3
 from calcflow.constants.ptable import ELEMENT_DATA
-
-# cache version at module load to avoid repeated filesystem lookups
-_CALCFLOW_VERSION = get_version("calcflow")
 
 # =============================================================================
 # §0. BASE MODEL FOR SERIALIZATION & DESERIALIZATION

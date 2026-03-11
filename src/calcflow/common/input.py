@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field, is_dataclass, replace
-from importlib.metadata import version
 from typing import Any, Literal, TypeVar, cast
 
+from calcflow._version import __version__ as _CALCFLOW_VERSION
 from calcflow.common.exceptions import ConfigurationError, ValidationError
 from calcflow.geometry.static import Geometry
 from calcflow.io.orca.builder import OrcaBuilder
@@ -13,9 +13,6 @@ from calcflow.io.qchem.builder import QchemBuilder
 T_CalculationInput = TypeVar("T_CalculationInput", bound="CalculationInput")
 T_SpecSerializable = TypeVar("T_SpecSerializable", bound="_SpecSerializable")
 type TASK_TYPES = Literal["energy", "geometry", "frequency"]
-
-# cache version at module load to avoid repeated filesystem lookups
-_CALCFLOW_VERSION = version("calcflow")
 
 # registry of program-specific builders.
 BUILDERS = {"orca": OrcaBuilder(), "qchem": QchemBuilder()}
