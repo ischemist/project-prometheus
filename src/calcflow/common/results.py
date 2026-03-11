@@ -22,7 +22,7 @@ import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from types import UnionType
-from typing import Any, Literal, TypeAliasType, TypeVar, Union, get_args, get_origin
+from typing import Any, Literal, TypeAliasType, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from calcflow._version import __version__ as _CALCFLOW_VERSION
 from calcflow.common.exceptions import ValidationError
@@ -718,22 +718,138 @@ class CalculationResult(FrozenModel):
         return data
 
     @classmethod
+    def get_schema(cls) -> str:
+        """returns an auto-generated structural map of every result field.
+
+        walks the dataclass hierarchy recursively and emits an indented tree of
+        field names with their types and inline docstring annotations where available.
+        use this to navigate result fields without reading source code.
+
+        units convention (unless field name specifies otherwise):
+          energy: Hartree  |  _ev suffix: eV  |  _kcal_mol: kcal/mol
+          distance/size: Angstrom  |  dipole/trans moment: Debye  |  time: seconds
+        """
+        _seen: set[type] = set()
+
+        def _type_str(t: Any) -> str:
+            """compact representation of a type annotation."""
+            origin = get_origin(t)
+            args = get_args(t)
+            # handle X | Y (python 3.10+ UnionType) and Union[X, Y]
+            if isinstance(t, UnionType) or origin is Union:
+                non_none = [a for a in args if a is not type(None)]
+                has_none = type(None) in args
+                parts = " | ".join(_type_str(a) for a in non_none)
+                return parts + (" | None" if has_none else "")
+            # Sequence / list / tuple
+            if (
+                origin is not None
+                and getattr(origin, "__name__", "") in ("Sequence", "List")
+                or origin in (list, tuple)
+            ):
+                return f"list[{_type_str(args[0])}]" if args else "list"
+            # Mapping / dict
+            if origin is not None and getattr(origin, "__name__", "") in ("Mapping", "Dict") or origin is dict:
+                k = _type_str(args[0]) if args else "?"
+                v = _type_str(args[1]) if len(args) > 1 else "?"
+                return f"dict[{k}, {v}]"
+            if hasattr(t, "__name__"):
+                return t.__name__
+            return repr(t)
+
+        def _render(klass: type, indent: int = 0) -> list[str]:
+            pad = "  " * indent
+            lines: list[str] = []
+            if not dataclasses.is_dataclass(klass):
+                return lines
+            if klass in _seen:
+                lines.append(f"{pad}  (see {klass.__name__} above)")
+                return lines
+            _seen.add(klass)
+
+            try:
+                hints = {}
+                for f in dataclasses.fields(klass):
+                    hints[f.name] = f.type
+            except Exception:
+                return lines
+
+            # resolve string annotations where possible
+            try:
+                resolved = get_type_hints(klass)
+            except Exception:
+                resolved = hints
+
+            for f in dataclasses.fields(klass):
+                raw_type = resolved.get(f.name, f.type)
+                tstr = _type_str(raw_type)
+                default = ""
+                if f.default is not dataclasses.MISSING:
+                    default = f" = {f.default!r}"
+                elif f.default_factory is not dataclasses.MISSING:  # type: ignore[misc]
+                    default = " = []"
+                # inline comment from field default comment if field name hints units
+                lines.append(f"{pad}  .{f.name}: {tstr}{default}")
+
+                # recurse into nested dataclasses (unwrap Optional/list first)
+                inner = raw_type
+                args = get_args(raw_type)
+                if args:
+                    # pick first non-None arg
+                    candidates = [a for a in args if a is not type(None)]
+                    inner = candidates[0] if candidates else raw_type
+                    # unwrap list/Sequence
+                    inner_args = get_args(inner)
+                    if inner_args:
+                        inner = inner_args[0]
+                if dataclasses.is_dataclass(inner) and inner not in _seen:
+                    lines.extend(_render(inner, indent + 1))
+
+            return lines
+
+        out: list[str] = [
+            "CalculationResult — field schema (auto-generated)",
+            "=" * 55,
+            "",
+            "units: energy=Hartree (_ev=eV, _kcal_mol=kcal/mol) | distance/size=Angstrom | dipole=Debye | time=seconds",
+            "",
+            "parse functions:",
+            "  from calcflow.io.qchem import parse_qchem_output, parse_qchem_multi_job_output",
+            "  from calcflow.io.orca import parse_orca_output",
+            "  result = parse_qchem_output(Path('calc.out').read_text())",
+            "  result = parse_orca_output(Path('calc.out').read_text())",
+            "  jobs   = parse_qchem_multi_job_output(text)  # list[CalculationResult]",
+            "",
+            "serialization:",
+            "  result.to_json()              # save (excludes raw_output)",
+            "  CalculationResult.from_json(s)  # load",
+            "",
+            "CalculationResult",
+        ]
+        out.extend(_render(cls))
+        out += [
+            "",
+            "notes:",
+            "  - all optional fields default to None; guard with 'if result.field:'",
+            "  - atom indices are 0-based; tddft state numbers are 1-based",
+            "  - raw_output is excluded from to_dict()/to_json() serialization",
+            "  - for UHF/UKS: beta_orbitals populated; for RHF/RKS: only alpha_orbitals",
+        ]
+        return "\n".join(out)
+
+    @classmethod
     def get_api_docs(cls) -> str:
+        """compatibility alias — returns get_schema() output.
+
+        prefer get_schema() directly.
         """
-        returns comprehensive api documentation for llm-assisted code generation.
+        return cls.get_schema()
 
-        this method provides a complete reference of all available data models, fields,
-        and usage patterns without requiring access to source code. ideal for sharing
-        with llms when you want them to work with parsed quantum chemistry results.
+    # ---------- legacy full-text docs (kept for reference, not called by default) ----------
 
-        usage:
-            # print documentation for llm consumption
-            print(CalculationResult.get_api_docs())
-
-            # save to file
-            with open("calcflow_results_api.txt", "w") as f:
-                f.write(CalculationResult.get_api_docs())
-        """
+    @classmethod
+    def _get_full_docs(cls) -> str:
+        """returns the original verbose hardcoded reference (legacy, prefer get_schema)."""
         return """
 CalculationResult API Reference
 ================================
