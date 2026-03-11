@@ -790,7 +790,10 @@ class CalculationResult(FrozenModel):
                 if f.default is not dataclasses.MISSING:
                     default = f" = {f.default!r}"
                 elif f.default_factory is not dataclasses.MISSING:  # type: ignore[misc]
-                    default = " = []"
+                    try:
+                        default = f" = {f.default_factory()!r}"
+                    except Exception:
+                        default = " = ..."
                 # inline comment from field default comment if field name hints units
                 lines.append(f"{pad}  .{f.name}: {tstr}{default}")
 
