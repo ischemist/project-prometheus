@@ -90,7 +90,7 @@ def test_adc_ground_state_parser_does_not_mutate_state_in_matches() -> None:
     assert result_1 is True
     assert result_2 is True
     assert state.parsed_adc_gs is False
-    assert state.adc is None
+    assert state.adc_ground_state is None
 
 
 # =============================================================================

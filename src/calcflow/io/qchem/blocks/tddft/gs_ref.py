@@ -15,7 +15,7 @@ import re
 from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
-from calcflow.common.results import AtomicCharges, GroundStateReference, TddftResults
+from calcflow.common.results import AtomicCharges, GroundStateReference
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -228,16 +228,6 @@ class GroundStateRefParser:
         # --- Update ParseState ---
         state.parsed_tddft_gs_ref = True
 
-        # Merge with existing TDDFT data if present
-        if state.tddft is None:
-            state.tddft = TddftResults(ground_state_ref=gs_ref)
-        else:
-            # Preserve existing states and analyses
-            state.tddft = TddftResults(
-                tda_states=state.tddft.tda_states,
-                tddft_states=state.tddft.tddft_states,
-                nto_analyses=state.tddft.nto_analyses,
-                ground_state_ref=gs_ref,
-            )
+        state.tddft_ground_state_ref = gs_ref
 
         logger.debug("Ground state reference parsing completed successfully.")

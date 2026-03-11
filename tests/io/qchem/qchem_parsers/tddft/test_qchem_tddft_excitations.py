@@ -184,7 +184,7 @@ def test_excitations_parser_does_not_mutate_state_in_matches():
     assert result2 is True
     assert state.parsed_tddft_tda is False  # Should NOT be set
     assert state.parsed_tddft_full is False
-    assert state.tddft is None  # Should NOT be populated
+    assert state.tddft_tda_states == []  # Should NOT be populated
 
 
 # =============================================================================

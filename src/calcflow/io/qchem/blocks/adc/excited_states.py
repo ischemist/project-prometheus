@@ -29,7 +29,6 @@ from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import (
     AdcAmplitude,
     AdcExcitedState,
-    AdcResults,
     AtomicCharges,
     ExcitonAnalysis,
     NaturalOrbitals,
@@ -111,10 +110,7 @@ class AdcExcitedStatesParser(BlockParser):
         if not excited_states:
             logger.warning("AdcExcitedStatesParser: no states parsed.")
 
-        # Merge into state.adc (which may already have ground_state)
-        existing = state.adc.to_dict() if state.adc else {"method": "adc(2)"}
-        existing["excited_states"] = [es.to_dict() for es in excited_states]
-        state.adc = AdcResults.from_dict(existing)
+        state.adc_excited_states = excited_states
         state.parsed_adc_excited = True
         logger.debug(f"Finished parsing {len(excited_states)} ADC excited states.")
 

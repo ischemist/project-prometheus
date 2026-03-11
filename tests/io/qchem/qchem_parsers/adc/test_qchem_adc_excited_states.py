@@ -112,7 +112,7 @@ def test_adc_excited_states_parser_does_not_mutate_state_in_matches() -> None:
     assert result_1 is True
     assert result_2 is True
     assert state.parsed_adc_excited is False
-    assert state.adc is None
+    assert state.adc_excited_states == []
 
 
 # =============================================================================

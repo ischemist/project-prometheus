@@ -20,7 +20,6 @@ from typing import Any, ClassVar
 
 from calcflow.common.results import (
     AdcGroundState,
-    AdcResults,
     AtomicCharges,
     ExcitonAnalysis,
     NaturalOrbitals,
@@ -127,9 +126,7 @@ class AdcGroundStateParser(BlockParser):
             state.parsing_warnings.append(f"AdcGroundState creation failed: {e}")
             return
 
-        existing = state.adc.to_dict() if state.adc else {"method": "adc(2)"}
-        existing["ground_state"] = gs.to_dict()
-        state.adc = AdcResults.from_dict(existing)
+        state.adc_ground_state = gs
         state.parsed_adc_gs = True
         logger.debug("Finished parsing ADC ground state block.")
 

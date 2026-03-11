@@ -14,7 +14,7 @@ Format:
 import re
 from collections.abc import Iterator
 
-from calcflow.common.results import NTOContribution, NTOStateAnalysis, TddftResults
+from calcflow.common.results import NTOContribution, NTOStateAnalysis
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -192,10 +192,7 @@ class NTOParser:
             return
 
         # --- Update ParseState ---
-        # Integrate into existing TddftResults or create new one
-        existing_tddft = state.tddft.to_dict() if state.tddft else {}
-        existing_tddft["nto_analyses"] = nto_states
-        state.tddft = TddftResults.from_dict(existing_tddft)
+        state.tddft_nto_analyses = nto_states
         state.parsed_nto = True
 
         logger.debug(f"Parsed {len(nto_states)} NTO states.")
