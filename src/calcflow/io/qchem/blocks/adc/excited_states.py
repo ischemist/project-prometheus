@@ -25,6 +25,7 @@ from collections.abc import Iterator as LineIterator
 from itertools import chain
 from typing import Any, ClassVar
 
+from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import (
     AdcAmplitude,
     AdcExcitedState,
@@ -44,7 +45,6 @@ _STATE_HEADER_PAT = re.compile(r"^\s*Excited state\s+(\d+)\s*\(A\)")
 _END_PAT = re.compile(r"Time of ADC calculation")
 _AMP_ORB_PAT = re.compile(r"(\d+)\s*\(A\)\s*(A|B)")
 _NTO_LINE_PAT = re.compile(r"H-\s*(\d+)\s*->\s*L\+\s*(\d+):\s*([-\d.]+)\s*\(\s*([\d.]+)%\)")
-_NTO_OMEGA_PAT = re.compile(r"omega\s*=\s*([\d.]+)%")
 
 
 def _to_float(val: str | None) -> float | None:
@@ -57,7 +57,7 @@ def _to_float(val: str | None) -> float | None:
 
 
 def _parse_kv(line: str, key: str) -> float | None:
-    m = re.search(rf"{re.escape(key)}.*?:\s+([-\d.]+)", line)
+    m = re.search(rf"{re.escape(key)}.*?:\s+(-?[\d.]+)", line)
     return _to_float(m.group(1)) if m else None
 
 
@@ -94,11 +94,8 @@ class AdcExcitedStatesParser(BlockParser):
         while line_buffer is not None:
             m = _STATE_HEADER_PAT.match(line_buffer)
             if not m:
-                # Not a state header; could be END line
-                if _END_PAT.search(line_buffer):
-                    state.buffered_line = line_buffer
-                else:
-                    state.buffered_line = line_buffer
+                # Not a state header; could be END line or unexpected content
+                state.buffered_line = line_buffer
                 break
 
             state_num = int(m.group(1))
@@ -294,11 +291,9 @@ class AdcExcitedStatesParser(BlockParser):
             data["nto_beta"] = nto_beta
 
         try:
-            es = AdcExcitedState.from_dict(data)
-            return es, line_buffer
-        except Exception as e:
-            logger.error(f"Failed to create AdcExcitedState {state_number}: {e}", exc_info=True)
-            return None, line_buffer
+            return AdcExcitedState.from_dict(data), line_buffer
+        except (TypeError, ValueError, KeyError) as exc:
+            raise ParsingError(f"Invalid ADC excited state {state_number}") from exc
 
     # ------------------------------------------------------------------
     # Amplitude parser
@@ -316,11 +311,20 @@ class AdcExcitedStatesParser(BlockParser):
         except (ValueError, IndexError):
             return None
 
-        if len(orbs) >= 2:
+        if len(orbs) == 2:
+            # 1h1p: occ_i -> vir_a
             occ_i = int(orbs[0][0])
             spin_i = orbs[0][1]  # A or B
             vir_a = int(orbs[1][0])
             return AdcAmplitude(occ_i=occ_i, vir_a=vir_a, amplitude=amplitude, spin=spin_i)
+        if len(orbs) == 4:
+            # 2h2p: occ_i, occ_j -> vir_a, vir_b
+            occ_i = int(orbs[0][0])
+            spin_i = orbs[0][1]
+            occ_j = int(orbs[1][0])
+            vir_a = int(orbs[2][0])
+            vir_b = int(orbs[3][0])
+            return AdcAmplitude(occ_i=occ_i, vir_a=vir_a, amplitude=amplitude, spin=spin_i, occ_j=occ_j, vir_b=vir_b)
         return None
 
     # ------------------------------------------------------------------
