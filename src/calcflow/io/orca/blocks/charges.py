@@ -108,6 +108,7 @@ class ChargesParser:
 
         logger.debug(f"Parsed {method} charges for {len(charges)} atoms")
 
-        # Set flag after successfully parsing any charges method.
-        # This allows supporting files with only Mulliken, only Loewdin, or both.
-        state.parsed_mulliken = True
+        if method == "Mulliken":
+            state.parsed_mulliken = True
+        elif method == "Loewdin":
+            state.parsed_loewdin = True

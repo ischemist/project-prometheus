@@ -77,6 +77,7 @@ class ParseState:
         self.parsed_scf: bool = False
         self.parsed_orbitals: bool = False
         self.parsed_mulliken: bool = False
+        self.parsed_loewdin: bool = False
         self.parsed_hirshfeld: bool = False
         self.parsed_cm5: bool = False
         self.parsed_dipole: bool = False
