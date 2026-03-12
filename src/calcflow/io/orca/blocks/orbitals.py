@@ -50,6 +50,8 @@ class OrbitalsParser:
         Returns:
             True if this is the start of an orbital block and hasn't been parsed yet.
         """
+        if "ORBITAL ENERGIES" not in line:
+            return False
         if state.parsed_orbitals:
             return False
         return bool(ORBITAL_ENERGIES_START_PAT.search(line))

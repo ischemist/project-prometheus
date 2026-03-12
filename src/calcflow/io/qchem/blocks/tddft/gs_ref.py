@@ -65,6 +65,8 @@ class GroundStateRefParser:
 
         Matches "Ground State (Reference) :" and only if not already parsed.
         """
+        if "Ground State" not in line:
+            return False
         if state.parsed_tddft_gs_ref:
             return False
 

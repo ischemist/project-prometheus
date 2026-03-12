@@ -35,6 +35,8 @@ class TimingParser:
 
     def matches(self, line: str, state: ParseState) -> bool:
         """Matches on total wall time line or module timing lines."""
+        if "..." not in line and "TOTAL RUN TIME" not in line:
+            return False
         if state.parsed_timing:
             return False
         return bool(TOTAL_TIME_PAT.search(line)) or bool(MODULE_TIME_PAT.search(line))

@@ -9,6 +9,8 @@ NORMAL_TERM_PAT = re.compile(r"\*\*\*\*ORCA TERMINATED NORMALLY\*\*\*\*")
 
 class FinalEnergyParser:
     def matches(self, line: str, state: ParseState) -> bool:
+        if "FINAL SINGLE POINT ENERGY" not in line:
+            return False
         return state.final_energy is None and bool(FINAL_ENERGY_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
@@ -19,6 +21,8 @@ class FinalEnergyParser:
 
 class TerminationParser:
     def matches(self, line: str, state: ParseState) -> bool:
+        if "ORCA TERMINATED" not in line:
+            return False
         return state.termination_status == "UNKNOWN" and bool(NORMAL_TERM_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:

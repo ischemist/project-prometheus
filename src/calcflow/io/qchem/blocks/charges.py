@@ -40,7 +40,9 @@ class MullikenParser:
         Returns True only if we haven't already parsed Mulliken charges and the line
         contains the Mulliken charges header.
         """
-        return bool(MULLIKEN_START_PAT.search(line)) and not state.parsed_mulliken
+        if "Mulliken" not in line:
+            return False
+        return not state.parsed_mulliken and bool(MULLIKEN_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """

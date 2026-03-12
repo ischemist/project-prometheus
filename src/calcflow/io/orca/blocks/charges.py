@@ -40,8 +40,12 @@ class ChargesParser:
         Check if this line marks the beginning of an atomic charges block.
 
         Returns True for either MULLIKEN or LOEWDIN atomic charges headers.
-        Note: No state flag check - allows parser to run multiple times (once per method).
+        Allows the parser to run twice (once per method); stops after both are parsed.
         """
+        if state.parsed_mulliken and state.parsed_loewdin:
+            return False
+        if "MULLIKEN" not in line and "LOEWDIN" not in line:
+            return False
         return bool(MULLIKEN_START_PAT.search(line)) or bool(LOEWDIN_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:

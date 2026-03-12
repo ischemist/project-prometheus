@@ -51,6 +51,8 @@ class DispersionParser:
         """
         Check if this line marks the start of a dispersion block.
         """
+        if "DISPERSION CORRECTION" not in line:
+            return False
         if state.parsed_dispersion:
             return False
         return bool(START_PAT.search(line))

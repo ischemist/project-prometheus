@@ -54,6 +54,8 @@ class NTOParser:
 
         Returns False if already parsed.
         """
+        if "NTO" not in line:
+            return False
         if state.parsed_nto:
             return False
 
