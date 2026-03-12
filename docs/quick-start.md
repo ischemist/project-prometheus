@@ -4,15 +4,6 @@ icon: lucide/rocket
 
 # Quick Start
 
-Install CalcFlow, parse your first output file, and build your first input — in about five minutes.
-
-!!! tip "What you'll learn"
-    - Installing CalcFlow with `uv` or `pip`
-    - Parsing a Q-Chem or ORCA output file into a structured result object
-    - Extracting energies, charges, and excited states
-    - Building a calculation input with the fluent API
-    - Exporting inputs to Q-Chem and ORCA format
-
 ## 1. Install
 
 === "uv (recommended)"
@@ -29,15 +20,14 @@ Install CalcFlow, parse your first output file, and build your first input — i
 
 ## 2. Parse an Output File
 
-CalcFlow exposes a single parse function per program. Pass it the raw output text — it returns an immutable `CalculationResult`.
+CalcFlow exposes one parse function per program. Pass it the raw output text — it returns an immutable `CalculationResult`.
 
 === "Q-Chem"
 
     ```python
     from calcflow import parse_qchem_output
 
-    text = open("h2o_sp.out").read()
-    result = parse_qchem_output(text)
+    result = parse_qchem_output(open("h2o_sp.out").read())
     ```
 
 === "ORCA"
@@ -45,26 +35,23 @@ CalcFlow exposes a single parse function per program. Pass it the raw output tex
     ```python
     from calcflow import parse_orca_output
 
-    text = open("h2o_sp.out").read()
-    result = parse_orca_output(text)
+    result = parse_orca_output(open("h2o_sp.out").read())
     ```
 
-### Check termination
-
-Always check whether the calculation finished normally before reading results:
+Check termination before trusting the results:
 
 ```python
 if result.termination_status != "NORMAL":
-    raise RuntimeError(f"Calculation did not converge: {result.termination_status}")
+    raise RuntimeError(f"Calculation failed: {result.termination_status}")
 ```
 
-### Extract the final energy
+Extract the final energy:
 
 ```python
 print(result.final_energy)  # -76.4234... Hartree
 ```
 
-### Extract charges
+Extract charges:
 
 ```python
 mulliken = result.get_charges("Mulliken")
@@ -73,31 +60,27 @@ if mulliken:
         print(f"Atom {atom_idx}: {charge:+.4f}")
 ```
 
-### Extract excited states (TDDFT)
+Extract excited states:
 
 ```python
 if result.tddft:
     for state in result.tddft.tddft_states:
         ev = state.excitation_energy_ev
-        nm = 1239.8 / ev  # convert to wavelength
+        nm = 1239.8 / ev
         f  = state.oscillator_strength
         print(f"S{state.state_number}: {ev:.2f} eV ({nm:.0f} nm)  f={f:.4f}")
 ```
 
-!!! info "Units"
-    All energies are in **Hartree** unless otherwise noted. Excitation energies on `ExcitedState` are also available in eV via `excitation_energy_ev`.
+Energies are in **Hartree** unless the field name says otherwise (`_ev`, `_kcal_mol`).
 
 ## 3. Serialize and Reload
 
-Parsed results can be saved to JSON and reloaded without re-parsing:
-
 ```python
-# Save
-json_str = result.to_json()
+# Save — raw_output is excluded to keep the file compact
 with open("result.json", "w") as f:
-    f.write(json_str)
+    f.write(result.to_json())
 
-# Reload (note: raw_output is excluded from serialization)
+# Reload
 from calcflow.common.results import CalculationResult
 
 result2 = CalculationResult.from_json(open("result.json").read())
@@ -106,15 +89,13 @@ print(result2.final_energy)
 
 ## 4. Build a Calculation Input
 
-`CalculationInput` is a frozen dataclass with a fluent setter API. Every setter returns a new instance — the original is never mutated.
+`CalculationInput` is a frozen dataclass. Every setter returns a new instance — the original is never mutated.
 
 ```python
 from calcflow import CalculationInput, Geometry
 
-# Load geometry from an XYZ file
 geom = Geometry.from_xyz_file("h2o.xyz")
 
-# Build the calculation spec
 calc = (
     CalculationInput(
         charge=0,
@@ -130,7 +111,7 @@ calc = (
 )
 ```
 
-### Export to Q-Chem or ORCA
+Export to Q-Chem or ORCA:
 
 ```python
 qchem_input = calc.export("qchem", geom)
@@ -139,9 +120,7 @@ orca_input  = calc.export("orca", geom)
 print(qchem_input)
 ```
 
-The same `CalculationInput` object produces valid input for both programs.
-
-### Save the spec for reproducibility
+Save the spec for reproducibility:
 
 ```python
 with open("calc_spec.json", "w") as f:
@@ -150,19 +129,14 @@ with open("calc_spec.json", "w") as f:
 
 ## 5. Discover the API at Runtime
 
-Both `CalculationInput` and `CalculationResult` are self-documenting:
-
 ```python
 # Full method catalogue for CalculationInput
 print(CalculationInput.get_api_docs())
 
-# Structural field map with types and units for CalculationResult
+# Field map with types and units for CalculationResult
 from calcflow.common.results import CalculationResult
 print(CalculationResult.get_api_docs())
 ```
-
-!!! success "You're all set"
-    You've parsed an output, extracted results, built an input, and exported it — the full CalcFlow workflow. Explore the guides to go deeper.
 
 ## Next Steps
 

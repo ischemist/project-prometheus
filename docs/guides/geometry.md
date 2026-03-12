@@ -142,17 +142,16 @@ sv = ag.get_adc_state(state_number=1)
 
 ## AnnotatedTrajectory
 
-`AnnotatedTrajectory` is a sequence of `AnnotatedGeometry` frames — useful for analyzing a geometry optimization in terms of charges or orbital populations at each step.
+`AnnotatedTrajectory` is a sequence of `AnnotatedGeometry` frames — useful for tracking how charges or populations evolve along a geometry optimization when you have a separate `CalculationResult` per step.
 
 ```python
 from calcflow import AnnotatedTrajectory
 
-# Build from a list of CalculationResult objects (one per frame)
+# results: list[CalculationResult], one per optimization step
 at = AnnotatedTrajectory.from_results(results)
 
 for frame in at:
-    atom0 = frame[0]
-    print(atom0.charges.get("Mulliken"))
+    print(frame[0].charges.get("Mulliken"))   # Mulliken charge on atom 0 at this step
 ```
 
 ## Topology
@@ -204,18 +203,16 @@ aromatic = find_aromatic_atoms(atoms, bond_graph)
 
 ## Element Data
 
-CalcFlow bundles a complete periodic table with atomic masses, van der Waals radii, and Pyykko covalent radii:
+CalcFlow bundles a periodic table (all 118 elements) with atomic masses, van der Waals radii, and Pyykko covalent radii. The topology functions use this internally, but you can access it directly:
 
 ```python
 from calcflow.constants.ptable import ELEMENT_DATA
 
 carbon = ELEMENT_DATA["C"]
-print(carbon.atomic_number)              # 6
-print(carbon.atomic_mass)               # 12.011
-print(carbon.atomic_radius_vdw_pm)      # 170
-print(carbon.covalent_radius_single_pm) # 75
-print(carbon.covalent_radius_double_pm) # 67
-print(carbon.covalent_radius_triple_pm) # 60
+carbon.atomic_number              # 6
+carbon.atomic_mass               # 12.011
+carbon.atomic_radius_vdw_pm      # van der Waals radius in pm
+carbon.covalent_radius_single_pm # single-bond covalent radius (Pyykko 2009)
+carbon.covalent_radius_double_pm
+carbon.covalent_radius_triple_pm
 ```
-
-Covers all 118 elements.

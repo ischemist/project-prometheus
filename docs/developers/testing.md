@@ -4,7 +4,7 @@ icon: lucide/flask-conical
 
 # Testing
 
-CalcFlow uses a four-level testing hierarchy aligned with the four sources of complexity in the codebase: pure logic, parser contracts, component integration, and numerical regression.
+CalcFlow uses four test levels, each targeting a distinct layer of complexity: pure logic, parser contracts, component integration, and numerical regression.
 
 ## The Four Levels
 

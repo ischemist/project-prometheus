@@ -4,7 +4,7 @@ icon: lucide/file-search
 
 # Parsing Output Files
 
-CalcFlow parses quantum chemistry output files into structured, immutable `CalculationResult` objects. This guide covers every result field, from basic energies to excited-state density matrices.
+CalcFlow parses quantum chemistry output files into structured, immutable `CalculationResult` objects.
 
 ## The Parsers
 
@@ -24,11 +24,11 @@ CalcFlow parses quantum chemistry output files into structured, immutable `Calcu
     result = parse_orca_output(open("calculation.out").read())
     ```
 
-Both functions return a `CalculationResult`. The raw output text is stored on `result.raw_output` but is excluded from JSON serialization.
+The raw output text is stored on `result.raw_output` but is excluded from JSON serialization.
 
 ### Multi-job Q-Chem outputs
 
-Q-Chem can concatenate multiple jobs into a single output file (e.g. a two-job MOM calculation). Use the multi-job parser to get a list of results:
+Q-Chem concatenates multiple jobs into a single output file (e.g. a two-job MOM calculation). Use the multi-job parser to get a list of results:
 
 ```python
 from calcflow import parse_qchem_multi_job_output
@@ -57,7 +57,7 @@ if result.termination_status != "NORMAL":
 
 ```python
 result.final_energy              # float | None — total energy in Hartree
-result.nuclear_repulsion_energy  # float | None — nuclear repulsion in Hartree
+result.nuclear_repulsion_energy  # float | None — Hartree
 result.dispersion                # DispersionCorrection | None
 result.smd                       # SmdResults | None
 ```
@@ -74,8 +74,8 @@ if result.dispersion:
 
 ```python
 if result.smd:
-    print(result.smd.total_energy_kcal_mol)   # total solvation free energy
-    print(result.smd.electrostatic_kcal_mol)  # electrostatic component
+    print(result.smd.total_energy_kcal_mol)
+    print(result.smd.electrostatic_kcal_mol)
     print(result.smd.non_electrostatic_kcal_mol)
 ```
 
@@ -87,15 +87,18 @@ if scf:
     print(scf.converged)       # bool
     print(scf.energy)          # float — final SCF energy in Hartree
     print(scf.n_iterations)    # int
+```
 
-    # Per-iteration history
+The per-iteration history is useful for diagnosing convergence problems:
+
+```python
     for i, it in enumerate(scf.iterations):
         print(f"  iter {i+1}: {it.energy:.10f} Hartree  delta={it.delta_energy:.2e}")
 ```
 
 ### SCF energy components
 
-Q-Chem outputs include a breakdown of the SCF energy:
+Q-Chem outputs include a breakdown:
 
 ```python
 if scf.components:
@@ -111,12 +114,10 @@ if scf.components:
 ```python
 orbs = result.orbitals
 if orbs:
-    # All alpha (or closed-shell) orbitals
     for orb in orbs.alpha_orbitals:
         occ = "occ" if orb.occupied else "virt"
         print(f"  MO {orb.index}: {orb.energy:.4f} Hartree  [{occ}]")
 
-    # HOMO and LUMO
     homo = next(o for o in reversed(orbs.alpha_orbitals) if o.occupied)
     lumo = next(o for o in orbs.alpha_orbitals if not o.occupied)
     gap  = lumo.energy - homo.energy
@@ -149,8 +150,7 @@ if mulliken:
             print(f"  atom {idx} spin: {spin:+.4f}")
 ```
 
-!!! info "Atom indexing"
-    Charge and spin dicts use **0-based** integer keys, consistent with Python conventions. Q-Chem output uses 1-based numbering — CalcFlow converts on ingestion.
+Atom indices are 0-based throughout CalcFlow. Q-Chem output uses 1-based numbering — CalcFlow converts on ingestion.
 
 ## Multipole Moments
 
@@ -186,8 +186,6 @@ if tddft:
     for trans in state.transitions:
         print(f"  {trans.from_orbital} -> {trans.to_orbital}  coeff={trans.coefficient:.4f}")
 ```
-
-### Excited-state geometry optimization
 
 When a TDDFT geometry optimization is run, `state.total_energy_au` gives the total energy of the excited state on the optimized geometry.
 
@@ -228,12 +226,10 @@ adc = result.adc
 if adc:
     print(f"Method: {adc.method}")  # e.g. "ADC(2)"
 
-    # Ground state (HF + MP2)
     gs = adc.ground_state
     print(f"HF energy:  {gs.hf_energy:.6f} Hartree")
     print(f"MP2 energy: {gs.mp2_energy:.6f} Hartree")
 
-    # Excited states
     for state in adc.excited_states:
         print(f"State {state.state_number} ({state.multiplicity}):")
         print(f"  {state.excitation_energy_ev:.3f} eV"
@@ -245,11 +241,9 @@ if adc:
 ## Geometry
 
 ```python
-# Geometry used as input for this calculation
 if result.input_geometry:
     print(result.input_geometry.to_xyz_str())
 
-# Final optimized geometry (geometry optimization jobs)
 if result.final_geometry:
     result.final_geometry.to_xyz_file("optimized.xyz")
     print(f"Optimized energy: {result.final_geometry.energy}")
@@ -266,7 +260,7 @@ if result.timing:
 ## Serialization
 
 ```python
-# Serialize — raw_output is excluded, schema_version is included
+# Serialize — raw_output excluded, schema_version included
 json_str = result.to_json()
 
 # Reload — works across calcflow versions (with migrations)
@@ -278,8 +272,7 @@ data = result.to_dict()
 result3 = CalculationResult.from_dict(data)
 ```
 
-!!! warning "raw_output is excluded"
-    The full output text (`result.raw_output`) is intentionally excluded from JSON serialization to keep files compact. If you need the raw output, save it separately alongside the JSON.
+The full output text (`result.raw_output`) is intentionally excluded from JSON. Save it separately if you need it.
 
 ## Spectrum Broadening
 
@@ -301,4 +294,4 @@ spectrum = spectrum_from_excited_states(states, grid, fwhm=0.3)  # eV FWHM
 np.savetxt("spectrum.dat", np.column_stack([grid, spectrum]))
 ```
 
-ADC OPA and TPA spectra are also available via `opa_spectrum_from_adc_states` and `tpa_spectrum_from_adc_states`.
+ADC OPA and TPA spectra: `opa_spectrum_from_adc_states` and `tpa_spectrum_from_adc_states`.

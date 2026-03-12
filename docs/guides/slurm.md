@@ -4,7 +4,7 @@ icon: lucide/server
 
 # SLURM Job Scripts
 
-`SlurmJob` generates complete SLURM submission scripts for running Q-Chem or ORCA jobs on HPC clusters. It uses the same `CalculationInput` spec to derive program-specific directives — no need to manually translate core counts or memory limits into `#SBATCH` lines.
+`SlurmJob` generates complete SLURM submission scripts for Q-Chem or ORCA jobs. Core counts, memory limits, and program-specific launch commands are derived from the `CalculationInput` spec automatically.
 
 ## The SlurmJob Object
 
@@ -129,8 +129,6 @@ with open("meoq.inp", "w") as f:
 with open("submit.sh", "w") as f:
     f.write(script)
 ```
-
-Submit with `sbatch submit.sh`.
 
 ## ORCA Example
 

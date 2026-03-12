@@ -4,42 +4,29 @@ icon: lucide/bot
 
 # Agentic & LLM Workflows
 
-CalcFlow is designed to drop into agentic workflows. Zero dependencies, a self-documenting API, and `uv`-based instant execution mean an LLM agent can parse and analyze quantum chemistry output files without any pre-existing environment setup.
-
-## Why It Works in Agentic Contexts
-
-Three properties make CalcFlow unusually well-suited for tool use:
-
-1. **Zero dependencies** — `uv run --with calcflow` installs and runs in seconds, in any environment, without version conflicts.
-2. **Self-documenting API** — call `CalculationResult.get_schema()` or `CalculationInput.get_quick_ref()` at runtime to get a complete, always-current field reference. The agent doesn't need to read source code.
-3. **JSON-first results** — every parsed result serializes to JSON via `.to_json()`, making it trivial to pass structured data between agent steps.
-
 ## The CalcFlow OpenCode Agent
 
-The repo ships a purpose-built [opencode](https://opencode.ai) agent at [`calcflow.md`](https://github.com/ischemist/project-prometheus/blob/master/calcflow.md) in the project root. Install it with a single command:
+The repo ships a purpose-built [opencode](https://opencode.ai) agent at [`calcflow.md`](https://github.com/ischemist/project-prometheus/blob/master/calcflow.md). Install it with:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ischemist/project-prometheus/master/calcflow.md \
   -o ~/.config/opencode/agents/calcflow.md
 ```
 
-Once installed, open opencode in any directory containing `.out` files or `.xyz` geometries and the CalcFlow agent is available.
+Open opencode in any directory containing `.out` files or `.xyz` geometries and the CalcFlow agent is available.
 
 ### What the agent does
 
-The agent is configured to:
-
-- **Never read files directly** — all file inspection happens through `calcflow` via the shell tool (`cat`, `grep`, `head` are disabled). This keeps context tight and avoids raw-text hallucinations.
-- **Use `uv run --with calcflow`** for every operation — no assumptions about the local environment.
-- **Navigate the API incrementally** — quick ref first, full method docs only when needed, never dumping the entire schema upfront.
-- **Speak in one-liners** — short, focused scripts that do one thing.
+- **Never reads files directly** — all file inspection goes through `calcflow` via the shell tool. This keeps context tight and avoids raw-text hallucinations.
+- **Uses `uv run --with calcflow`** for every operation — no assumptions about the local environment.
+- **Navigates the API incrementally** — quick ref first, full method docs only when needed.
+- **Works in short, focused scripts** — one task per shell call.
 
 ## `uv run --with calcflow`
 
-The universal entry point — no installation, no virtual environment management:
+No installation, no virtual environment management. Works anywhere `uv` is installed:
 
 ```bash
-# Parse an output file and print key results
 uv run --with calcflow python -c "
 from calcflow.io.qchem import parse_qchem_output
 from pathlib import Path
@@ -52,7 +39,7 @@ if r.tddft and r.tddft.tda_states:
 "
 ```
 
-If CalcFlow is already installed in the project's virtualenv, drop the `--with calcflow`:
+If CalcFlow is already installed in the project virtualenv, drop `--with calcflow`:
 
 ```bash
 uv run python -c "..."
@@ -60,7 +47,7 @@ uv run python -c "..."
 
 ## API Navigation
 
-The agent (and you) can explore the API at runtime — without reading source code.
+Explore the API at runtime — no source code reading needed.
 
 **Quick reference (usually enough):**
 ```bash
@@ -78,7 +65,7 @@ print(CalculationInput.get_method_docs('set_tddft'))
 "
 ```
 
-**Result field schema (for parsing questions):**
+**Result field schema:**
 ```bash
 uv run --with calcflow python -c "
 from calcflow.common.results import CalculationResult
@@ -86,8 +73,7 @@ print(CalculationResult.get_schema())
 "
 ```
 
-!!! tip "One targeted call beats one 600-line blob"
-    Prefer `get_quick_ref()` or `get_method_docs('set_tddft')` over `get_api_docs()` unless you need the full catalogue. Agents work better with focused context.
+Prefer `get_quick_ref()` or `get_method_docs('set_tddft')` over `get_api_docs()` unless you need the full catalogue. A focused 30-line reference beats a 600-line blob.
 
 ## Common One-Liners
 
@@ -163,44 +149,84 @@ print('wrote calc.in and calc_spec.json')
 "
 ```
 
-**Spatial analysis — excited-state hole localization:**
+**Excited-state hole localization (unrelaxed DM):**
 ```bash
 uv run --with calcflow python -c "
-from calcflow import AnnotatedGeometry, build_bond_graph, find_aromatic_atoms
+from calcflow import AnnotatedGeometry
 from calcflow.io.qchem import parse_qchem_output
 from pathlib import Path
 r = parse_qchem_output(Path('calc.out').read_text())
 ag = AnnotatedGeometry.from_result(r)
-graph = build_bond_graph(ag.geometry.atoms)
-aromatic = find_aromatic_atoms(ag.geometry.atoms, graph)
-if s1 := ag.get_unrelaxed_state(1):
+s1 = ag.get_unrelaxed_state(1)
+if s1:
     for atom in s1:
-        if atom.hole_population and atom.hole_population > 0.5:
-            print(f'S1 hole localized on {atom.symbol}{atom.index}')
+        if atom.hole_population and atom.hole_population > 0.1:
+            print(f'S1 hole on {atom.symbol}{atom.index}: {atom.hole_population:.3f}')
 "
 ```
 
-## Multi-Step Workflows
+## Multi-Step Workflow Example
 
-CalcFlow's JSON roundtrip makes it natural to chain agent steps without re-parsing:
+CalcFlow's JSON roundtrip lets agent steps pick up where the last one left off — no re-parsing, no re-running.
 
+A typical absorption → excited-state geometry → emission workflow:
+
+**Step 1 — Parse the ground-state single point, save to JSON:**
+```bash
+uv run --with calcflow python -c "
+from calcflow.io.qchem import parse_qchem_output
+from pathlib import Path
+r = parse_qchem_output(Path('gs_sp.out').read_text())
+assert r.termination_status == 'NORMAL'
+Path('gs_sp.json').write_text(r.to_json())
+# print S1 for reference
+s1 = r.tddft.tddft_states[0]
+print(f'S1 absorption: {s1.excitation_energy_ev:.3f} eV  f={s1.oscillator_strength:.4f}')
+"
 ```
-parse gs_sp.out  →  result.json
-      ↓
-agent reads result.json, decides on excited-state geometry optimization
-      ↓
-generate s1_opt.inp + s1_opt_spec.json
-      ↓
-submit to cluster, wait
-      ↓
-parse s1_opt.out  →  s1_result.json
-      ↓
-agent analyzes S1 geometry, builds emission calculation
-      ↓
-...
+
+**Step 2 — Build the S1 geometry optimization input:**
+```bash
+uv run --with calcflow python -c "
+from calcflow import CalculationInput, Geometry
+from calcflow.common.results import CalculationResult
+from pathlib import Path
+
+gs = CalculationResult.from_json(Path('gs_sp.json').read_text())
+geom = gs.input_geometry   # Geometry object from the parsed result
+
+calc = (
+    CalculationInput(charge=0, spin_multiplicity=1, task='geometry',
+        level_of_theory='wB97X-D3', basis_set='def2-TZVP', n_cores=32)
+    .set_tddft(nroots=5, singlets=True, triplets=False, state_to_optimize=1)
+    .set_solvation('smd', 'water')
+)
+Path('s1_opt.in').write_text(calc.export('qchem', geom))
+Path('s1_opt_spec.json').write_text(calc.to_json())
+print('wrote s1_opt.in')
+"
 ```
 
-Each step stores its output as JSON. The agent can pick up at any point — even across sessions — by loading a previous `result.json` instead of re-parsing the raw output.
+**Step 3 — Parse the S1 optimized geometry, compute emission energy:**
+```bash
+uv run --with calcflow python -c "
+from calcflow.io.qchem import parse_qchem_output
+from calcflow.common.results import CalculationResult
+from pathlib import Path
+
+gs  = CalculationResult.from_json(Path('gs_sp.json').read_text())
+s1  = parse_qchem_output(Path('s1_opt.out').read_text())
+assert s1.termination_status == 'NORMAL'
+Path('s1_opt.json').write_text(s1.to_json())
+
+gs_energy = gs.final_energy
+s1_energy = s1.final_energy
+emission_ev = (s1_energy - gs_energy) * 27.211   # Hartree to eV
+print(f'S1 emission energy: {emission_ev:.3f} eV  ({1239.8 / emission_ev:.0f} nm)')
+"
+```
+
+Each step is self-contained. If a job fails or you want to branch — try a different functional, check a different state — reload from the JSON and go.
 
 ## Units and Conventions
 

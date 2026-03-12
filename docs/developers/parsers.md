@@ -270,6 +270,5 @@ class MullikenParser:
 
 - **Forgetting the completion flag**: the parser will re-run every time it sees the header line.
 - **Mutating state in `matches()`**: creates order-dependent bugs that are hard to track down.
-- **Not pushing back over-read lines**: the next block's header will be silently swallowed.
-- **Using `buffered_line` on state**: the correct mechanism is `iterator.push_back()`. The state object has no `buffered_line` field.
+- **Not pushing back over-read lines**: the next block's header will be silently swallowed. Use `iterator.push_back(line)` — don't try to stash lines on `ParseState` manually.
 - **Raising bare `Exception`**: always raise `ParsingError` from `calcflow.common.exceptions` so callers can catch CalcFlow-specific errors.

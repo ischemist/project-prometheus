@@ -4,7 +4,7 @@ icon: lucide/file-pen
 
 # Building Calculation Inputs
 
-`CalculationInput` is CalcFlow's unified interface for specifying quantum chemistry calculations. You describe *what* you want — method, basis, task, solvation, excited states — and the program-specific builders translate that into valid input syntax for Q-Chem or ORCA.
+`CalculationInput` describes *what* you want — method, basis, task, solvation, excited states — and the program-specific builders translate that into valid input syntax for Q-Chem or ORCA.
 
 ## Construction
 
@@ -227,18 +227,17 @@ calc = calc.enable_ri_for_orca(
 )
 ```
 
-## Program-Specific Escape Hatch
+## Program-Specific Options
 
-For options not covered by the standard API, use `set_options()`:
+For options not covered by the standard API, use `set_options()`. Keys are stored in `program_options` and translated by the builder:
 
 ```python
 calc = calc.set_options(
-    parallelism="mpi",     # Q-Chem: use MPI instead of OpenMP
-    maxiter=500,           # passed through to the program
+    parallelism="mpi",     # Q-Chem: MPI instead of OpenMP (default: "openmp")
 )
 ```
 
-These are forwarded to the builder as `program_options` and translated into program-specific keywords where known.
+Note: `enable_ri_for_orca()` and some other setters are thin wrappers around `set_options()` internally.
 
 ## Exporting
 

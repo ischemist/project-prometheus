@@ -111,15 +111,6 @@ if stored_version > RESULT_SCHEMA_VERSION:
     )
 ```
 
-## Example: Adding an Optional Field (No Bump Needed)
-
-Adding `timing: TimingResults | None = None` to `CalculationResult`:
-
-1. Add the field with a default of `None`.
-2. Old dumps that don't include `timing` will deserialize with `timing=None` — correct behavior.
-3. No migration step needed.
-4. **Do not bump `schema_version`.**
-
 ## Example: Renaming a Field (Bump Required)
 
 Renaming `CalculationResult.scf_results` to `CalculationResult.scf`:
