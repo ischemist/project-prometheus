@@ -783,6 +783,16 @@ class CalculationResult(FrozenModel):
             "  json.dumps([r.to_dict() for r in jobs])          # serialize list",
             "  [CalculationResult.from_dict(d) for d in data]   # deserialize list",
             "",
+            "annotated views (atom-centric access, co-locates geometry + result):",
+            "  from calcflow import AnnotatedGeometry",
+            "  ag = AnnotatedGeometry.from_result(result)",
+            "  ag[0].charges                         # {'Mulliken': -0.42, ...}  ground state",
+            "  ag[0].spins                           # {'Mulliken': 0.1, ...}    UKS only",
+            "  ag.get_unrelaxed_state(1)[0].hole_population    # TDDFT unrelaxed DM",
+            "  ag.get_transition_state(1)[0].trans_charge      # TDDFT transition DM",
+            "  ag.get_adc_state(1)[0].hole_population          # ADC excited state",
+            "  # all three return None if the data was not parsed",
+            "",
             "CalculationResult",
         ]
         out.extend(_render(cls))

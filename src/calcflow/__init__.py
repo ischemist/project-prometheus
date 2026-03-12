@@ -6,6 +6,13 @@ outputs for quantum chemistry software like Q-Chem and ORCA.
 
 from calcflow._version import __version__
 from calcflow.common.input import CalculationInput
+from calcflow.geometry.annotated import (
+    AnnotatedAtom,
+    AnnotatedGeometry,
+    AnnotatedStateAtom,
+    AnnotatedStateView,
+    AnnotatedTrajectory,
+)
 from calcflow.geometry.static import Geometry
 from calcflow.geometry.topology import (
     build_bond_graph,
@@ -27,6 +34,11 @@ from calcflow.postprocess import (
 
 __all__ = [
     "__version__",
+    "AnnotatedAtom",
+    "AnnotatedGeometry",
+    "AnnotatedStateAtom",
+    "AnnotatedStateView",
+    "AnnotatedTrajectory",
     "CalculationInput",
     "Geometry",
     "Trajectory",
