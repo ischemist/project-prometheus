@@ -449,20 +449,6 @@ def adc_state_3() -> AdcExcitedState:
     )
 
 
-def _make_tddft_result(
-    h2o_geometry: Geometry,
-    unrelaxed: list[UnrelaxedDensityMatrix] | None = None,
-    transition: list[TransitionDensityMatrix] | None = None,
-) -> CalculationResult:
-    from calcflow.common.results import TddftResults
-
-    tddft = TddftResults(
-        unrelaxed_density_matrices=unrelaxed or None,
-        transition_density_matrices=transition or None,
-    )
-    return _make_result(final_geometry=h2o_geometry, atomic_charges=[], final_energy=-76.0)._replace_tddft(tddft)  # type: ignore[attr-defined]
-
-
 # AnnotatedResult helper that injects tddft/adc directly via dataclass replace.
 def _result_with_tddft(base: CalculationResult, tddft: "TddftResults") -> CalculationResult:  # noqa: F821
     import dataclasses

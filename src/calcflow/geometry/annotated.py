@@ -135,6 +135,16 @@ def _state_atom_from_mulliken(
 
     Handles both unrelaxed/ADC difference DM fields and transition DM fields,
     populating only what is present on the given AtomicCharges object.
+
+    Args:
+        symbol: element symbol for this atom.
+        x: Cartesian x coordinate in Angstrom.
+        y: Cartesian y coordinate in Angstrom.
+        z: Cartesian z coordinate in Angstrom.
+        resolved: normalized 0-based atom index. Negative indices must be converted
+            to positive by the caller before passing (e.g. -1 → 2 for a 3-atom
+            geometry). Used as the key into all AtomicCharges mappings.
+        ac: the AtomicCharges entry to project onto this atom, or None if unavailable.
     """
     if ac is None:
         return AnnotatedStateAtom(symbol=symbol, x=x, y=y, z=z, index=resolved)
@@ -148,7 +158,7 @@ def _state_atom_from_mulliken(
         y=y,
         z=z,
         index=resolved,
-        charge=_get(ac.charges) if ac.charges else None,
+        charge=_get(ac.charges),
         spin=_get(ac.spins),
         hole_population=_get(ac.hole_populations),
         electron_population=_get(ac.electron_populations),
