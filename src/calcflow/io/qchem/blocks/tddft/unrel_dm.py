@@ -228,8 +228,8 @@ class UnrelaxedDensityMatrixParser(BlockParser):
                 line_buffer = line
                 break
 
-            idx = extract_index(parts[0])
             try:
+                idx = extract_index(parts[0])
                 if is_uks:
                     assert spins is not None and hole_populations_alpha is not None
                     assert hole_populations_beta is not None and electron_populations_alpha is not None

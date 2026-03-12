@@ -193,8 +193,8 @@ class AdcGroundStateParser(BlockParser):
             if not parts or not parts[0].isdigit():
                 line_buffer = line
                 break
-            idx = extract_index(parts[0])
             try:
+                idx = extract_index(parts[0])
                 charges[idx] = float(parts[2])
                 if is_uks:
                     assert spins is not None and hole_populations_alpha is not None

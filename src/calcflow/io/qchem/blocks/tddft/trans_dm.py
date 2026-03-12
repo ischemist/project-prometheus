@@ -229,8 +229,8 @@ class TransitionDensityMatrixParser(BlockParser):
                 line_buffer = line
                 break
 
-            idx = extract_index(parts[0])
             try:
+                idx = extract_index(parts[0])
                 # Use float() to parse numeric columns
                 # After the atom label (parts[0]) and element (parts[1]), we have the numeric data
                 if is_uks:
