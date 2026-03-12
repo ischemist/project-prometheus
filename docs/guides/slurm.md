@@ -87,6 +87,7 @@ The generated script includes:
 ## Full Example: Q-Chem TDDFT Workflow
 
 ```python
+from pathlib import Path
 from calcflow import CalculationInput, Geometry
 from calcflow.slurm import SlurmJob
 
@@ -123,11 +124,8 @@ job = SlurmJob(
 input_text = calc.export("qchem", geom)
 script     = job.export(calc, "qchem", "meoq.inp", "meoq.out")
 
-with open("meoq.inp", "w") as f:
-    f.write(input_text)
-
-with open("submit.sh", "w") as f:
-    f.write(script)
+Path("meoq.inp").write_text(input_text)
+Path("submit.sh").write_text(script)
 ```
 
 ## ORCA Example
@@ -161,12 +159,12 @@ script     = orca_job.export(orca_calc, "orca", "meoq.inp", "meoq.out")
 ## Saving the Spec for Reproducibility
 
 ```python
-# Save the calculation spec alongside the job script
-with open("calc_spec.json", "w") as f:
-    f.write(calc.to_json())
+from pathlib import Path
+
+Path("calc_spec.json").write_text(calc.to_json())
 ```
 
-Reload later with `CalculationInput.from_json(open("calc_spec.json").read())` — so you always know exactly what was run.
+Reload later with `CalculationInput.from_json(Path("calc_spec.json").read_text())` — so you always know exactly what was run.
 
 ## Partition and Constraint
 

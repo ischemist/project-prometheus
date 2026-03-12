@@ -11,17 +11,19 @@ CalcFlow parses quantum chemistry output files into structured, immutable `Calcu
 === "Q-Chem"
 
     ```python
+    from pathlib import Path
     from calcflow import parse_qchem_output
 
-    result = parse_qchem_output(open("calculation.out").read())
+    result = parse_qchem_output(Path("calculation.out").read_text())
     ```
 
 === "ORCA"
 
     ```python
+    from pathlib import Path
     from calcflow import parse_orca_output
 
-    result = parse_orca_output(open("calculation.out").read())
+    result = parse_orca_output(Path("calculation.out").read_text())
     ```
 
 The raw output text is stored on `result.raw_output` but is excluded from JSON serialization.
@@ -31,9 +33,10 @@ The raw output text is stored on `result.raw_output` but is excluded from JSON s
 Q-Chem concatenates multiple jobs into a single output file (e.g. a two-job MOM calculation). Use the multi-job parser to get a list of results:
 
 ```python
+from pathlib import Path
 from calcflow import parse_qchem_multi_job_output
 
-results = parse_qchem_multi_job_output(open("mom_calc.out").read())
+results = parse_qchem_multi_job_output(Path("mom_calc.out").read_text())
 gs_result  = results[0]  # ground state job
 es_result  = results[1]  # excited state job
 ```
@@ -279,10 +282,11 @@ The full output text (`result.raw_output`) is intentionally excluded from JSON. 
 For UV/Vis spectrum simulation, install the numpy extra and use the `postprocess` module:
 
 ```python
+from pathlib import Path
 from calcflow import parse_qchem_output, spectrum_from_excited_states, make_energy_grid
 import numpy as np
 
-result = parse_qchem_output(open("tddft.out").read())
+result = parse_qchem_output(Path("tddft.out").read_text())
 states = result.tddft.tddft_states
 
 grid     = make_energy_grid(

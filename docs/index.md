@@ -76,9 +76,10 @@ For spectrum broadening (`postprocess` module), install the optional numpy extra
 ## Quick Example
 
 ```python
+from pathlib import Path
 from calcflow import parse_qchem_output
 
-result = parse_qchem_output(open("calculation.out").read())
+result = parse_qchem_output(Path("calculation.out").read_text())
 
 print(result.termination_status)   # "NORMAL"
 print(result.final_energy)         # -76.4234... (Hartree)

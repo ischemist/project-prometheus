@@ -242,6 +242,7 @@ Note: `enable_ri_for_orca()` and some other setters are thin wrappers around `se
 ## Exporting
 
 ```python
+from pathlib import Path
 from calcflow import Geometry
 
 geom = Geometry.from_xyz_file("molecule.xyz")
@@ -249,8 +250,7 @@ geom = Geometry.from_xyz_file("molecule.xyz")
 qchem_input = calc.export("qchem", geom)
 orca_input  = calc.export("orca", geom)
 
-with open("molecule.inp", "w") as f:
-    f.write(qchem_input)
+Path("molecule.inp").write_text(qchem_input)
 ```
 
 ## Serialization
@@ -258,13 +258,14 @@ with open("molecule.inp", "w") as f:
 Save a spec to JSON for reproducibility and reload it later:
 
 ```python
+from pathlib import Path
+from calcflow.common.input import CalculationInput
+
 # Save
-with open("calc_spec.json", "w") as f:
-    f.write(calc.to_json())
+Path("calc_spec.json").write_text(calc.to_json())
 
 # Reload
-from calcflow.common.input import CalculationInput
-calc2 = CalculationInput.from_json(open("calc_spec.json").read())
+calc2 = CalculationInput.from_json(Path("calc_spec.json").read_text())
 ```
 
 ## Runtime API Reference

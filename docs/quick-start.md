@@ -25,17 +25,19 @@ CalcFlow exposes one parse function per program. Pass it the raw output text —
 === "Q-Chem"
 
     ```python
+    from pathlib import Path
     from calcflow import parse_qchem_output
 
-    result = parse_qchem_output(open("h2o_sp.out").read())
+    result = parse_qchem_output(Path("h2o_sp.out").read_text())
     ```
 
 === "ORCA"
 
     ```python
+    from pathlib import Path
     from calcflow import parse_orca_output
 
-    result = parse_orca_output(open("h2o_sp.out").read())
+    result = parse_orca_output(Path("h2o_sp.out").read_text())
     ```
 
 Check termination before trusting the results:
@@ -76,14 +78,14 @@ Energies are in **Hartree** unless the field name says otherwise (`_ev`, `_kcal_
 ## 3. Serialize and Reload
 
 ```python
-# Save — raw_output is excluded to keep the file compact
-with open("result.json", "w") as f:
-    f.write(result.to_json())
-
-# Reload
+from pathlib import Path
 from calcflow.common.results import CalculationResult
 
-result2 = CalculationResult.from_json(open("result.json").read())
+# Save — raw_output is excluded to keep the file compact
+Path("result.json").write_text(result.to_json())
+
+# Reload
+result2 = CalculationResult.from_json(Path("result.json").read_text())
 print(result2.final_energy)
 ```
 
@@ -123,8 +125,7 @@ print(qchem_input)
 Save the spec for reproducibility:
 
 ```python
-with open("calc_spec.json", "w") as f:
-    f.write(calc.to_json())
+Path("calc_spec.json").write_text(calc.to_json())
 ```
 
 ## 5. Discover the API at Runtime

@@ -84,9 +84,10 @@ All frames in a `Trajectory` must have the same number and order of atoms — th
 `AnnotatedGeometry` is a read-only view that pairs a `Geometry` with a `CalculationResult`. It gives atom-centric access to charges, spin densities, and excited-state populations without duplicating data.
 
 ```python
+from pathlib import Path
 from calcflow import parse_qchem_output, AnnotatedGeometry
 
-result = parse_qchem_output(open("calculation.out").read())
+result = parse_qchem_output(Path("calculation.out").read_text())
 ag = AnnotatedGeometry.from_result(result)
 ```
 
