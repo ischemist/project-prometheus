@@ -244,7 +244,7 @@ class AtomicCharges(FrozenModel):
     trans_charges: Mapping[int, float] | None = None  # "Trans. (e)" column
     del_q: Mapping[int, float] | None = None  # "Del q" column
 
-    def to_array(self, n_atoms: int) -> list[float]:
+    def to_list(self, n_atoms: int) -> list[float]:
         """Returns charges as a list of length n_atoms, indexed by atom position.
 
         Missing indices (sparse charges) default to 0.0. n_atoms must be provided

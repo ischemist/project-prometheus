@@ -1,5 +1,5 @@
 """
-unit tests for AtomicCharges.to_array() and CalculationResult.get_charges().
+unit tests for AtomicCharges.to_list() and CalculationResult.get_charges().
 
 these are pure-logic unit tests — no file I/O, no parsers, minimal fixtures.
 """
@@ -43,47 +43,47 @@ def result_no_charges() -> CalculationResult:
 
 
 # ---------------------------------------------------------------------------
-# AtomicCharges.to_array()
+# AtomicCharges.to_list()
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.unit
 class TestAtomicChargesToArray:
     def test_returns_correct_values_in_order(self, mulliken: AtomicCharges):
-        arr = mulliken.to_array(3)
+        arr = mulliken.to_list(3)
         assert arr == [-0.5, 0.25, 0.25]
 
     def test_missing_indices_default_to_zero(self):
         # sparse charges: only atom 1 is present
         sparse = AtomicCharges(method="Hirshfeld", charges={1: 0.5})
-        arr = sparse.to_array(3)
+        arr = sparse.to_list(3)
         assert arr == [0.0, 0.5, 0.0]
 
     def test_n_atoms_larger_than_charges_pads_with_zeros(self, mulliken: AtomicCharges):
         # caller passes a larger n_atoms than indices present
-        arr = mulliken.to_array(5)
+        arr = mulliken.to_list(5)
         assert arr == [-0.5, 0.25, 0.25, 0.0, 0.0]
 
     def test_n_atoms_zero_with_empty_charges_returns_empty_list(self):
         ac = AtomicCharges(method="Mulliken", charges={})
-        assert ac.to_array(0) == []
+        assert ac.to_list(0) == []
 
     def test_out_of_range_index_raises(self, mulliken: AtomicCharges):
         # mulliken has indices 0,1,2 — n_atoms=2 makes index 2 out of range
         with pytest.raises(ValueError, match="out of range"):
-            mulliken.to_array(2)
+            mulliken.to_list(2)
 
     def test_single_atom(self):
         ac = AtomicCharges(method="Mulliken", charges={0: 1.0})
-        assert ac.to_array(1) == [1.0]
+        assert ac.to_list(1) == [1.0]
 
     def test_returns_list_not_other_sequence(self, mulliken: AtomicCharges):
-        result = mulliken.to_array(3)
+        result = mulliken.to_list(3)
         assert isinstance(result, list)
 
     def test_negative_and_positive_charges_preserved(self):
         ac = AtomicCharges(method="CM5", charges={0: -0.834, 1: 0.417, 2: 0.417})
-        arr = ac.to_array(3)
+        arr = ac.to_list(3)
         assert arr[0] == pytest.approx(-0.834)
         assert arr[1] == pytest.approx(0.417)
         assert arr[2] == pytest.approx(0.417)
@@ -91,7 +91,7 @@ class TestAtomicChargesToArray:
     @pytest.mark.parametrize("n_atoms", [1, 3, 10, 100])
     def test_length_always_equals_n_atoms(self, n_atoms: int):
         ac = AtomicCharges(method="Mulliken", charges={0: 0.1})
-        assert len(ac.to_array(n_atoms)) == n_atoms
+        assert len(ac.to_list(n_atoms)) == n_atoms
 
 
 # ---------------------------------------------------------------------------
@@ -139,8 +139,8 @@ class TestCalculationResultGetCharges:
         assert result_with_charges.get_charges("") is None
 
     @pytest.mark.parametrize("method", ["Mulliken", "CM5", "Hirshfeld", "Loewdin", "NPA"])
-    def test_get_charges_roundtrip_with_to_array(self, method: str):
-        """get_charges + to_array is a natural usage pattern — verify it composes correctly."""
+    def test_get_charges_roundtrip_with_to_list(self, method: str):
+        """get_charges + to_list is a natural usage pattern — verify it composes correctly."""
         ac = AtomicCharges(method=method, charges={0: 0.1, 1: -0.1})
         result = CalculationResult(
             termination_status="NORMAL",
@@ -150,4 +150,4 @@ class TestCalculationResultGetCharges:
         )
         found = result.get_charges(method)
         assert found is not None
-        assert found.to_array(2) == pytest.approx([0.1, -0.1])
+        assert found.to_list(2) == pytest.approx([0.1, -0.1])
