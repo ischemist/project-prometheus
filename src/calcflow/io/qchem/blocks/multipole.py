@@ -7,6 +7,7 @@ quadrupole, octopole, and hexadecapole moments.
 
 import re
 
+from calcflow.common.patterns import FLOAT_PAT
 from calcflow.common.results import (
     DipoleMoment,
     HexadecapoleMoment,
@@ -21,9 +22,8 @@ from calcflow.utils import logger
 # Regex patterns
 MULTIPOLE_START_PAT = re.compile(r"Cartesian Multipole Moments")
 MULTIPOLE_END_PAT = re.compile(r"^\s*-+\s*$")
-CHARGE_PAT = re.compile(r"^\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*$")
-COMPONENT_PAT = re.compile(r"([A-Za-z]+)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)")
-FLOAT_PAT = r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)"
+CHARGE_PAT = re.compile(rf"^\s*{FLOAT_PAT}\s*$")
+COMPONENT_PAT = re.compile(rf"([A-Za-z]+)\s+{FLOAT_PAT}")
 
 # Expected component keys for each multipole type
 MULTIPOLE_KEYS = {

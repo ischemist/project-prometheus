@@ -1,14 +1,78 @@
 """
-Pattern definition types for version-aware QChem output parsing.
+Shared primitives for QC output parsing.
 
-This module provides dataclasses for defining version-specific regex patterns
-that can be used to parse QChem output files across different versions.
+Canonical float patterns
+------------------------
+Import these instead of redefining ``FLOAT_PAT`` in every parser file.  Using
+a shared constant guarantees all parsers handle the same numeric formats and
+makes future changes (e.g. adding support for a new notation) apply everywhere
+at once.
+
+Index conversion
+----------------
+QC programs use 1-based indices in their text output; internal models use
+0-based indices.  Use ``extract_index`` for every such conversion so the
+off-by-one rule lives in exactly one place.
+
+Pattern definition infrastructure
+----------------------------------
+The ``VersionSpec`` / ``VersionedPattern`` / ``PatternDefinition`` dataclasses
+support version-aware regex patterns for QChem output across software versions.
 """
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from re import Match, Pattern
 from typing import Any, TypeVar
+
+# ---------------------------------------------------------------------------
+# Canonical float regex strings
+# ---------------------------------------------------------------------------
+# These are *raw strings* (not compiled patterns) so callers can embed them
+# inside larger patterns with rf"…{FLOAT_PAT}…".
+
+# Full float: optional sign, optional integer part, optional decimal point,
+# required digits, optional scientific notation.  Matches: -1.5e-10, .5, 42
+FLOAT_PAT = r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)"
+
+# Strict signed float: requires digits before and after the decimal point,
+# no scientific notation.  Matches: -1.5, +0.0, 42.0  but NOT: 1e-5, .5
+SIGNED_FIXED_FLOAT_PAT = r"([-+]?\d+\.\d+)"
+
+# Negative-or-unsigned fixed float: allows a leading minus but not plus,
+# requires digits on both sides of the decimal point, no scientific notation.
+# Matches: -1.5, 0.0, 42.7  but NOT: +1.5, 1e-5, .5
+NEG_FIXED_FLOAT_PAT = r"(-?\d+\.\d+)"
+
+# Unsigned fixed float: no sign allowed, requires digits on both sides of the
+# decimal point, no scientific notation.  Use for quantities that are always
+# non-negative (e.g. oscillator strengths, timing values).
+UNSIGNED_FIXED_FLOAT_PAT = r"(\d+\.\d+)"
+
+
+# ---------------------------------------------------------------------------
+# Index conversion
+# ---------------------------------------------------------------------------
+
+
+def extract_index(value: str | int) -> int:
+    """Convert a 1-based atom/orbital index from QC output to 0-based.
+
+    Args:
+        value: The raw index as parsed from the output file (string or int).
+               Must be a positive integer in the QC program's 1-based scheme.
+
+    Returns:
+        The corresponding 0-based index for internal storage.
+
+    Raises:
+        ValueError: If *value* cannot be converted to a positive integer.
+    """
+    idx = int(value)
+    if idx < 1:
+        raise ValueError(f"QC output indices are 1-based and must be >= 1, got {idx!r}")
+    return idx - 1
+
 
 # Type variable for regex pattern
 T = TypeVar("T", bound=str)

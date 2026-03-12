@@ -9,6 +9,7 @@ Hirshfeld block since CM5 is derived from the Hirshfeld partitioning.
 
 import re
 
+from calcflow.common.patterns import extract_index
 from calcflow.common.results import AtomicCharges
 from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
@@ -43,9 +44,9 @@ class Cm5Parser:
             match = CHARGE_LINE_PAT.match(line)
             if match:
                 try:
-                    atom_idx_0based = int(match.group(1)) - 1
+                    atom_idx = extract_index(match.group(1))
                     charge = float(match.group(3))
-                    charges[atom_idx_0based] = charge
+                    charges[atom_idx] = charge
                 except (ValueError, IndexError) as e:
                     state.parsing_warnings.append(f"Could not parse CM5 charge line: {line.strip()} ({e})")
 

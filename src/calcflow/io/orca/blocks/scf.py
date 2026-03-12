@@ -1,12 +1,12 @@
 import re
 
 from calcflow.common.exceptions import ParsingError
+from calcflow.common.patterns import FLOAT_PAT
 from calcflow.common.results import ScfEnergyComponents, ScfIteration, ScfResults
 from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
-FLOAT_PAT = r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)"
 SCF_CONVERGED_LINE_PAT = re.compile(r"SCF CONVERGED AFTER\s+(\d+)\s+CYCLES")
 
 # DIIS iteration format: Iteration Energy Delta-E RMSDP MaxDP DIISErr Damp Time(sec)

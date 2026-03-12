@@ -8,6 +8,7 @@ from the "ORBITAL ENERGIES" block in ORCA output.
 import re
 
 from calcflow.common.exceptions import ParsingError
+from calcflow.common.patterns import SIGNED_FIXED_FLOAT_PAT
 from calcflow.common.results import Orbital, OrbitalsSet
 from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
@@ -19,8 +20,11 @@ ORBITAL_ENERGIES_START_PAT = re.compile(r"ORBITAL ENERGIES")
 # Pattern to match a single orbital data line:
 # Format: NO   OCC          E(Eh)            E(eV)
 # Example:   0   2.0000     -18.937331      -515.3110
-FLOAT_PAT = r"([-+]?\d+\.\d+)"
-ORBITAL_LINE_PAT = re.compile(rf"^\s*(\d+)\s+{FLOAT_PAT}\s+{FLOAT_PAT}\s+{FLOAT_PAT}")
+# Uses SIGNED_FIXED_FLOAT_PAT: requires digits on both sides of the decimal,
+# no scientific notation (orbital energies are never in that format in ORCA output).
+ORBITAL_LINE_PAT = re.compile(
+    rf"^\s*(\d+)\s+{SIGNED_FIXED_FLOAT_PAT}\s+{SIGNED_FIXED_FLOAT_PAT}\s+{SIGNED_FIXED_FLOAT_PAT}"
+)
 
 # Pattern to detect end of orbital data (truncation message or next section)
 ORBITAL_END_PAT = re.compile(r"\*Only the first.*orbitals were printed")

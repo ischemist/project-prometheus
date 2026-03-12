@@ -14,6 +14,7 @@ The parser handles both RKS (restricted) and UKS (unrestricted) calculations.
 import re
 
 from calcflow.common.exceptions import ParsingError
+from calcflow.common.patterns import extract_index
 from calcflow.common.results import AtomicCharges, GroundStateReference
 from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
@@ -160,7 +161,7 @@ class GroundStateRefParser:
                 # Try to match an atom line
                 atom_match = MULLIKEN_ATOM_PAT.search(line)
                 if atom_match:
-                    atom_index = int(atom_match.group(1)) - 1  # Convert to 0-based indexing
+                    atom_index = extract_index(atom_match.group(1))
                     charge = float(atom_match.group(2))
                     gs_data["mulliken_charges"][atom_index] = charge
 

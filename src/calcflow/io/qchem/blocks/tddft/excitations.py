@@ -16,6 +16,7 @@ Both blocks contain excited state information including:
 import re
 
 from calcflow.common.exceptions import ParsingError
+from calcflow.common.patterns import extract_index
 from calcflow.common.results import ExcitedState, OrbitalTransition
 from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
@@ -152,8 +153,8 @@ class ExcitationsParser:
             # --- Parse orbital transitions ---
             trans_match = TRANSITION_PAT.search(line)
             if trans_match:
-                from_idx = int(trans_match.group(1)) - 1  # Convert to 0-indexed
-                to_idx = int(trans_match.group(2)) - 1
+                from_idx = extract_index(trans_match.group(1))
+                to_idx = extract_index(trans_match.group(2))
                 amplitude = float(trans_match.group(3))
                 spin_label = trans_match.group(4)
 
