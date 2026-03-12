@@ -19,4 +19,5 @@ docs/
 ex-*.md
 h2o_calc_spec.json
 *.md
+!calcflow.md
 *.csv
