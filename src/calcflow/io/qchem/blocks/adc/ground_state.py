@@ -25,6 +25,7 @@ from calcflow.common.results import (
     NaturalOrbitals,
 )
 from calcflow.io.core import BlockParser, ParseState
+from calcflow.io.peekable import PeekableIterator
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class AdcGroundStateParser(BlockParser):
             return False
         return bool(self.BANNER_PAT.search(line))
 
-    def parse(self, iterator: LineIterator, start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Parsing ADC ground state block.")
         data: dict[str, Any] = {}
 
@@ -78,7 +79,7 @@ class AdcGroundStateParser(BlockParser):
                     break
 
             if self.DAVIDSON_PAT.search(line):
-                state.buffered_line = line
+                iterator.push_back(line)
                 break
 
             if "Energy:" in line and "hf_energy_au" not in data and "a.u." in line:

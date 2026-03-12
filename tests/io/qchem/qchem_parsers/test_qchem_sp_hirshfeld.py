@@ -14,6 +14,7 @@ Test hierarchy:
 import pytest
 
 from calcflow.common.results import AtomicCharges, CalculationResult
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.qchem.blocks.hirshfeld import HirshfeldParser
 from calcflow.io.state import ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
@@ -109,7 +110,7 @@ def test_hirshfeld_parser_parse_basic():
         "  ---------------------------------------- ",
         "  Sum of atomic charges =     0.000248",
     ]
-    parser.parse(iter(lines), "          Hirshfeld Atomic Charges         ", state)
+    parser.parse(PeekableIterator(iter(lines)), "          Hirshfeld Atomic Charges         ", state)
 
     assert state.parsed_hirshfeld is True
     assert len(state.atomic_charges) == 1
@@ -131,7 +132,7 @@ def test_hirshfeld_parser_uses_0based_indices():
         "      2 O                    -0.200000",
         "  Sum of atomic charges =    -0.100000",
     ]
-    parser.parse(iter(lines), "Hirshfeld Atomic Charges", state)
+    parser.parse(PeekableIterator(iter(lines)), "Hirshfeld Atomic Charges", state)
 
     assert 0 in state.atomic_charges[0].charges
     assert 1 in state.atomic_charges[0].charges
@@ -144,7 +145,7 @@ def test_hirshfeld_parser_empty_block_adds_warning():
     parser = HirshfeldParser()
     state = ParseState(raw_output="")
 
-    parser.parse(iter(["  Sum of atomic charges =     0.000000"]), "Hirshfeld Atomic Charges", state)
+    parser.parse(PeekableIterator(iter(["  Sum of atomic charges =     0.000000"])), "Hirshfeld Atomic Charges", state)
 
     assert state.parsed_hirshfeld is False
     assert len(state.atomic_charges) == 0

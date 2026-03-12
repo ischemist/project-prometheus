@@ -96,7 +96,6 @@ class ParseState:
         # --- Communication & Error Handling ---
         self.parsing_errors: list[str] = []
         self.parsing_warnings: list[str] = []
-        self.buffered_line: str | None = None  # For parsers that over-read
 
     def to_calculation_result(self) -> CalculationResult:
         """

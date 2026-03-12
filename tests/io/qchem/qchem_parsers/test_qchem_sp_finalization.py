@@ -3,6 +3,7 @@
 import pytest
 
 from calcflow.common.results import CalculationResult
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.qchem.blocks.finalization import TerminationParser
 from calcflow.io.state import ParseState
 
@@ -105,7 +106,7 @@ class TestTerminationParserParse:
         state = parse_state_empty
         line = "        *  Thank you very much for using Q-Chem.  Have a nice day.  *"
 
-        parser.parse(iter([]), line, state)
+        parser.parse(PeekableIterator(iter([])), line, state)
 
         assert state.termination_status == "NORMAL"
 
@@ -116,7 +117,7 @@ class TestTerminationParserParse:
         state = parse_state_empty
         line = "ERROR: SCF failed to converge"
 
-        parser.parse(iter([]), line, state)
+        parser.parse(PeekableIterator(iter([])), line, state)
 
         assert state.termination_status == "ERROR"
 
@@ -127,7 +128,7 @@ class TestTerminationParserParse:
         state = parse_state_empty
         line = "error: Geometry optimization failed"
 
-        parser.parse(iter([]), line, state)
+        parser.parse(PeekableIterator(iter([])), line, state)
 
         assert state.termination_status == "ERROR"
 
@@ -138,7 +139,7 @@ class TestTerminationParserParse:
         state = parse_state_empty
         line = "Aborting calculation due to memory issues"
 
-        parser.parse(iter([]), line, state)
+        parser.parse(PeekableIterator(iter([])), line, state)
 
         assert state.termination_status == "ERROR"
 
@@ -149,7 +150,7 @@ class TestTerminationParserParse:
         state = parse_state_empty
         line = "Job failed at basis set allocation"
 
-        parser.parse(iter([]), line, state)
+        parser.parse(PeekableIterator(iter([])), line, state)
 
         assert state.termination_status == "ERROR"
 
@@ -160,7 +161,7 @@ class TestTerminationParserParse:
         state = parse_state_empty
         line = "        *  Thank you very much for using Q-Chem.  Have a nice day.  *"
         test_lines = ["line1", "line2", "line3"]
-        iterator = iter(test_lines)
+        iterator = PeekableIterator(iter(test_lines))
 
         parser.parse(iterator, line, state)
 

@@ -2,11 +2,12 @@
 The unified core parsing engine for calcflow.
 """
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Sequence
 from typing import Protocol
 
 from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import CalculationResult
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -15,7 +16,7 @@ class BlockParser(Protocol):
     """Protocol for all section/block parsers."""
 
     def matches(self, line: str, state: ParseState) -> bool: ...
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None: ...
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None: ...
 
 
 def core_parse(output_text: str, parser_registry: Sequence[BlockParser]) -> CalculationResult:
@@ -30,39 +31,27 @@ def core_parse(output_text: str, parser_registry: Sequence[BlockParser]) -> Calc
         An immutable `CalculationResult` object.
     """
     state = ParseState(raw_output=output_text)
-    line_iterator = iter(output_text.splitlines())
+    iterator = PeekableIterator(iter(output_text.splitlines()))
 
     current_line_num = 0
-    while True:
-        try:
-            if state.buffered_line is not None:
-                line = state.buffered_line
-                state.buffered_line = None
-            else:
-                line = next(line_iterator)
-                current_line_num += 1
-
-            parser_found = False
+    try:
+        for line in iterator:
+            current_line_num += 1
             for parser in parser_registry:
                 if parser.matches(line, state):
                     logger.debug(f"Line {current_line_num}: Matched {type(parser).__name__}")
-                    parser.parse(line_iterator, line, state)
-                    parser_found = True
+                    parser.parse(iterator, line, state)
                     break
 
-            if parser_found:
-                continue
+    except ParsingError:
+        state.termination_status = "ERROR"
+        raise
+    except Exception as e:
+        logger.critical(f"Unhandled exception in core parser at line ~{current_line_num}", exc_info=True)
+        state.termination_status = "ERROR"
+        raise ParsingError("An unexpected critical error occurred during parsing.") from e
 
-        except StopIteration:
-            logger.debug("Core parser reached end of file.")
-            break
-        except ParsingError:
-            state.termination_status = "ERROR"
-            raise
-        except Exception as e:
-            logger.critical(f"Unhandled exception in core parser at line ~{current_line_num}", exc_info=True)
-            state.termination_status = "ERROR"
-            raise ParsingError("An unexpected critical error occurred during parsing.") from e
+    logger.debug("Core parser reached end of file.")
 
     # --- Finalization ---
     # Finalize termination status if it wasn't explicitly set by a parser

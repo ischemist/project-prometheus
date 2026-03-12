@@ -37,6 +37,7 @@ from calcflow.common.results import (
 )
 from calcflow.common.types import SpinChannel
 from calcflow.io.core import BlockParser, ParseState
+from calcflow.io.peekable import PeekableIterator
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,7 @@ class AdcExcitedStatesParser(BlockParser):
             return False
         return bool(self.START_PAT.search(line))
 
-    def parse(self, iterator: LineIterator, start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Parsing ADC Excited State Summary block.")
         excited_states: list[AdcExcitedState] = []
 
@@ -84,7 +85,7 @@ class AdcExcitedStatesParser(BlockParser):
         # Advance to the first state header
         for line in chain([start_line], iterator):
             if _END_PAT.search(line):
-                state.buffered_line = line
+                iterator.push_back(line)
                 line_buffer = None
                 break
             if _STATE_HEADER_PAT.match(line):
@@ -95,16 +96,16 @@ class AdcExcitedStatesParser(BlockParser):
             m = _STATE_HEADER_PAT.match(line_buffer)
             if not m:
                 # Not a state header; could be END line or unexpected content
-                state.buffered_line = line_buffer
+                iterator.push_back(line_buffer)
                 break
 
             state_num = int(m.group(1))
             es, line_buffer = self._parse_single_state(iterator, state_num)
             if es is not None:
                 excited_states.append(es)
-            # If line_buffer is the END line, buffer it and stop
+            # If line_buffer is the END line, push it back and stop
             if line_buffer is not None and _END_PAT.search(line_buffer):
-                state.buffered_line = line_buffer
+                iterator.push_back(line_buffer)
                 line_buffer = None
                 break
 

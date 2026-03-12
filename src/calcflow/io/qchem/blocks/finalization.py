@@ -3,8 +3,8 @@ Block parser for QChem termination status messages.
 """
 
 import re
-from collections.abc import Iterator
 
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -27,7 +27,7 @@ class TerminationParser:
             return False
         return bool(NORMAL_TERM_PAT.search(line) or ERROR_TERM_PAT.search(line))
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Sets the termination status based on the matched line. This parser does not
         consume any additional lines from the iterator.

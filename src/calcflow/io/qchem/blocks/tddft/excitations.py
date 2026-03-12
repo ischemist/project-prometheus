@@ -14,10 +14,10 @@ Both blocks contain excited state information including:
 """
 
 import re
-from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import ExcitedState, OrbitalTransition
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -60,7 +60,7 @@ class ExcitationsParser:
 
         return bool(TDA_START_PAT.search(line) or TDDFT_START_PAT.search(line))
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Parse TDDFT/TDA excitation energies block.
 
@@ -83,7 +83,7 @@ class ExcitationsParser:
             # --- Check for end of block (only after we've seen at least one state) ---
             if seen_first_state and any(pat.search(line) for pat in END_OF_BLOCK_PATS):
                 logger.debug(f"Excitations parser ended on terminator: {line.strip()}")
-                state.buffered_line = line
+                iterator.push_back(line)
                 break
 
             # --- Parse new excited state ---

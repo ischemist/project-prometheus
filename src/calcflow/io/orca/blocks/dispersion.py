@@ -1,8 +1,8 @@
 import re
-from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import DispersionCorrection
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -56,7 +56,7 @@ class DispersionParser:
             return False
         return bool(START_PAT.search(line))
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Parse the entire dispersion block.
         """

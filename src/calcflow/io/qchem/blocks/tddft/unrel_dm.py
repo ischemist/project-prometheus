@@ -24,6 +24,7 @@ from calcflow.common.results import (
     UnrelaxedDensityMatrix,
 )
 from calcflow.io.core import BlockParser, ParseState
+from calcflow.io.peekable import PeekableIterator
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
             return False
         return bool(self.START_PAT.search(line))
 
-    def parse(self, iterator: LineIterator, start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Parsing 'Analysis of Unrelaxed Density Matrices' block.")
         all_analyses: list[UnrelaxedDensityMatrix] = []
 
@@ -69,7 +70,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
         while line_buffer is not None:
             state_match = self.STATE_HEADER_PAT.match(line_buffer)
             if not state_match:
-                state.buffered_line = line_buffer
+                iterator.push_back(line_buffer)
                 break
 
             multiplicity, state_num_str = state_match.groups()

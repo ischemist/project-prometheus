@@ -6,9 +6,9 @@ charges for each atom in the system.
 """
 
 import re
-from collections.abc import Iterator
 
 from calcflow.common.results import AtomicCharges
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -41,7 +41,7 @@ class MullikenParser:
         """
         return bool(MULLIKEN_START_PAT.search(line)) and not state.parsed_mulliken
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Parse the Mulliken atomic charges block.
 
@@ -53,25 +53,15 @@ class MullikenParser:
         logger.debug("Parsing QChem Mulliken charges block.")
 
         # Skip the dashes separator line
-        try:
-            next(iterator)
-        except StopIteration:
-            logger.warning("Unexpected end of iterator after Mulliken charges header")
-            return
+        iterator.skip()
 
         charges: dict[int, float] = {}
 
-        # Parse charge lines until we hit the sum line
-        for line in iterator:
-            # Check for end marker
-            if SUM_LINE_PAT.search(line):
-                break
-
-            # Empty line might signal end, but continue to be safe
+        # Parse charge lines until we hit the sum line (sum line is pushed back, not consumed)
+        for line in iterator.take_until(lambda ln: bool(SUM_LINE_PAT.search(ln))):
             if not line.strip():
                 continue
 
-            # Try to match a charge line
             match = CHARGE_LINE_PAT.match(line.strip())
             if match:
                 try:

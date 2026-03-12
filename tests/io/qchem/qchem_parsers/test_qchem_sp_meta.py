@@ -72,7 +72,9 @@ def test_metadata_parser_sets_software_name_and_version():
     state = ParseState(raw_output="")
 
     version_line = " Q-Chem 6.2, Q-Chem, Inc., Pleasanton, CA (2024)"
-    parser.parse(iter([]), version_line, state)
+    from calcflow.io.peekable import PeekableIterator
+
+    parser.parse(PeekableIterator(iter([])), version_line, state)
 
     assert state.metadata.software_name == "Q-Chem"
     assert state.metadata.software_version == "6.2"

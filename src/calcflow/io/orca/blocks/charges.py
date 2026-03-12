@@ -7,9 +7,9 @@ Both methods share identical formatting and are parsed by the same parser.
 """
 
 import re
-from collections.abc import Iterator
 
 from calcflow.common.results import AtomicCharges
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -44,7 +44,7 @@ class ChargesParser:
         """
         return bool(MULLIKEN_START_PAT.search(line)) or bool(LOEWDIN_START_PAT.search(line))
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Parse an atomic charges block (either Mulliken or Loewdin).
 

@@ -7,11 +7,11 @@ unrestricted (UKS/UHF) calculations.
 """
 
 import re
-from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import Orbital, OrbitalsSet
 from calcflow.common.types import SpinChannel
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -43,7 +43,7 @@ class OrbitalsParser:
             return False
         return bool(ORBITAL_BLOCK_START_PAT.search(line))
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """Parse the entire orbital energies block."""
         logger.debug("Starting orbitals block parsing.")
 
@@ -73,7 +73,7 @@ class OrbitalsParser:
             if any(pat.search(line) for pat in END_OF_BLOCK_PATS):
                 # Hit the start of next block
                 logger.debug(f"Orbitals parser ended on next-block line: {line.strip()}")
-                state.buffered_line = line
+                iterator.push_back(line)
                 break
 
             # Check for section headers

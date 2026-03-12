@@ -6,9 +6,9 @@ QChem provides timing in the format:
 """
 
 import re
-from collections.abc import Iterator
 
 from calcflow.common.results import TimingResults
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -27,7 +27,7 @@ class TimingParser:
             return False
         return bool(TOTAL_TIME_PAT.search(line))
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Parses the total job time line to extract wall and CPU times.
         """

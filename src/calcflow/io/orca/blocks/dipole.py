@@ -1,8 +1,8 @@
 import re
-from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import DipoleMoment, MultipoleResults
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -31,7 +31,7 @@ class DipoleParser:
             return False
         return "DIPOLE MOMENT" in line
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Parse the dipole moment block and populate state.multipole with DipoleMoment.
 

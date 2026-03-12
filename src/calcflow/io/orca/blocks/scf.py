@@ -1,8 +1,8 @@
 import re
-from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import ScfEnergyComponents, ScfIteration, ScfResults
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -59,7 +59,7 @@ class ScfParser:
         except (ValueError, IndexError):
             return False
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         self._reset_state()
         logger.debug("Parsing SCF block.")
 
@@ -84,7 +84,7 @@ class ScfParser:
                 if SCF_CONVERGED_LINE_PAT.search(line):
                     self.converged = True
                     self.n_iterations = int(SCF_CONVERGED_LINE_PAT.search(line).group(1))  # type: ignore
-                state.buffered_line = line
+                iterator.push_back(line)
                 break
 
             # Parse iteration line
@@ -143,7 +143,7 @@ class ScfParser:
                         self.xc_eh = float(xc_match.group(1))
 
                     if "FINAL SINGLE POINT ENERGY" in comp_line or "SCF CONVERGENCE" in comp_line:
-                        state.buffered_line = comp_line
+                        iterator.push_back(comp_line)
                         break
                 break  # Exit components search
 

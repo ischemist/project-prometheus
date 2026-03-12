@@ -6,7 +6,6 @@ quadrupole, octopole, and hexadecapole moments.
 """
 
 import re
-from collections.abc import Iterator
 
 from calcflow.common.results import (
     DipoleMoment,
@@ -15,6 +14,7 @@ from calcflow.common.results import (
     OctopoleMoment,
     QuadrupoleMoment,
 )
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -62,7 +62,7 @@ class MultipoleParser:
         """Check if this line marks the beginning of the multipole moments block."""
         return bool(MULTIPOLE_START_PAT.search(line)) and not state.parsed_multipole
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Parse the Cartesian multipole moments block.
 
