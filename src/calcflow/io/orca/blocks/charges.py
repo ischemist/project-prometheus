@@ -7,9 +7,9 @@ Both methods share identical formatting and are parsed by the same parser.
 """
 
 import re
-from collections.abc import Iterator
 
 from calcflow.common.results import AtomicCharges
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -44,7 +44,7 @@ class ChargesParser:
         """
         return bool(MULLIKEN_START_PAT.search(line)) or bool(LOEWDIN_START_PAT.search(line))
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Parse an atomic charges block (either Mulliken or Loewdin).
 
@@ -64,26 +64,13 @@ class ChargesParser:
             logger.warning(f"Could not determine charge method from line: {start_line}")
             return
 
-        # Skip the dashes separator line
-        try:
-            next(iterator)
-        except StopIteration:
-            logger.warning("Unexpected end of iterator after charges header")
-            return
+        iterator.skip()  # consume the dashes separator line
 
         charges: dict[int, float] = {}
 
         # Parse charge lines until we hit the end marker
-        for line in iterator:
-            # Check for end markers
-            if MULLIKEN_SUM_PAT.search(line) or REDUCED_CHARGES_PAT.search(line):
-                # For Mulliken, the sum line is part of this block
-                # For Loewdin, "REDUCED ORBITAL CHARGES" signals the end
-                break
-
-            # Empty line might also signal end
+        for line in iterator.take_until(lambda ln: bool(MULLIKEN_SUM_PAT.search(ln) or REDUCED_CHARGES_PAT.search(ln))):
             if not line.strip():
-                # Look ahead to see if we're done with charges
                 continue
 
             # Try to match a charge line

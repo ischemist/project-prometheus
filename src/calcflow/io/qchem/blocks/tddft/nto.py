@@ -12,11 +12,11 @@ Format:
 """
 
 import re
-from collections.abc import Iterator
 from typing import cast
 
 from calcflow.common.results import NTOContribution, NTOStateAnalysis
 from calcflow.common.types import SpinChannel
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -59,7 +59,7 @@ class NTOParser:
 
         return bool(NTO_START_PAT.search(line))
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Parse SA-NTO decomposition block.
 
@@ -76,7 +76,7 @@ class NTOParser:
             # --- Check for end of block ---
             if any(pat.search(line) for pat in END_OF_BLOCK_PATS):
                 logger.debug(f"NTO parser ended on terminator: {line.strip()}")
-                state.buffered_line = line
+                iterator.push_back(line)
                 break
 
             # --- Try RKS state header ---
@@ -94,7 +94,7 @@ class NTOParser:
                     logger.debug(
                         f"Non-sequential state number {state_number} after {last_state_number}, ending NTO parsing"
                     )
-                    state.buffered_line = line
+                    iterator.push_back(line)
                     break
 
                 last_state_number = state_number
@@ -122,7 +122,7 @@ class NTOParser:
                     logger.debug(
                         f"Non-sequential state number {state_number} after {last_state_number}, ending NTO parsing"
                     )
-                    state.buffered_line = line
+                    iterator.push_back(line)
                     break
 
                 last_state_number = state_number

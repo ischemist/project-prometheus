@@ -25,6 +25,7 @@ from calcflow.common.results import (
     NaturalOrbitals,
 )
 from calcflow.io.core import BlockParser, ParseState
+from calcflow.io.peekable import PeekableIterator
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class AdcGroundStateParser(BlockParser):
             return False
         return bool(self.BANNER_PAT.search(line))
 
-    def parse(self, iterator: LineIterator, start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Parsing ADC ground state block.")
         data: dict[str, Any] = {}
 
@@ -78,7 +79,7 @@ class AdcGroundStateParser(BlockParser):
                     break
 
             if self.DAVIDSON_PAT.search(line):
-                state.buffered_line = line
+                iterator.push_back(line)
                 break
 
             if "Energy:" in line and "hf_energy_au" not in data and "a.u." in line:
@@ -176,9 +177,9 @@ class AdcGroundStateParser(BlockParser):
 
         return nos, line_buffer
 
-    def _parse_mulliken_section(self, iterator: LineIterator) -> tuple[AtomicCharges | None, str | None]:
+    def _parse_mulliken_section(self, iterator: PeekableIterator) -> tuple[AtomicCharges | None, str | None]:
         header_line = next(iterator, "")
-        next(iterator, None)  # separator
+        iterator.skip()  # separator
 
         is_uks = "Spin (e)" in header_line
         data: dict[str, Any] = {
@@ -190,6 +191,13 @@ class AdcGroundStateParser(BlockParser):
             "electron_populations_alpha": {} if is_uks else None,
             "electron_populations_beta": {} if is_uks else None,
         }
+
+        charges: dict[int, float] = data["charges"]
+        spins: dict[int, float] | None = data["spins"]
+        hole_populations_alpha: dict[int, float] | None = data["hole_populations_alpha"]
+        hole_populations_beta: dict[int, float] | None = data["hole_populations_beta"]
+        electron_populations_alpha: dict[int, float] | None = data["electron_populations_alpha"]
+        electron_populations_beta: dict[int, float] | None = data["electron_populations_beta"]
 
         line_buffer = None
         for line in iterator:
@@ -203,13 +211,16 @@ class AdcGroundStateParser(BlockParser):
                 break
             idx = int(parts[0]) - 1
             try:
-                data["charges"][idx] = float(parts[2])
+                charges[idx] = float(parts[2])
                 if is_uks:
-                    data["spins"][idx] = float(parts[3])
-                    data["hole_populations_alpha"][idx] = float(parts[4])
-                    data["hole_populations_beta"][idx] = float(parts[5])
-                    data["electron_populations_alpha"][idx] = float(parts[6])
-                    data["electron_populations_beta"][idx] = float(parts[7])
+                    assert spins is not None and hole_populations_alpha is not None
+                    assert hole_populations_beta is not None and electron_populations_alpha is not None
+                    assert electron_populations_beta is not None
+                    spins[idx] = float(parts[3])
+                    hole_populations_alpha[idx] = float(parts[4])
+                    hole_populations_beta[idx] = float(parts[5])
+                    electron_populations_alpha[idx] = float(parts[6])
+                    electron_populations_beta[idx] = float(parts[7])
             except (ValueError, IndexError):
                 logger.warning(f"Could not parse Mulliken line: {line.strip()}")
 
@@ -230,17 +241,17 @@ class AdcGroundStateParser(BlockParser):
                 break
         return data, line_buffer
 
-    def _parse_exciton_section(self, iterator: LineIterator) -> tuple[dict[str, ExcitonAnalysis | None], str | None]:
+    def _parse_exciton_section(
+        self, iterator: PeekableIterator
+    ) -> tuple[dict[str, ExcitonAnalysis | None], str | None]:
         exciton: dict[str, ExcitonAnalysis | None] = {}
-        line_buffer: str | None = None
 
         # Find first meaningful line
-        for line in iterator:
-            if line.strip():
-                line_buffer = line
-                break
-        else:
+        iterator.take_while(lambda ln: not ln.strip())
+        line_buffer = iterator.peek()
+        if line_buffer is None:
             return {}, None
+        next(iterator)  # consume the peeked line
 
         # RKS (first line is data, not "Total:")
         if "Total:" not in line_buffer:
@@ -251,18 +262,18 @@ class AdcGroundStateParser(BlockParser):
         exciton["exciton_total"], line_buffer = self._parse_exciton_sub(iterator)
 
         if line_buffer is None:
-            for line in iterator:
-                if line.strip():
-                    line_buffer = line
-                    break
+            iterator.take_while(lambda ln: not ln.strip())
+            line_buffer = iterator.peek()
+            if line_buffer is not None:
+                next(iterator)
 
         if line_buffer and "Alpha spin:" in line_buffer:
             exciton["exciton_alpha"], line_buffer = self._parse_exciton_sub(iterator)
             if line_buffer is None:
-                for line in iterator:
-                    if line.strip():
-                        line_buffer = line
-                        break
+                iterator.take_while(lambda ln: not ln.strip())
+                line_buffer = iterator.peek()
+                if line_buffer is not None:
+                    next(iterator)
 
         if line_buffer and "Beta spin:" in line_buffer:
             exciton["exciton_beta"], line_buffer = self._parse_exciton_sub(iterator)

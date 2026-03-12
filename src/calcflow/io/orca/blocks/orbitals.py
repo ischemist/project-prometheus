@@ -6,10 +6,10 @@ from the "ORBITAL ENERGIES" block in ORCA output.
 """
 
 import re
-from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import Orbital, OrbitalsSet
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -50,7 +50,7 @@ class OrbitalsParser:
             return False
         return bool(ORBITAL_ENERGIES_START_PAT.search(line))
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Parse the entire orbital energies block.
 
@@ -68,24 +68,10 @@ class OrbitalsParser:
         homo_idx: int | None = None
         lumo_idx: int | None = None
 
-        # Skip separator line ("----------------")
-        _ = next(iterator, None)
+        # Skip separator, empty line, and column header
+        iterator.skip(3)
 
-        # Skip empty line
-        _ = next(iterator, None)
-
-        # Skip header line ("  NO   OCC          E(Eh)            E(eV)")
-        _ = next(iterator, None)
-
-        for line in iterator:
-            # Empty line might mark the end of orbital data
-            if not line.strip():
-                break
-
-            # Check for truncation message
-            if ORBITAL_END_PAT.search(line):
-                break
-
+        for line in iterator.take_while(lambda ln: bool(ln.strip()) and not ORBITAL_END_PAT.search(ln)):
             # Try to parse as an orbital data line
             match = ORBITAL_LINE_PAT.match(line.strip())
             if match:
@@ -114,11 +100,6 @@ class OrbitalsParser:
 
                 except (ValueError, IndexError) as e:
                     state.parsing_warnings.append(f"Could not parse orbital line: {line.strip()}. Error: {e}")
-            else:
-                # If line doesn't match orbital format and isn't empty/truncation msg,
-                # we've likely reached the next section. Buffer it for the core parser.
-                state.buffered_line = line
-                break
 
         if not orbitals:
             raise ParsingError("Orbital energies block found but no orbitals were parsed.")

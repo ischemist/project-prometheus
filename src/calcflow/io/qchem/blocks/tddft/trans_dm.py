@@ -24,6 +24,7 @@ from calcflow.common.results import (
     TransitionDensityMatrix,
 )
 from calcflow.io.core import BlockParser, ParseState
+from calcflow.io.peekable import PeekableIterator
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class TransitionDensityMatrixParser(BlockParser):
             return False
         return bool(self.START_PAT.search(line))
 
-    def parse(self, iterator: LineIterator, start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Parsing 'Transition Density Matrix Analysis' block.")
         all_analyses: list[TransitionDensityMatrix] = []
 
@@ -69,7 +70,7 @@ class TransitionDensityMatrixParser(BlockParser):
         while line_buffer is not None:
             state_match = self.STATE_HEADER_PAT.match(line_buffer)
             if not state_match:
-                state.buffered_line = line_buffer
+                iterator.push_back(line_buffer)
                 break
 
             multiplicity, state_num_str = state_match.groups()
@@ -101,13 +102,13 @@ class TransitionDensityMatrixParser(BlockParser):
         logger.debug("Finished parsing 'Transition Density Matrix Analysis'.")
 
     def _parse_single_state_block(
-        self, iterator: LineIterator, state_number: int, multiplicity: str
+        self, iterator: PeekableIterator, state_number: int, multiplicity: str
     ) -> tuple[TransitionDensityMatrix | None, str | None]:
         data: dict[str, Any] = {"state_number": state_number, "multiplicity": multiplicity}
         line_buffer = None
 
         # Consume the separator line after the state header
-        next(iterator, None)
+        iterator.skip()
 
         for line in iterator:
             stripped_line = line.strip()
@@ -189,7 +190,7 @@ class TransitionDensityMatrixParser(BlockParser):
         match = re.search(r"\[\s*([\d.-]+),\s*([\d.-]+),\s*([\d.-]+)\]", line)
         return tuple(map(float, match.groups())) if match else None
 
-    def _parse_mulliken_section(self, iterator: LineIterator) -> tuple[AtomicCharges | None, str | None]:
+    def _parse_mulliken_section(self, iterator: PeekableIterator) -> tuple[AtomicCharges | None, str | None]:
         """
         Parse Mulliken population analysis section.
 
@@ -197,7 +198,7 @@ class TransitionDensityMatrixParser(BlockParser):
         UKS format: Atom, Trans. (e), h+ (alpha), h+ (beta), e- (alpha), e- (beta)
         """
         header_line = next(iterator)
-        next(iterator)  # separator
+        iterator.skip()  # separator
 
         is_uks = "alpha" in header_line.lower()
         data: dict[str, Any] = {
@@ -212,6 +213,16 @@ class TransitionDensityMatrixParser(BlockParser):
             "electron_populations_beta": {} if is_uks else None,
             "del_q": {},
         }
+
+        charges: dict[int, float] = data["charges"]
+        trans_charges: dict[int, float] = data["trans_charges"]
+        del_q: dict[int, float] = data["del_q"]
+        hole_populations: dict[int, float] | None = data["hole_populations"]
+        electron_populations: dict[int, float] | None = data["electron_populations"]
+        hole_populations_alpha: dict[int, float] | None = data["hole_populations_alpha"]
+        hole_populations_beta: dict[int, float] | None = data["hole_populations_beta"]
+        electron_populations_alpha: dict[int, float] | None = data["electron_populations_alpha"]
+        electron_populations_beta: dict[int, float] | None = data["electron_populations_beta"]
 
         line_buffer = None
         for line in iterator:
@@ -232,23 +243,26 @@ class TransitionDensityMatrixParser(BlockParser):
                 if is_uks:
                     # UKS: Atom Element Trans(e), h+ alpha, h+ beta, e- alpha, e- beta, [Del q]
                     # parts: [atom_num, element, trans_charge, h_alpha, h_beta, e_alpha, e_beta, ...]
-                    data["trans_charges"][idx] = float(parts[2])
-                    data["charges"][idx] = float(parts[2])  # Trans charge as "charges"
-                    data["hole_populations_alpha"][idx] = float(parts[3])
-                    data["hole_populations_beta"][idx] = float(parts[4])
-                    data["electron_populations_alpha"][idx] = float(parts[5])
-                    data["electron_populations_beta"][idx] = float(parts[6])
+                    assert hole_populations_alpha is not None and hole_populations_beta is not None
+                    assert electron_populations_alpha is not None and electron_populations_beta is not None
+                    trans_charges[idx] = float(parts[2])
+                    charges[idx] = float(parts[2])  # Trans charge as "charges"
+                    hole_populations_alpha[idx] = float(parts[3])
+                    hole_populations_beta[idx] = float(parts[4])
+                    electron_populations_alpha[idx] = float(parts[5])
+                    electron_populations_beta[idx] = float(parts[6])
                     # Del q might not be present in UKS
                     if len(parts) > 7:
-                        data["del_q"][idx] = float(parts[7])
+                        del_q[idx] = float(parts[7])
                 else:
                     # RKS: Atom Element Trans(e), h+, e-, Del q
                     # parts: [atom_num, element, trans_charge, h_pop, e_pop, del_q]
-                    data["trans_charges"][idx] = float(parts[2])
-                    data["charges"][idx] = float(parts[2])  # Trans charge as "charges"
-                    data["hole_populations"][idx] = float(parts[3])
-                    data["electron_populations"][idx] = float(parts[4])
-                    data["del_q"][idx] = float(parts[5])
+                    assert hole_populations is not None and electron_populations is not None
+                    trans_charges[idx] = float(parts[2])
+                    charges[idx] = float(parts[2])  # Trans charge as "charges"
+                    hole_populations[idx] = float(parts[3])
+                    electron_populations[idx] = float(parts[4])
+                    del_q[idx] = float(parts[5])
             except (ValueError, IndexError) as e:
                 logger.warning(f"Could not parse Mulliken line: {line.strip()} ({e})")
 
@@ -334,21 +348,19 @@ class TransitionDensityMatrixParser(BlockParser):
 
         return data, line_buffer
 
-    def _parse_exciton_section(self, iterator: LineIterator) -> tuple[dict[str, Any], str | None]:
+    def _parse_exciton_section(self, iterator: PeekableIterator) -> tuple[dict[str, Any], str | None]:
         """
         Orchestrates parsing of the exciton block, handling both RKS and UKS cases.
         Returns a dict with transition metrics + exciton analyses.
         """
         exciton_data: dict[str, Any] = {}
-        line_buffer = None
 
         # Find the first meaningful line to determine if this is an RKS or UKS block
-        for line in iterator:
-            if line.strip():
-                line_buffer = line
-                break
-        else:
+        iterator.take_while(lambda ln: not ln.strip())
+        line_buffer = iterator.peek()
+        if line_buffer is None:
             return {}, None  # Reached end of iterator
+        next(iterator)  # consume the peeked line
 
         # RKS case: the first line is data, not a "Total:" header
         if "Total:" not in line_buffer:
@@ -365,10 +377,10 @@ class TransitionDensityMatrixParser(BlockParser):
 
         # After parsing a sub-block, if buffer is empty, search for next header
         if line_buffer is None:
-            for line in iterator:
-                if line.strip():
-                    line_buffer = line
-                    break
+            iterator.take_while(lambda ln: not ln.strip())
+            line_buffer = iterator.peek()
+            if line_buffer is not None:
+                next(iterator)
 
         if line_buffer and "Alpha spin:" in line_buffer:
             _, exciton_alpha, line_buffer = self._parse_exciton_sub_block(iterator)
@@ -376,10 +388,10 @@ class TransitionDensityMatrixParser(BlockParser):
 
             # Repeat search logic for the Beta block
             if line_buffer is None:
-                for line in iterator:
-                    if line.strip():
-                        line_buffer = line
-                        break
+                iterator.take_while(lambda ln: not ln.strip())
+                line_buffer = iterator.peek()
+                if line_buffer is not None:
+                    next(iterator)
 
         if line_buffer and "Beta spin:" in line_buffer:
             _, exciton_beta, line_buffer = self._parse_exciton_sub_block(iterator)

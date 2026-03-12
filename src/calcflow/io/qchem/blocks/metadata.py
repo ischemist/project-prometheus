@@ -1,8 +1,8 @@
 import dataclasses
 import re
-from collections.abc import Iterator
 
 from calcflow.common.patterns import VersionSpec
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -25,7 +25,7 @@ class MetadataParser:
             return False
         return QCHEM_VERSION_PAT.search(line) is not None
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Extracts the Q-Chem version, normalizes it, and sets the completion flag.
         """

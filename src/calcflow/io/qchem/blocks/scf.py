@@ -1,9 +1,9 @@
 import re
-from collections.abc import Iterator
 
 from calcflow.common.exceptions import InternalCodeError, ParsingError
 from calcflow.common.patterns import VersionSpec
 from calcflow.common.results import ScfIteration, ScfResults, SmdResults
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.qchem.blocks.patterns import QCHEM_PATTERNS
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
@@ -35,7 +35,7 @@ class ScfParser:
     def matches(self, line: str, state: ParseState) -> bool:
         return not state.parsed_scf and bool(SCF_START_PAT.search(line))
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Starting SCF block parsing.")
 
         iterations: list[ScfIteration] = []
@@ -58,7 +58,7 @@ class ScfParser:
             # --- 1. Check for End-of-Block Conditions ---
             if any(pat.search(line) for pat in END_OF_BLOCK_PATS):
                 logger.debug(f"SCF parser ended on terminator line: {line.strip()}")
-                state.buffered_line = line
+                iterator.push_back(line)
                 break
 
             # --- 2. Handle Block State ---

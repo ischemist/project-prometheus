@@ -12,10 +12,10 @@ The parser handles both RKS (restricted) and UKS (unrestricted) calculations.
 """
 
 import re
-from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import AtomicCharges, GroundStateReference
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -69,7 +69,7 @@ class GroundStateRefParser:
 
         return bool(GS_REF_START_PAT.search(line))
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
         Parse ground state reference block.
 
@@ -98,7 +98,7 @@ class GroundStateRefParser:
             # --- Check for end of block ---
             if any(pat.search(line) for pat in END_OF_BLOCK_PATS):
                 logger.debug(f"Ground state ref parser ended on terminator: {line.strip()}")
-                state.buffered_line = line
+                iterator.push_back(line)
                 break
 
             # --- Detect NOs sections (to identify UKS vs RKS) ---

@@ -24,6 +24,7 @@ from calcflow.common.results import (
     UnrelaxedDensityMatrix,
 )
 from calcflow.io.core import BlockParser, ParseState
+from calcflow.io.peekable import PeekableIterator
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
             return False
         return bool(self.START_PAT.search(line))
 
-    def parse(self, iterator: LineIterator, start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Parsing 'Analysis of Unrelaxed Density Matrices' block.")
         all_analyses: list[UnrelaxedDensityMatrix] = []
 
@@ -69,7 +70,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
         while line_buffer is not None:
             state_match = self.STATE_HEADER_PAT.match(line_buffer)
             if not state_match:
-                state.buffered_line = line_buffer
+                iterator.push_back(line_buffer)
                 break
 
             multiplicity, state_num_str = state_match.groups()
@@ -101,13 +102,13 @@ class UnrelaxedDensityMatrixParser(BlockParser):
         logger.debug("Finished parsing 'Analysis of Unrelaxed Density Matrices'.")
 
     def _parse_single_state_block(
-        self, iterator: LineIterator, state_number: int, multiplicity: str
+        self, iterator: PeekableIterator, state_number: int, multiplicity: str
     ) -> tuple[UnrelaxedDensityMatrix | None, str | None]:
         data: dict[str, Any] = {"state_number": state_number, "multiplicity": multiplicity}
         line_buffer = None
 
         # Consume the separator line after the state header
-        next(iterator, None)
+        iterator.skip()
 
         for line in iterator:
             stripped_line = line.strip()
@@ -197,9 +198,9 @@ class UnrelaxedDensityMatrixParser(BlockParser):
                 nos[current_spin_key] = NaturalOrbitals.from_dict(sub_data)
         return nos, line_buffer
 
-    def _parse_mulliken_section(self, iterator: LineIterator) -> tuple[AtomicCharges | None, str | None]:
+    def _parse_mulliken_section(self, iterator: PeekableIterator) -> tuple[AtomicCharges | None, str | None]:
         header_line = next(iterator)
-        next(iterator)  # separator
+        iterator.skip()  # separator
 
         is_uks = "Spin (e)" in header_line
         data: dict[str, Any] = {
@@ -213,6 +214,15 @@ class UnrelaxedDensityMatrixParser(BlockParser):
             "electron_populations_alpha": {} if is_uks else None,
             "electron_populations_beta": {} if is_uks else None,
         }
+
+        charges: dict[int, float] = data["charges"]
+        spins: dict[int, float] | None = data["spins"]
+        hole_populations: dict[int, float] | None = data["hole_populations"]
+        electron_populations: dict[int, float] | None = data["electron_populations"]
+        hole_populations_alpha: dict[int, float] | None = data["hole_populations_alpha"]
+        hole_populations_beta: dict[int, float] | None = data["hole_populations_beta"]
+        electron_populations_alpha: dict[int, float] | None = data["electron_populations_alpha"]
+        electron_populations_beta: dict[int, float] | None = data["electron_populations_beta"]
 
         line_buffer = None
         for line in iterator:
@@ -229,16 +239,20 @@ class UnrelaxedDensityMatrixParser(BlockParser):
             idx = int(parts[0]) - 1
             try:
                 if is_uks:
-                    data["charges"][idx] = float(parts[2])
-                    data["spins"][idx] = float(parts[3])
-                    data["hole_populations_alpha"][idx] = float(parts[4])
-                    data["hole_populations_beta"][idx] = float(parts[5])
-                    data["electron_populations_alpha"][idx] = float(parts[6])
-                    data["electron_populations_beta"][idx] = float(parts[7])
+                    assert spins is not None and hole_populations_alpha is not None
+                    assert hole_populations_beta is not None and electron_populations_alpha is not None
+                    assert electron_populations_beta is not None
+                    charges[idx] = float(parts[2])
+                    spins[idx] = float(parts[3])
+                    hole_populations_alpha[idx] = float(parts[4])
+                    hole_populations_beta[idx] = float(parts[5])
+                    electron_populations_alpha[idx] = float(parts[6])
+                    electron_populations_beta[idx] = float(parts[7])
                 else:
-                    data["charges"][idx] = float(parts[2])
-                    data["hole_populations"][idx] = float(parts[3])
-                    data["electron_populations"][idx] = float(parts[4])
+                    assert hole_populations is not None and electron_populations is not None
+                    charges[idx] = float(parts[2])
+                    hole_populations[idx] = float(parts[3])
+                    electron_populations[idx] = float(parts[4])
             except (ValueError, IndexError):
                 logger.warning(f"Could not parse Mulliken line: {line.strip()}")
 
@@ -263,21 +277,21 @@ class UnrelaxedDensityMatrixParser(BlockParser):
                 break
         return data, line_buffer
 
-    def _parse_exciton_section(self, iterator: LineIterator) -> tuple[dict[str, ExcitonAnalysis | None], str | None]:
+    def _parse_exciton_section(
+        self, iterator: PeekableIterator
+    ) -> tuple[dict[str, ExcitonAnalysis | None], str | None]:
         """
         Orchestrates parsing of the potentially multi-part exciton block, now
         with robust handling of transitions between Total, Alpha, and Beta sections.
         """
         exciton: dict[str, ExcitonAnalysis | None] = {}
-        line_buffer = None
 
         # Find the first meaningful line to determine if this is an RKS or UKS block.
-        for line in iterator:
-            if line.strip():
-                line_buffer = line
-                break
-        else:
+        iterator.take_while(lambda ln: not ln.strip())
+        line_buffer = iterator.peek()
+        if line_buffer is None:
             return {}, None  # Reached end of iterator
+        next(iterator)  # consume the peeked line
 
         # RKS case: the first line is data, not a "Total:" header.
         if "Total:" not in line_buffer:
@@ -291,20 +305,20 @@ class UnrelaxedDensityMatrixParser(BlockParser):
         # CRITICAL FIX: After parsing a sub-block, if the buffer is empty (due to
         # ending on a blank line), we must actively search for the next header.
         if line_buffer is None:
-            for line in iterator:
-                if line.strip():
-                    line_buffer = line
-                    break
+            iterator.take_while(lambda ln: not ln.strip())
+            line_buffer = iterator.peek()
+            if line_buffer is not None:
+                next(iterator)
 
         if line_buffer and "Alpha spin:" in line_buffer:
             exciton["exciton_alpha"], line_buffer = self._parse_exciton_sub_block(iterator)
 
             # Repeat the search logic for the Beta block.
             if line_buffer is None:
-                for line in iterator:
-                    if line.strip():
-                        line_buffer = line
-                        break
+                iterator.take_while(lambda ln: not ln.strip())
+                line_buffer = iterator.peek()
+                if line_buffer is not None:
+                    next(iterator)
 
         if line_buffer and "Beta spin:" in line_buffer:
             exciton["exciton_beta"], line_buffer = self._parse_exciton_sub_block(iterator)

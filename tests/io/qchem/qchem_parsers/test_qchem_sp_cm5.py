@@ -15,6 +15,7 @@ Test hierarchy:
 import pytest
 
 from calcflow.common.results import AtomicCharges, CalculationResult
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.qchem.blocks.cm5 import Cm5Parser
 from calcflow.io.state import ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
@@ -110,7 +111,7 @@ def test_cm5_parser_parse_basic():
         "  ---------------------------------------- ",
         "  Sum of atomic charges =     0.000248",
     ]
-    parser.parse(iter(lines), "          Charge Model 5         ", state)
+    parser.parse(PeekableIterator(iter(lines)), "          Charge Model 5         ", state)
 
     assert state.parsed_cm5 is True
     assert len(state.atomic_charges) == 1
@@ -132,7 +133,7 @@ def test_cm5_parser_uses_0based_indices():
         "      2 O                    -0.571558",
         "  Sum of atomic charges =    -0.285845",
     ]
-    parser.parse(iter(lines), "Charge Model 5", state)
+    parser.parse(PeekableIterator(iter(lines)), "Charge Model 5", state)
 
     assert 0 in state.atomic_charges[0].charges
     assert 1 in state.atomic_charges[0].charges
@@ -145,7 +146,7 @@ def test_cm5_parser_empty_block_adds_warning():
     parser = Cm5Parser()
     state = ParseState(raw_output="")
 
-    parser.parse(iter(["  Sum of atomic charges =     0.000000"]), "Charge Model 5", state)
+    parser.parse(PeekableIterator(iter(["  Sum of atomic charges =     0.000000"])), "Charge Model 5", state)
 
     assert state.parsed_cm5 is False
     assert len(state.atomic_charges) == 0

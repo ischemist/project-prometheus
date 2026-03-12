@@ -1,9 +1,9 @@
 import re
-from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
 from calcflow.common.models import Atom
 from calcflow.geometry.static import Geometry
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -15,21 +15,15 @@ class GeometryParser:
     def matches(self, line: str, state: ParseState) -> bool:
         return not state.parsed_geometry and bool(GEOMETRY_START_PAT.search(line))
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Parsing geometry block.")
-        next(iterator, None)  # Consume header
+        iterator.skip()  # Consume blank header line
         geometry: list[Atom] = []
-        for line in iterator:
-            line_stripped = line.strip()
-            if not line_stripped:
-                break
-            match = GEOMETRY_LINE_PAT.match(line_stripped)
+        for line in iterator.take_while(lambda ln: bool(ln.strip())):
+            match = GEOMETRY_LINE_PAT.match(line.strip())
             if match:
                 symbol, x, y, z = match.groups()
                 geometry.append(Atom(symbol=symbol, x=float(x), y=float(y), z=float(z)))
-            else:
-                state.buffered_line = line
-                break
 
         if not geometry:
             raise ParsingError("Geometry block found but no atoms parsed.")

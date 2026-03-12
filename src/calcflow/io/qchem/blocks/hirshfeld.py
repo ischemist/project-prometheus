@@ -7,9 +7,9 @@ partitioning of the electron density onto pro-molecular atomic densities.
 """
 
 import re
-from collections.abc import Iterator
 
 from calcflow.common.results import AtomicCharges
+from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -35,15 +35,13 @@ class HirshfeldParser:
     def matches(self, line: str, state: ParseState) -> bool:
         return bool(HIRSHFELD_START_PAT.search(line)) and not state.parsed_hirshfeld
 
-    def parse(self, iterator: Iterator[str], start_line: str, state: ParseState) -> None:
+    def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Parsing QChem Hirshfeld charges block.")
 
         charges: dict[int, float] = {}
 
-        for line in iterator:
-            if SUM_LINE_PAT.search(line):
-                break
-
+        # sum line is pushed back, not consumed
+        for line in iterator.take_until(lambda ln: bool(SUM_LINE_PAT.search(ln))):
             match = CHARGE_LINE_PAT.match(line)
             if match:
                 try:

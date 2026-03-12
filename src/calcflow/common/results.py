@@ -21,7 +21,7 @@ import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from types import UnionType
-from typing import Any, Literal, Union, get_args, get_origin, get_type_hints
+from typing import Any, Literal, Union, cast, get_args, get_origin, get_type_hints
 
 from calcflow._version import __version__ as _CALCFLOW_VERSION
 from calcflow.common.models import Atom, FrozenModel
@@ -731,7 +731,7 @@ class CalculationResult(FrozenModel):
                 default = ""
                 if f.default is not dataclasses.MISSING:
                     default = f" = {f.default!r}"
-                elif f.default_factory is not dataclasses.MISSING:  # type: ignore[misc]
+                elif f.default_factory is not dataclasses.MISSING:
                     try:
                         default = f" = {f.default_factory()!r}"
                     except Exception:
@@ -751,7 +751,7 @@ class CalculationResult(FrozenModel):
                     if inner_args:
                         inner = inner_args[0]
                 if dataclasses.is_dataclass(inner) and inner not in _seen:
-                    lines.extend(_render(inner, indent + 1))
+                    lines.extend(_render(cast(type, inner), indent + 1))
 
             return lines
 
