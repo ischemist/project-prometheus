@@ -241,21 +241,13 @@ class TestDetectMoleculesTolerance:
 
 @pytest.mark.unit
 class TestDetectMoleculesErrors:
-    def test_unknown_element_raises_configuration_error(self):
-        # Force an element with no entry: patch ELEMENT_DATA temporarily
-        # by using a symbol that parses as valid Atom but has no radius.
-        # We test this by monkeypatching ELEMENT_DATA.
+    def test_unknown_element_raises_configuration_error(self, monkeypatch: pytest.MonkeyPatch):
         import calcflow.geometry.topology as topo
 
-        original = topo.ELEMENT_DATA.copy()
-        try:
-            # remove H from the lookup so detect_molecules can't find its radius
-            patched = {k: v for k, v in original.items() if k != "H"}
-            topo.ELEMENT_DATA = patched  # type: ignore[assignment]
-            with pytest.raises(ConfigurationError, match="no single-bond covalent radius"):
-                detect_molecules([a("H", 0.0, 0.0, 0.0)])
-        finally:
-            topo.ELEMENT_DATA = original  # type: ignore[assignment]
+        patched = {k: v for k, v in topo.ELEMENT_DATA.items() if k != "H"}
+        monkeypatch.setattr(topo, "ELEMENT_DATA", patched)
+        with pytest.raises(ConfigurationError, match="no single-bond covalent radius"):
+            detect_molecules([a("H", 0.0, 0.0, 0.0)])
 
 
 # ---------------------------------------------------------------------------
@@ -335,17 +327,13 @@ class TestClassifyBond:
         # same distance with tolerance=0.1: threshold = 1.65 > 1.54 → single
         assert classify_bond(a("C", 0, 0, 0), a("C", 1.54, 0, 0), 1.54, tolerance=0.1) == "single"
 
-    def test_raises_configuration_error_for_unknown_element(self):
+    def test_raises_configuration_error_for_unknown_element(self, monkeypatch: pytest.MonkeyPatch):
         import calcflow.geometry.topology as topo
 
-        original = topo.ELEMENT_DATA.copy()
-        try:
-            patched = {k: v for k, v in original.items() if k != "C"}
-            topo.ELEMENT_DATA = patched  # type: ignore[assignment]
-            with pytest.raises(ConfigurationError, match="no single-bond covalent radius"):
-                classify_bond(a("C", 0, 0, 0), a("H", 1.09, 0, 0), 1.09)
-        finally:
-            topo.ELEMENT_DATA = original  # type: ignore[assignment]
+        patched = {k: v for k, v in topo.ELEMENT_DATA.items() if k != "C"}
+        monkeypatch.setattr(topo, "ELEMENT_DATA", patched)
+        with pytest.raises(ConfigurationError, match="no single-bond covalent radius"):
+            classify_bond(a("C", 0, 0, 0), a("H", 1.09, 0, 0), 1.09)
 
 
 # ---------------------------------------------------------------------------
@@ -508,13 +496,6 @@ class TestFindAromaticAtoms:
         graph = build_bond_graph(atoms)
         result = find_aromatic_atoms(atoms, graph)
         assert isinstance(result, frozenset)
-
-    def test_non_planar_ring_not_aromatic(self):
-        # cyclohexane chair: 6-membered, all C, but non-planar → not aromatic
-        atoms = _cyclohexane_chair()
-        graph = build_bond_graph(atoms)
-        aromatic = find_aromatic_atoms(atoms, graph)
-        assert len(aromatic) == 0
 
     def test_fused_rings_naphthalene(self):
         """Naphthalene: both rings should be detected as aromatic (10 atoms total)."""

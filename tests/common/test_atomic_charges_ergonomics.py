@@ -53,9 +53,6 @@ class TestAtomicChargesToArray:
         arr = mulliken.to_array(3)
         assert arr == [-0.5, 0.25, 0.25]
 
-    def test_length_matches_n_atoms(self, mulliken: AtomicCharges):
-        assert len(mulliken.to_array(3)) == 3
-
     def test_missing_indices_default_to_zero(self):
         # sparse charges: only atom 1 is present
         sparse = AtomicCharges(method="Hirshfeld", charges={1: 0.5})

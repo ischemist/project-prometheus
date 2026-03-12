@@ -2,6 +2,7 @@
 
 import math
 from collections.abc import Sequence
+from typing import Literal
 
 from calcflow.common.exceptions import ConfigurationError
 from calcflow.common.results import Atom
@@ -10,7 +11,7 @@ from calcflow.constants.ptable import ELEMENT_DATA
 # Elements that can participate in aromatic rings
 _AROMATIC_ELEMENTS = frozenset({"C", "N", "O", "S"})
 
-BondOrder = str  # "single" | "double" | "triple" | "aromatic" | "none"
+BondOrder = Literal["single", "double", "triple", "aromatic", "none"]
 
 
 # =============================================================================
@@ -19,7 +20,7 @@ BondOrder = str  # "single" | "double" | "triple" | "aromatic" | "none"
 
 
 def _find(parent: list[int], i: int) -> int:
-    """path-compressing union-find root lookup."""
+    """Return the path-compressed union-find root for index ``i``."""
     while parent[i] != i:
         parent[i] = parent[parent[i]]
         i = parent[i]
@@ -27,6 +28,7 @@ def _find(parent: list[int], i: int) -> int:
 
 
 def _union(parent: list[int], i: int, j: int) -> None:
+    """Union the components containing indices ``i`` and ``j``."""
     parent[_find(parent, i)] = _find(parent, j)
 
 
@@ -43,12 +45,17 @@ def _covalent_r1_ang(atom: Atom) -> float:
 
 
 def _dist(ai: Atom, aj: Atom) -> float:
+    """Return Euclidean distance between two atoms in Angstrom."""
     dx, dy, dz = ai.x - aj.x, ai.y - aj.y, ai.z - aj.z
     return math.sqrt(dx * dx + dy * dy + dz * dz)
 
 
 def _find_small_cycles(graph: dict[int, list[int]], max_size: int = 7) -> list[frozenset[int]]:
-    """Find all simple cycles up to max_size using DFS. Returns deduplicated frozensets."""
+    """Find all simple cycles up to ``max_size`` using DFS.
+
+    Returns:
+        A deduplicated list of cycle atom sets.
+    """
     cycles: list[frozenset[int]] = []
     seen: set[frozenset[int]] = set()
 
@@ -69,9 +76,47 @@ def _find_small_cycles(graph: dict[int, list[int]], max_size: int = 7) -> list[f
     return cycles
 
 
+def _aromatic_rings(atoms: Sequence[Atom], bond_graph: dict[int, list[int]]) -> list[frozenset[int]]:
+    """Return aromatic rings that pass all structural criteria.
+
+    Criteria include allowed elements, ring size (5/6), planarity, and shortened
+    bond lengths consistent with aromatic delocalization.
+    """
+    aromatic_graph: dict[int, list[int]] = {}
+    for i, atom in enumerate(atoms):
+        if atom.symbol.upper() in _AROMATIC_ELEMENTS:
+            aromatic_graph[i] = [j for j in bond_graph.get(i, []) if atoms[j].symbol.upper() in _AROMATIC_ELEMENTS]
+
+    all_cycles = _find_small_cycles(aromatic_graph, max_size=6)
+    small_cycles = [c for c in all_cycles if len(c) in (5, 6)]
+    if not small_cycles:
+        return []
+
+    rings = _sssr(small_cycles)
+    aromatic_rings: list[frozenset[int]] = []
+    for ring in rings:
+        indices = list(ring)
+        ring_atoms = [atoms[i] for i in indices]
+
+        if not _is_planar(ring_atoms):
+            continue
+
+        ordered = _order_ring(indices, aromatic_graph)
+        if ordered is None:
+            continue
+
+        if _bonds_shortened(ordered, atoms, bond_graph):
+            aromatic_rings.append(ring)
+
+    return aromatic_rings
+
+
 def _sssr(cycles: list[frozenset[int]]) -> list[frozenset[int]]:
-    """Keep only the smallest set of smallest rings — discard any ring whose atom set
-    is a superset of the union of two smaller already-kept rings."""
+    """Keep the smallest set of smallest rings from cycle candidates.
+
+    A candidate is discarded when its atom set is exactly the union of two smaller
+    already-kept rings.
+    """
     sorted_cycles = sorted(cycles, key=len)
     kept: list[frozenset[int]] = []
     for candidate in sorted_cycles:
@@ -253,44 +298,14 @@ def find_aromatic_atoms(
     Returns:
         frozenset of 0-based atom indices that belong to at least one aromatic ring.
     """
-    # restrict graph to aromatic-capable elements only
-    aromatic_graph: dict[int, list[int]] = {}
-    for i, atom in enumerate(atoms):
-        if atom.symbol.upper() in _AROMATIC_ELEMENTS:
-            aromatic_graph[i] = [j for j in bond_graph.get(i, []) if atoms[j].symbol.upper() in _AROMATIC_ELEMENTS]
-
-    all_cycles = _find_small_cycles(aromatic_graph, max_size=6)
-    # keep only size 5 and 6
-    small_cycles = [c for c in all_cycles if len(c) in (5, 6)]
-    if not small_cycles:
-        return frozenset()
-
-    rings = _sssr(small_cycles)
-
     aromatic_indices: set[int] = set()
-    for ring in rings:
-        indices = list(ring)
-        ring_atoms = [atoms[i] for i in indices]
-
-        if not _is_planar(ring_atoms):
-            continue
-
-        # order indices around the ring for bond-shortening check
-        # reconstruct ring order via graph traversal
-        ordered = _order_ring(indices, aromatic_graph)
-        if ordered is None:
-            continue
-
-        if not _bonds_shortened(ordered, atoms, bond_graph):
-            continue
-
-        aromatic_indices.update(indices)
-
+    for ring in _aromatic_rings(atoms, bond_graph):
+        aromatic_indices.update(ring)
     return frozenset(aromatic_indices)
 
 
 def _order_ring(indices: list[int], graph: dict[int, list[int]]) -> list[int] | None:
-    """Return indices ordered as a cycle, or None if the ring path can't be walked."""
+    """Return ring atom indices in walk order, or ``None`` when not walkable."""
     index_set = set(indices)
     start = indices[0]
     ordered = [start]
@@ -390,7 +405,8 @@ def classify_all_bonds(
         ConfigurationError: if an element has no single-bond covalent radius.
     """
     graph = build_bond_graph(atoms, tolerance)
-    aromatic = find_aromatic_atoms(atoms, graph)
+    aromatic_rings = _aromatic_rings(atoms, graph)
+    aromatic = frozenset(i for ring in aromatic_rings for i in ring)
 
     result: dict[tuple[int, int], BondOrder] = {}
     for i in range(len(atoms)):
@@ -400,7 +416,7 @@ def classify_all_bonds(
             if i in aromatic and j in aromatic:
                 # verify they're in the same ring, not just both aromatic atoms
                 # connected by a non-aromatic bond (e.g. biphenyl C-C bridge)
-                order = _aromatic_or_geometric(atoms, i, j, aromatic, graph, tolerance)
+                order = _aromatic_or_geometric(atoms, i, j, aromatic_rings, tolerance)
             else:
                 order = classify_bond(atoms[i], atoms[j], _dist(atoms[i], atoms[j]), tolerance=0.2)
             result[(i, j)] = order
@@ -412,8 +428,7 @@ def _aromatic_or_geometric(
     atoms: Sequence[Atom],
     i: int,
     j: int,
-    aromatic: frozenset[int],
-    graph: dict[int, list[int]],
+    aromatic_rings: list[frozenset[int]],
     tolerance: float,
 ) -> BondOrder:
     """For a bond between two aromatic atoms, return 'aromatic' only if they
@@ -422,13 +437,7 @@ def _aromatic_or_geometric(
     This handles inter-ring bonds in biaryl systems (e.g. biphenyl C1-C1' bond
     connects two aromatic rings but is itself a single bond).
     """
-    # find all size-5/6 aromatic rings and check if i and j are co-members
-    aromatic_graph: dict[int, list[int]] = {k: [nb for nb in graph.get(k, []) if nb in aromatic] for k in aromatic}
-    all_cycles = _find_small_cycles(aromatic_graph, max_size=6)
-    small_cycles = [c for c in all_cycles if len(c) in (5, 6)]
-    rings = _sssr(small_cycles)
-
-    for ring in rings:
+    for ring in aromatic_rings:
         if i in ring and j in ring:
             return "aromatic"
 
