@@ -1,0 +1,590 @@
+"""
+unit tests for topology functions and the enriched ELEMENT_DATA.
+
+all tests are pure-logic unit tests — no file I/O, inline atom fixtures only.
+coordinates are in Angstrom, consistent with calcflow's Atom convention.
+"""
+
+import math
+
+import pytest
+
+from calcflow.common.exceptions import ConfigurationError
+from calcflow.common.results import Atom
+from calcflow.constants.ptable import ELEMENT_DATA
+from calcflow.geometry.topology import (
+    build_bond_graph,
+    classify_all_bonds,
+    classify_bond,
+    detect_molecules,
+    find_aromatic_atoms,
+)
+
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
+
+
+def a(symbol: str, x: float, y: float, z: float) -> Atom:
+    """shorthand for building Atom fixtures."""
+    return Atom(symbol=symbol, x=x, y=y, z=z)
+
+
+# ---------------------------------------------------------------------------
+# ELEMENT_DATA sanity checks
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestElementData:
+    def test_all_118_elements_present(self):
+        assert len(ELEMENT_DATA) == 118
+
+    def test_hydrogen(self):
+        h = ELEMENT_DATA["H"]
+        assert h.atomic_number == 1
+        assert h.symbol == "H"
+        assert h.covalent_radius_single_pm == 32
+        assert h.covalent_radius_double_pm is None
+        assert h.covalent_radius_triple_pm is None
+        assert h.atomic_mass == pytest.approx(1.008, rel=1e-3)
+        assert h.atomic_radius_vdw_pm == 120
+
+    def test_carbon(self):
+        c = ELEMENT_DATA["C"]
+        assert c.atomic_number == 6
+        assert c.covalent_radius_single_pm == 75
+        assert c.covalent_radius_double_pm == 67
+        assert c.covalent_radius_triple_pm == 60
+
+    def test_helium_no_double_triple(self):
+        he = ELEMENT_DATA["HE"]
+        assert he.covalent_radius_single_pm == 46
+        assert he.covalent_radius_double_pm is None
+        assert he.covalent_radius_triple_pm is None
+
+    def test_oxygen(self):
+        o = ELEMENT_DATA["O"]
+        assert o.covalent_radius_single_pm == 63
+        assert o.covalent_radius_double_pm == 57
+        assert o.covalent_radius_triple_pm == 53
+
+    def test_keys_are_uppercase(self):
+        for key in ELEMENT_DATA:
+            assert key == key.upper(), f"key {key!r} is not uppercase"
+
+    def test_all_elements_have_atomic_number(self):
+        for key, elem in ELEMENT_DATA.items():
+            assert isinstance(elem.atomic_number, int), f"{key} missing atomic_number"
+
+    def test_all_elements_have_r1(self):
+        # every element in Pyykkö 2009 has at least r1
+        for key, elem in ELEMENT_DATA.items():
+            assert elem.covalent_radius_single_pm is not None, f"{key} missing r1"
+
+    def test_element_is_frozen(self):
+        h = ELEMENT_DATA["H"]
+        with pytest.raises((AttributeError, TypeError)):
+            h.atomic_number = 99  # type: ignore[misc]
+
+    @pytest.mark.parametrize("symbol,z", [("H", 1), ("C", 6), ("N", 7), ("O", 8), ("AU", 79), ("OG", 118)])
+    def test_atomic_numbers_correct(self, symbol: str, z: int):
+        assert ELEMENT_DATA[symbol].atomic_number == z
+
+
+# ---------------------------------------------------------------------------
+# detect_molecules — basic cases
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestDetectMolecules:
+    def test_empty_returns_empty(self):
+        assert detect_molecules([]) == []
+
+    def test_single_atom_returns_one_fragment(self):
+        result = detect_molecules([a("He", 0.0, 0.0, 0.0)])
+        assert result == [frozenset({0})]
+
+    def test_single_water_molecule(self):
+        # O-H bond ~0.96 Å, well within threshold
+        atoms = [
+            a("O", 0.000, 0.000, 0.117),
+            a("H", 0.000, 0.757, -0.469),
+            a("H", 0.000, -0.757, -0.469),
+        ]
+        result = detect_molecules(atoms)
+        assert result == [frozenset({0, 1, 2})]
+
+    def test_water_dimer_gives_two_fragments(self):
+        # two H2O molecules separated by ~3 Å (non-bonding distance)
+        atoms = [
+            a("O", 0.000, 0.000, 0.117),  # mol 1
+            a("H", 0.000, 0.757, -0.469),
+            a("H", 0.000, -0.757, -0.469),
+            a("O", 5.000, 0.000, 0.117),  # mol 2
+            a("H", 5.000, 0.757, -0.469),
+            a("H", 5.000, -0.757, -0.469),
+        ]
+        result = detect_molecules(atoms)
+        assert len(result) == 2
+        assert frozenset({0, 1, 2}) in result
+        assert frozenset({3, 4, 5}) in result
+
+    def test_co2_is_one_molecule(self):
+        # C=O bond ~1.16 Å
+        atoms = [
+            a("C", 0.000, 0.000, 0.000),
+            a("O", 1.160, 0.000, 0.000),
+            a("O", -1.160, 0.000, 0.000),
+        ]
+        result = detect_molecules(atoms)
+        assert result == [frozenset({0, 1, 2})]
+
+    def test_two_isolated_hydrogen_atoms(self):
+        # 10 Å apart — clearly non-bonding
+        atoms = [a("H", 0.0, 0.0, 0.0), a("H", 10.0, 0.0, 0.0)]
+        result = detect_molecules(atoms)
+        assert len(result) == 2
+        assert frozenset({0}) in result
+        assert frozenset({1}) in result
+
+    def test_two_bonded_hydrogen_atoms(self):
+        # H2 bond ~0.74 Å
+        atoms = [a("H", 0.0, 0.0, 0.0), a("H", 0.74, 0.0, 0.0)]
+        result = detect_molecules(atoms)
+        assert result == [frozenset({0, 1})]
+
+    def test_ethanol_is_one_molecule(self):
+        # C-C ~1.54, C-O ~1.43, C-H ~1.09, O-H ~0.96
+        atoms = [
+            a("C", 0.000, 0.000, 0.000),
+            a("C", 1.540, 0.000, 0.000),
+            a("O", 2.100, 1.200, 0.000),
+            a("H", -0.390, 1.030, 0.000),
+            a("H", -0.390, -0.515, 0.891),
+            a("H", -0.390, -0.515, -0.891),
+            a("H", 1.930, -1.030, 0.000),
+            a("H", 1.930, 0.515, -0.891),
+            a("H", 2.490, 1.200, 0.890),
+        ]
+        result = detect_molecules(atoms)
+        assert len(result) == 1
+        assert result[0] == frozenset(range(9))
+
+    def test_sorted_by_smallest_index(self):
+        # three isolated atoms — result must be in index order
+        atoms = [
+            a("He", 0.0, 0.0, 0.0),
+            a("Ne", 100.0, 0.0, 0.0),
+            a("Ar", 200.0, 0.0, 0.0),
+        ]
+        result = detect_molecules(atoms)
+        assert result == [frozenset({0}), frozenset({1}), frozenset({2})]
+
+    def test_returns_list_of_frozensets(self):
+        atoms = [a("O", 0.0, 0.0, 0.0), a("H", 0.96, 0.0, 0.0)]
+        result = detect_molecules(atoms)
+        assert isinstance(result, list)
+        for fragment in result:
+            assert isinstance(fragment, frozenset)
+
+    def test_all_atom_indices_covered(self):
+        # every atom index must appear in exactly one fragment
+        atoms = [
+            a("O", 0.0, 0.0, 0.0),
+            a("H", 0.96, 0.0, 0.0),
+            a("H", -0.96, 0.0, 0.0),
+            a("N", 10.0, 0.0, 0.0),
+            a("H", 10.96, 0.0, 0.0),
+        ]
+        result = detect_molecules(atoms)
+        all_indices = set().union(*result)
+        assert all_indices == set(range(len(atoms)))
+
+    def test_no_index_appears_twice(self):
+        atoms = [
+            a("C", 0.0, 0.0, 0.0),
+            a("C", 1.54, 0.0, 0.0),
+            a("C", 20.0, 0.0, 0.0),
+        ]
+        result = detect_molecules(atoms)
+        all_indices = [idx for fragment in result for idx in fragment]
+        assert len(all_indices) == len(set(all_indices))
+
+
+# ---------------------------------------------------------------------------
+# detect_molecules — tolerance parameter
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestDetectMoleculesTolerance:
+    def test_zero_tolerance_misses_stretched_bond(self):
+        # O-H stretched to 1.5 Å: r1_O=0.63, r1_H=0.32, sum=0.95
+        # with tolerance=0 threshold is 0.95 Å — below 1.5, so not bonded
+        atoms = [a("O", 0.0, 0.0, 0.0), a("H", 1.5, 0.0, 0.0)]
+        result = detect_molecules(atoms, tolerance=0.0)
+        assert len(result) == 2
+
+    def test_large_tolerance_connects_distant_atoms(self):
+        # same atoms but tolerance=2.0 → threshold = 0.95 * 3.0 = 2.85 Å > 1.5
+        atoms = [a("O", 0.0, 0.0, 0.0), a("H", 1.5, 0.0, 0.0)]
+        result = detect_molecules(atoms, tolerance=2.0)
+        assert result == [frozenset({0, 1})]
+
+
+# ---------------------------------------------------------------------------
+# detect_molecules — error handling
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestDetectMoleculesErrors:
+    def test_unknown_element_raises_configuration_error(self, monkeypatch: pytest.MonkeyPatch):
+        import calcflow.geometry.topology as topo
+
+        patched = {k: v for k, v in topo.ELEMENT_DATA.items() if k != "H"}
+        monkeypatch.setattr(topo, "ELEMENT_DATA", patched)
+        with pytest.raises(ConfigurationError, match="no single-bond covalent radius"):
+            detect_molecules([a("H", 0.0, 0.0, 0.0)])
+
+
+# ---------------------------------------------------------------------------
+# classify_bond
+# ---------------------------------------------------------------------------
+
+# Reference radii (Pyykkö 2009, pm → Å):
+#   C: r1=0.75, r2=0.67, r3=0.60
+#   N: r1=0.71, r2=0.60, r3=0.54
+#   O: r1=0.63, r2=0.57, r3=0.53
+#   H: r1=0.32  (no r2/r3)
+
+# typical bond lengths (Å):
+#   C-C single ~1.54, C=C double ~1.34, C≡C triple ~1.20
+#   C-N single ~1.47, C=N double ~1.27, C≡N triple ~1.16
+#   C-H ~1.09, O-H ~0.96
+
+
+@pytest.mark.unit
+class TestClassifyBond:
+    def test_cc_single(self):
+        # C-C thresholds (tol=0.2): triple=1.44, double=1.608, single=1.80
+        # 1.65 Å: above triple (1.44) and double (1.608) thresholds → single
+        assert classify_bond(a("C", 0, 0, 0), a("C", 1.65, 0, 0), 1.65) == "single"
+
+    def test_cc_double(self):
+        # C-C thresholds (tol=0.2): triple=1.44, double=1.608, single=1.80
+        # 1.50 Å: above triple threshold (1.44) but below double (1.608) → double
+        assert classify_bond(a("C", 0, 0, 0), a("C", 1.50, 0, 0), 1.50) == "double"
+
+    def test_cc_triple(self):
+        # 1.20 Å: triple threshold = (0.60+0.60)*1.2 = 1.44 > 1.20 → triple
+        assert classify_bond(a("C", 0, 0, 0), a("C", 1.20, 0, 0), 1.20) == "triple"
+
+    def test_ch_single(self):
+        # C-H: r1 sum = 0.75+0.32 = 1.07, threshold = 1.07*1.2 = 1.284 > 1.09 → single
+        # H has no r2/r3, so only single candidate exists
+        assert classify_bond(a("C", 0, 0, 0), a("H", 1.09, 0, 0), 1.09) == "single"
+
+    def test_oh_single(self):
+        # O-H: r1 sum = 0.63+0.32 = 0.95, threshold = 1.14 > 0.96 → single
+        assert classify_bond(a("O", 0, 0, 0), a("H", 0.96, 0, 0), 0.96) == "single"
+
+    def test_cn_triple(self):
+        # C≡N: r3 sum = 0.60+0.54 = 1.14, threshold = 1.368 > 1.16 → triple
+        assert classify_bond(a("C", 0, 0, 0), a("N", 1.16, 0, 0), 1.16) == "triple"
+
+    def test_returns_none_for_nonbonding_distance(self):
+        # 5.0 Å C-C: way beyond any threshold
+        assert classify_bond(a("C", 0, 0, 0), a("C", 5.0, 0, 0), 5.0) is None
+
+    def test_returns_none_just_above_single_threshold(self):
+        # C-C r1 threshold = 1.50 * 1.2 = 1.80; use 1.85
+        assert classify_bond(a("C", 0, 0, 0), a("C", 1.85, 0, 0), 1.85) is None
+
+    def test_prefers_higher_order_when_distance_fits_multiple(self):
+        # at exactly r3 threshold, triple should win over double and single
+        c = a("C", 0, 0, 0)
+        # r3_C + r3_C = 1.20 Å; any dist <= 1.20*1.2=1.44 should be triple
+        assert classify_bond(c, a("C", 1.20, 0, 0), 1.20) == "triple"
+
+    def test_element_with_no_r2_r3_only_returns_single_or_none(self):
+        # H has no r2 or r3 — result must be "single" or None, never "double"/"triple"
+        result = classify_bond(a("H", 0, 0, 0), a("H", 0.74, 0, 0), 0.74)
+        assert result in ("single", None)
+        assert result == "single"  # H2 bond length 0.74 is well within threshold
+
+    def test_symmetric(self):
+        # classify_bond(i, j, d) == classify_bond(j, i, d)
+        c = a("C", 0, 0, 0)
+        n = a("N", 1.16, 0, 0)
+        assert classify_bond(c, n, 1.16) == classify_bond(n, c, 1.16)
+
+    def test_custom_tolerance(self):
+        # C-C at 1.54 with tolerance=0.0: r1 threshold = 1.50, so 1.54 > 1.50 → None
+        assert classify_bond(a("C", 0, 0, 0), a("C", 1.54, 0, 0), 1.54, tolerance=0.0) is None
+        # same distance with tolerance=0.1: threshold = 1.65 > 1.54 → single
+        assert classify_bond(a("C", 0, 0, 0), a("C", 1.54, 0, 0), 1.54, tolerance=0.1) == "single"
+
+    def test_raises_configuration_error_for_unknown_element(self, monkeypatch: pytest.MonkeyPatch):
+        import calcflow.geometry.topology as topo
+
+        patched = {k: v for k, v in topo.ELEMENT_DATA.items() if k != "C"}
+        monkeypatch.setattr(topo, "ELEMENT_DATA", patched)
+        with pytest.raises(ConfigurationError, match="no single-bond covalent radius"):
+            classify_bond(a("C", 0, 0, 0), a("H", 1.09, 0, 0), 1.09)
+
+
+# ---------------------------------------------------------------------------
+# geometry helpers for ring fixtures
+# ---------------------------------------------------------------------------
+
+
+def _regular_polygon(n: int, radius: float, symbol: str, z: float = 0.0) -> list[Atom]:
+    """Atoms placed at vertices of a regular n-gon in the xy-plane."""
+    return [
+        Atom(symbol=symbol, x=radius * math.cos(2 * math.pi * i / n), y=radius * math.sin(2 * math.pi * i / n), z=z)
+        for i in range(n)
+    ]
+
+
+def _benzene() -> list[Atom]:
+    """Benzene: 6 C at ~1.40 Å bond length, flat."""
+    # circumradius for bond length ~1.40: r = 1.40 / (2*sin(pi/6)) = 1.40
+    return _regular_polygon(6, 1.40, "C")
+
+
+def _cyclohexane_chair() -> list[Atom]:
+    """Cyclohexane in chair conformation — non-planar, bonds ~1.54 Å."""
+    # chair: alternating atoms up/down by ~0.25 Å
+    r = 1.54 / (2 * math.sin(math.pi / 6))  # circumradius for 1.54 Å bonds
+    atoms = []
+    for i in range(6):
+        angle = 2 * math.pi * i / 6
+        z = 0.25 if i % 2 == 0 else -0.25
+        atoms.append(Atom(symbol="C", x=r * math.cos(angle), y=r * math.sin(angle), z=z))
+    return atoms
+
+
+def _pyridine() -> list[Atom]:
+    """Pyridine: 5C + 1N at ~1.39 Å, flat."""
+    r = 1.39
+    symbols = ["C", "C", "N", "C", "C", "C"]
+    return [
+        Atom(symbol=sym, x=r * math.cos(2 * math.pi * i / 6), y=r * math.sin(2 * math.pi * i / 6), z=0.0)
+        for i, sym in enumerate(symbols)
+    ]
+
+
+def _pyrrole_ring() -> list[Atom]:
+    """Pyrrole ring (5-membered, 4C+1N), flat, bond lengths ~1.37 Å."""
+    r = 1.37 / (2 * math.sin(math.pi / 5))
+    symbols = ["N", "C", "C", "C", "C"]
+    return [
+        Atom(symbol=sym, x=r * math.cos(2 * math.pi * i / 5), y=r * math.sin(2 * math.pi * i / 5), z=0.0)
+        for i, sym in enumerate(symbols)
+    ]
+
+
+def _naphthalene() -> list[Atom]:
+    """Naphthalene: two fused 6-membered rings sharing one bond, flat, bonds ~1.40 Å.
+
+    10 unique atoms: ring1 contributes all 6, ring2 contributes its 4 non-shared atoms.
+    Shared bond is the vertical edge at x=0 (atoms 0 and 5).
+    Indices 0-5: left ring, 6-9: right ring's unique atoms.
+    """
+    b = 1.40
+    d = b * math.sqrt(3) / 2  # distance from ring centre to shared bond
+    # Left ring centred at (-d, 0); start angle pi/6 so flat top/bottom edges are horizontal
+    ring1 = [
+        Atom(
+            symbol="C",
+            x=-d + b * math.cos(math.pi / 6 + k * math.pi / 3),
+            y=b * math.sin(math.pi / 6 + k * math.pi / 3),
+            z=0.0,
+        )
+        for k in range(6)
+    ]
+    # Right ring centred at (+d, 0); k=2 and k=3 overlap with ring1[0] and ring1[5] (shared atoms)
+    ring2_unique = [
+        Atom(
+            symbol="C",
+            x=d + b * math.cos(math.pi / 6 + k * math.pi / 3),
+            y=b * math.sin(math.pi / 6 + k * math.pi / 3),
+            z=0.0,
+        )
+        for k in [0, 1, 4, 5]
+    ]
+    return ring1 + ring2_unique
+
+
+# ---------------------------------------------------------------------------
+# build_bond_graph
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestBuildBondGraph:
+    def test_returns_dict_for_all_atoms(self):
+        atoms = [a("C", 0, 0, 0), a("H", 1.09, 0, 0)]
+        graph = build_bond_graph(atoms)
+        assert set(graph.keys()) == {0, 1}
+
+    def test_bonded_pair(self):
+        atoms = [a("C", 0, 0, 0), a("H", 1.09, 0, 0)]
+        graph = build_bond_graph(atoms)
+        assert 1 in graph[0]
+        assert 0 in graph[1]
+
+    def test_non_bonded_pair(self):
+        atoms = [a("C", 0, 0, 0), a("C", 10.0, 0, 0)]
+        graph = build_bond_graph(atoms)
+        assert graph[0] == []
+        assert graph[1] == []
+
+    def test_symmetric(self):
+        atoms = [a("C", 0, 0, 0), a("C", 1.54, 0, 0), a("H", 1.54 + 1.09, 0, 0)]
+        graph = build_bond_graph(atoms)
+        for i, neighbors in graph.items():
+            for j in neighbors:
+                assert i in graph[j], f"{i} in {j}'s neighbors but not vice versa"
+
+    def test_empty_atoms(self):
+        assert build_bond_graph([]) == {}
+
+    def test_water_connectivity(self):
+        atoms = [a("O", 0, 0, 0.117), a("H", 0, 0.757, -0.469), a("H", 0, -0.757, -0.469)]
+        graph = build_bond_graph(atoms)
+        # O bonded to both H, H not bonded to each other
+        assert set(graph[0]) == {1, 2}
+        assert graph[1] == [0]
+        assert graph[2] == [0]
+
+
+# ---------------------------------------------------------------------------
+# find_aromatic_atoms
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestFindAromaticAtoms:
+    def test_benzene_all_aromatic(self):
+        atoms = _benzene()
+        graph = build_bond_graph(atoms)
+        aromatic = find_aromatic_atoms(atoms, graph)
+        assert aromatic == frozenset(range(6))
+
+    def test_cyclohexane_not_aromatic(self):
+        atoms = _cyclohexane_chair()
+        graph = build_bond_graph(atoms)
+        aromatic = find_aromatic_atoms(atoms, graph)
+        assert aromatic == frozenset()
+
+    def test_pyridine_all_aromatic(self):
+        atoms = _pyridine()
+        graph = build_bond_graph(atoms)
+        aromatic = find_aromatic_atoms(atoms, graph)
+        assert aromatic == frozenset(range(6))
+
+    def test_pyrrole_ring_all_aromatic(self):
+        atoms = _pyrrole_ring()
+        graph = build_bond_graph(atoms)
+        aromatic = find_aromatic_atoms(atoms, graph)
+        assert aromatic == frozenset(range(5))
+
+    def test_single_atoms_not_aromatic(self):
+        atoms = [a("C", 0, 0, 0)]
+        graph = build_bond_graph(atoms)
+        assert find_aromatic_atoms(atoms, graph) == frozenset()
+
+    def test_linear_chain_not_aromatic(self):
+        # C-C-C-C: no rings
+        atoms = [a("C", i * 1.54, 0, 0) for i in range(4)]
+        graph = build_bond_graph(atoms)
+        assert find_aromatic_atoms(atoms, graph) == frozenset()
+
+    def test_returns_frozenset(self):
+        atoms = _benzene()
+        graph = build_bond_graph(atoms)
+        result = find_aromatic_atoms(atoms, graph)
+        assert isinstance(result, frozenset)
+
+    def test_fused_rings_naphthalene(self):
+        """Naphthalene: all 10 atoms across both fused rings must be aromatic."""
+        atoms = _naphthalene()
+        graph = build_bond_graph(atoms)
+        aromatic = find_aromatic_atoms(atoms, graph)
+        assert aromatic == frozenset(range(10))
+
+
+# ---------------------------------------------------------------------------
+# classify_all_bonds
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestClassifyAllBonds:
+    def test_benzene_all_bonds_aromatic(self):
+        atoms = _benzene()
+        bonds = classify_all_bonds(atoms)
+        # 6 bonds in benzene ring
+        assert len(bonds) == 6
+        assert all(v == "aromatic" for v in bonds.values())
+
+    def test_pyridine_ring_bonds_aromatic(self):
+        atoms = _pyridine()
+        bonds = classify_all_bonds(atoms)
+        assert all(v == "aromatic" for v in bonds.values())
+
+    def test_pyrrole_ring_bonds_aromatic(self):
+        atoms = _pyrrole_ring()
+        bonds = classify_all_bonds(atoms)
+        assert all(v == "aromatic" for v in bonds.values())
+
+    def test_cyclohexane_bonds_single(self):
+        atoms = _cyclohexane_chair()
+        bonds = classify_all_bonds(atoms)
+        assert all(v == "single" for v in bonds.values())
+
+    def test_h2_single(self):
+        atoms = [a("H", 0, 0, 0), a("H", 0.74, 0, 0)]
+        bonds = classify_all_bonds(atoms)
+        assert bonds[(0, 1)] == "single"
+
+    def test_non_bonded_pair_absent(self):
+        # two isolated atoms — no bonds in result
+        atoms = [a("C", 0, 0, 0), a("C", 10, 0, 0)]
+        bonds = classify_all_bonds(atoms)
+        assert bonds == {}
+
+    def test_keys_always_i_less_than_j(self):
+        atoms = _benzene()
+        bonds = classify_all_bonds(atoms)
+        for i, j in bonds:
+            assert i < j
+
+    def test_no_false_triple_in_aromatic_ring(self):
+        # before aromatic detection, benzene C-C bonds at ~1.40 Å were wrongly "triple"
+        atoms = _benzene()
+        bonds = classify_all_bonds(atoms)
+        assert "triple" not in bonds.values()
+
+    def test_empty_atoms(self):
+        assert classify_all_bonds([]) == {}
+
+    def test_water_bonds_single(self):
+        atoms = [a("O", 0, 0, 0.117), a("H", 0, 0.757, -0.469), a("H", 0, -0.757, -0.469)]
+        bonds = classify_all_bonds(atoms)
+        assert bonds[(0, 1)] == "single"
+        assert bonds[(0, 2)] == "single"
+        assert (1, 2) not in bonds  # H-H not bonded
+
+    def test_stretched_bond_absent_from_classify_all_bonds(self):
+        # C-C r1 threshold at classify_bond tolerance=0.2: 1.50 * 1.2 = 1.80 Å
+        # build_bond_graph tolerance=0.4 threshold: 1.50 * 1.4 = 2.10 Å
+        # place C-C at 1.90 Å: detected by bond graph (< 2.10), but unclassifiable (> 1.80)
+        # the pair must be absent from the result dict, not present as any sentinel value
+        atoms = [a("C", 0.0, 0.0, 0.0), a("C", 1.90, 0.0, 0.0)]
+        bonds = classify_all_bonds(atoms, tolerance=0.4)
+        assert (0, 1) not in bonds

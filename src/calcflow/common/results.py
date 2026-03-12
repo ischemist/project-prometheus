@@ -65,6 +65,15 @@ class FrozenModel:
                 value = data[field_name]
                 kwargs[field_name] = cls._convert_value(value, field_info.type)
 
+        required_fields = {
+            f.name
+            for f in dataclasses.fields(cls)
+            if f.default is dataclasses.MISSING and f.default_factory is dataclasses.MISSING  # type: ignore[misc]
+        }
+        missing = sorted(required_fields - set(kwargs))
+        if missing:
+            raise ValidationError(f"{cls.__name__}.from_dict() missing required fields: {missing}")
+
         return cls(**kwargs)
 
     @staticmethod
@@ -234,6 +243,26 @@ class AtomicCharges(FrozenModel):
     # For transition density matrix analysis
     trans_charges: Mapping[int, float] | None = None  # "Trans. (e)" column
     del_q: Mapping[int, float] | None = None  # "Del q" column
+
+    def to_list(self, n_atoms: int) -> list[float]:
+        """Returns charges as a list of length n_atoms, indexed by atom position.
+
+        Missing indices (sparse charges) default to 0.0. n_atoms must be provided
+        explicitly since AtomicCharges has no geometry reference.
+
+        Args:
+            n_atoms: expected number of atoms; defines the output list length.
+
+        Returns:
+            List of floats of length n_atoms.
+
+        Raises:
+            ValueError: if any charge index is >= n_atoms.
+        """
+        out_of_range = [i for i in self.charges if i >= n_atoms]
+        if out_of_range:
+            raise ValueError(f"charge indices {sorted(out_of_range)} are out of range for n_atoms={n_atoms}")
+        return [self.charges.get(i, 0.0) for i in range(n_atoms)]
 
 
 @dataclass(frozen=True)
@@ -717,13 +746,21 @@ class CalculationResult(FrozenModel):
         # --- future migrations go here ---
         return data
 
+    def get_charges(self, method: str) -> "AtomicCharges | None":
+        """Returns the AtomicCharges for the given population analysis method, or None.
+
+        Method names are case-sensitive and match how parsers store them
+        (e.g. "Mulliken", "Hirshfeld", "CM5", "Loewdin").
+        """
+        return next((ac for ac in self.atomic_charges if ac.method == method), None)
+
     @classmethod
     def get_schema(cls) -> str:
-        """returns an auto-generated structural map of every result field.
+        """Returns an auto-generated structural map of every result field.
 
-        walks the dataclass hierarchy recursively and emits an indented tree of
+        Walks the dataclass hierarchy recursively and emits an indented tree of
         field names with their types and inline docstring annotations where available.
-        use this to navigate result fields without reading source code.
+        Use this to navigate result fields without reading source code.
 
         units convention (unless field name specifies otherwise):
           energy: Hartree  |  _ev suffix: eV  |  _kcal_mol: kcal/mol
@@ -769,17 +806,12 @@ class CalculationResult(FrozenModel):
                 return lines
             _seen.add(klass)
 
-            try:
-                hints = {}
-                for f in dataclasses.fields(klass):
-                    hints[f.name] = f.type
-            except Exception:
-                return lines
+            hints = {f.name: f.type for f in dataclasses.fields(klass)}
 
             # resolve string annotations where possible
             try:
                 resolved = get_type_hints(klass)
-            except Exception:
+            except NameError:
                 resolved = hints
 
             for f in dataclasses.fields(klass):
@@ -860,612 +892,3 @@ class CalculationResult(FrozenModel):
         prefer get_schema() directly.
         """
         return cls.get_schema()
-
-    # ---------- legacy full-text docs (kept for reference, not called by default) ----------
-
-    @classmethod
-    def _get_full_docs(cls) -> str:
-        """returns the original verbose hardcoded reference (legacy, prefer get_schema)."""
-        return """
-CalculationResult API Reference
-================================
-
-DESCRIPTION
------------
-Immutable, program-agnostic data models for quantum chemistry calculation results.
-All models are frozen dataclasses built with Python's standard library, ensuring
-zero external dependencies and data integrity after parsing.
-
-The structure is hierarchical and compositional, building from fundamental concepts
-(atoms, orbitals) up to the complete CalculationResult. A single unified data model
-represents results from any supported program (ORCA, Q-Chem, etc.).
-
-All energies are in Hartree, distances in Angstrom unless otherwise specified.
-
-
-TOP-LEVEL MODEL: CalculationResult
------------------------------------
-The canonical result of a quantum chemistry calculation.
-
-Core Fields:
-  termination_status: Literal["NORMAL", "ERROR", "UNKNOWN"]
-    Whether the calculation completed successfully
-
-  metadata: CalculationMetadata
-    Software name and version information
-
-  raw_output: str
-    Full text output from the program (excluded from serialization)
-
-Geometry Fields:
-  input_geometry: Sequence[Atom] | None
-    Starting molecular geometry
-
-  final_geometry: Sequence[Atom] | None
-    Optimized geometry (for geometry tasks)
-
-Energy Fields:
-  final_energy: float | None
-    Final total energy in Hartree (e.g., SCF + dispersion)
-
-  nuclear_repulsion_energy: float | None
-    Nuclear repulsion energy in Hartree
-
-Parsed Results (all optional):
-  scf: ScfResults | None
-    Self-consistent field convergence data
-
-  orbitals: OrbitalsSet | None
-    Molecular orbital energies and occupations
-
-  multipole: MultipoleResults | None
-    Dipole, quadrupole, octopole, hexadecapole moments
-
-  smd: SmdResults | None
-    SMD solvation model results
-
-  tddft: TddftResults | None
-    Time-dependent DFT excited state results
-
-  dispersion: DispersionCorrection | None
-    DFT-D3/D4 dispersion correction data
-
-  timing: TimingResults | None
-    Calculation timing information
-
-  atomic_charges: Sequence[AtomicCharges]
-    Population analyses (Mulliken, Loewdin, Hirshfeld, etc.)
-
-  program_specific: Mapping[str, Any]
-    Program-specific data not covered by generic models
-
-
-FUNDAMENTAL MODELS
-------------------
-
-Atom:
-  symbol: str                    # Element symbol (capitalized, e.g., "O", "H")
-  x: float                       # X coordinate in Angstrom
-  y: float                       # Y coordinate in Angstrom
-  z: float                       # Z coordinate in Angstrom
-
-Orbital:
-  index: int                     # 0-based orbital index
-  energy: float                  # Orbital energy in Hartree
-  occupation: float | None       # Occupation number (0.0, 1.0, 2.0 for RHF)
-  energy_ev: float | None        # Orbital energy in eV (optional)
-
-
-SCF (SELF-CONSISTENT FIELD) MODELS
------------------------------------
-
-ScfIteration:
-  iteration: int                 # Iteration number
-  energy: float                  # Energy at this iteration (Hartree)
-  # ORCA-style convergence metrics:
-  delta_e_eh: float | None       # Energy change
-  rmsdp: float | None            # RMS density change
-  maxdp: float | None            # Max density change
-  # Q-Chem-style convergence:
-  diis_error: float | None       # DIIS error
-  # MOM-specific fields:
-  mom_active: bool | None        # Whether MOM is active
-  mom_overlap_current: float | None
-  mom_overlap_target: float | None
-
-ScfEnergyComponents:
-  nuclear_repulsion: float       # Nuclear repulsion energy (Hartree)
-  electronic_eh: float           # Electronic energy (Hartree)
-  one_electron_eh: float         # One-electron contribution
-  two_electron_eh: float         # Two-electron contribution
-  xc_eh: float | None            # Exchange-correlation (DFT only)
-
-ScfResults:
-  converged: bool                # Whether SCF converged
-  energy: float                  # Final SCF energy (Hartree)
-  n_iterations: int              # Number of iterations performed
-  iterations: Sequence[ScfIteration]  # Per-iteration data
-  components: ScfEnergyComponents | None  # Energy breakdown
-
-
-MOLECULAR ORBITALS MODEL
--------------------------
-
-OrbitalsSet:
-  alpha_orbitals: Sequence[Orbital]
-    Alpha spin orbitals (or all orbitals for RHF/RKS)
-
-  beta_orbitals: Sequence[Orbital] | None
-    Beta spin orbitals (UHF/UKS only)
-
-  alpha_homo_index: int | None   # Index of alpha HOMO
-  alpha_lumo_index: int | None   # Index of alpha LUMO
-  beta_homo_index: int | None    # Index of beta HOMO (UHF/UKS)
-  beta_lumo_index: int | None    # Index of beta LUMO (UHF/UKS)
-
-
-PROPERTY MODELS
----------------
-
-AtomicCharges:
-  method: str                    # "Mulliken", "Loewdin", "Hirshfeld", etc.
-  charges: Mapping[int, float]   # Atom index (0-based) -> charge
-  spins: Mapping[int, float] | None  # Atom index -> spin density (UKS)
-  # TDDFT excited state analysis fields:
-  hole_populations: Mapping[int, float] | None        # h+ (RKS)
-  electron_populations: Mapping[int, float] | None    # e- (RKS)
-  hole_populations_alpha: Mapping[int, float] | None  # h+ alpha (UKS)
-  hole_populations_beta: Mapping[int, float] | None   # h+ beta (UKS)
-  electron_populations_alpha: Mapping[int, float] | None  # e- alpha (UKS)
-  electron_populations_beta: Mapping[int, float] | None   # e- beta (UKS)
-  trans_charges: Mapping[int, float] | None           # Transition charges
-  del_q: Mapping[int, float] | None                   # Charge difference
-
-DipoleMoment:
-  x: float                       # X component (Debye)
-  y: float                       # Y component (Debye)
-  z: float                       # Z component (Debye)
-  magnitude: float               # Total magnitude (Debye)
-
-QuadrupoleMoment:
-  xx, xy, yy, xz, yz, zz: float  # Components in Debye-Ang
-
-OctopoleMoment:
-  xxx, xxy, xyy, yyy, xxz, xyz, yyz, xzz, yzz, zzz: float  # Debye-Ang^2
-
-HexadecapoleMoment:
-  xxxx, xxxy, xxyy, xyyy, yyyy, xxxz, xxyz, xyyz, yyyz, xxzz, xyzz, yyzz, xzzz, yzzz, zzzz: float  # Debye-Ang^3
-
-MultipoleResults:
-  charge: float | None           # Total charge (ESU x 10^10)
-  dipole: DipoleMoment | None
-  quadrupole: QuadrupoleMoment | None
-  octopole: OctopoleMoment | None
-  hexadecapole: HexadecapoleMoment | None
-
-DispersionCorrection:
-  method: str                    # "DFTD3", "DFTD4"
-  e_disp_au: float               # Dispersion energy (Hartree)
-  functional: str | None         # e.g., "omegaB97X-D3"
-  damping: str | None            # e.g., "zero damping"
-  molecular_c6_au: float | None  # C6 coefficient (au)
-  parameters: Mapping[str, float] | None  # Scaling/damping parameters
-  e_disp_kcal: float | None      # Dispersion energy (kcal/mol)
-  e6_kcal: float | None          # E6 component (kcal/mol)
-  e8_kcal: float | None          # E8 component (kcal/mol)
-  e8_percentage: float | None    # E8 contribution percentage
-
-SmdResults:
-  g_pcm_kcal_mol: float | None   # Polarization energy (kcal/mol)
-  g_cds_kcal_mol: float | None   # Non-electrostatic CDS (kcal/mol)
-  g_enp_au: float | None         # E_SCF + G_PCM (Hartree)
-  g_tot_au: float | None         # Total free energy (Hartree)
-
-TimingResults:
-  total_cpu_time_seconds: float | None
-  total_wall_time_seconds: float | None
-  module_times: Mapping[str, float] | None  # Module name -> seconds
-
-
-TDDFT & EXCITED STATE MODELS
------------------------------
-
-OrbitalTransition:
-  from_idx: int                  # Source orbital index
-  to_idx: int                    # Target orbital index
-  amplitude: float               # Transition amplitude/coefficient
-  is_alpha_spin: bool | None     # True=alpha, False=beta, None=unspecified
-
-ExcitedState:
-  state_number: int              # State number (1-based)
-  multiplicity: Literal["Singlet", "Triplet", "Unknown"]
-  excitation_energy_ev: float    # Excitation energy (eV)
-  total_energy_au: float         # Total energy of excited state (Hartree)
-  oscillator_strength: float | None  # Oscillator strength (f)
-  transitions: Sequence[OrbitalTransition]  # Dominant transitions
-  trans_mom_x: float | None      # Transition moment X (au)
-  trans_mom_y: float | None      # Transition moment Y (au)
-  trans_mom_z: float | None      # Transition moment Z (au)
-
-NTOContribution:
-  hole_offset: int               # e.g., -2 for H-2
-  electron_offset: int           # e.g., +3 for L+3
-  weight_percent: float          # Weight percentage
-  is_alpha_spin: bool            # Alpha or beta spin
-
-NTOStateAnalysis:
-  state_number: int
-  contributions: Sequence[NTOContribution]
-  omega_percent: float | None    # Total character
-  omega_alpha_percent: float | None
-  omega_beta_percent: float | None
-
-GroundStateReference:
-  frontier_nos: Sequence[float]  # Natural orbital occupations
-  num_electrons: float           # Total electron count
-  mulliken: AtomicCharges        # Mulliken charges/spins
-  dipole_moment_debye: float     # Total dipole (Debye)
-  dipole_components_debye: tuple[float, float, float]  # (X, Y, Z)
-  num_unpaired_electrons: float | None  # n_u value
-
-NaturalOrbitals:
-  frontier_occupations: Sequence[float]
-  num_electrons: float
-  num_unpaired: float | None     # n_u
-  num_unpaired_nl: float | None  # n_u,nl
-  pr_no: float | None            # NO participation ratio
-
-ExcitonAnalysis:
-  r_h_ang: tuple[float, float, float]  # Hole position (X, Y, Z) [Ang]
-  r_e_ang: tuple[float, float, float]  # Electron position (X, Y, Z) [Ang]
-  separation_ang: float          # |r_e - r_h| [Ang]
-  hole_size_ang: float           # Hole size [Ang]
-  electron_size_ang: float       # Electron size [Ang]
-  hole_size_components_ang: tuple[float, float, float] | None
-  electron_size_components_ang: tuple[float, float, float] | None
-  # Transition density matrix specific:
-  rms_separation_ang: float | None
-  rms_separation_components_ang: tuple[float, float, float] | None
-  covariance: float | None
-  correlation_coef: float | None
-  center_of_mass_size_ang: float | None
-  center_of_mass_components_ang: tuple[float, float, float] | None
-  trans_dipole_moment_debye: float | None
-  trans_dipole_moment_components_debye: tuple[float, float, float] | None
-  trans_r2_au: float | None
-  trans_r2_components_au: tuple[float, float, float] | None
-
-UnrelaxedDensityMatrix:
-  state_number: int
-  nos_spin_traced: NaturalOrbitals  # Main/only (RKS) or spin-traced (UKS)
-  mulliken: AtomicCharges        # State/difference density charges
-  molecular_charge: float
-  num_electrons: float
-  dipole_moment_debye: float
-  dipole_components_debye: tuple[float, float, float]
-  exciton_total: ExcitonAnalysis
-  multiplicity: str | None
-  nos_alpha: NaturalOrbitals | None  # UKS only
-  nos_beta: NaturalOrbitals | None   # UKS only
-  exciton_alpha: ExcitonAnalysis | None  # UKS only
-  exciton_beta: ExcitonAnalysis | None   # UKS only
-
-TransitionDensityMatrix:
-  state_number: int
-  exciton_total: ExcitonAnalysis
-  multiplicity: str | None
-  mulliken: AtomicCharges | None
-  # CT numbers and metrics:
-  sum_abs_trans_charges: float | None    # QTa
-  sum_squared_trans_charges: float | None  # QT2
-  omega: float | None
-  omega_alpha: float | None      # UKS only
-  omega_beta: float | None       # UKS only
-  two_alpha_beta: float | None   # 2<alpha|beta>
-  loc: float | None              # LOC
-  loc_alpha: float | None        # UKS only
-  loc_beta: float | None         # UKS only
-  loca: float | None             # LOCa
-  loca_alpha: float | None       # UKS only
-  loca_beta: float | None        # UKS only
-  phe: float | None              # <Phe>
-  phe_alpha: float | None        # UKS only
-  phe_beta: float | None         # UKS only
-  trans_dipole_moment_debye: float | None
-  trans_r2_au: float | None
-  trans_dipole_components_debye: tuple[float, float, float] | None
-  trans_r2_components_au: tuple[float, float, float] | None
-  exciton_alpha: ExcitonAnalysis | None  # UKS only
-  exciton_beta: ExcitonAnalysis | None   # UKS only
-
-TddftResults:
-  tda_states: Sequence[ExcitedState] | None          # TDA results
-  tddft_states: Sequence[ExcitedState] | None        # Full TDDFT results
-  nto_analyses: Sequence[NTOStateAnalysis] | None    # NTO analysis
-  ground_state_ref: GroundStateReference | None      # Ground state reference
-  unrelaxed_density_matrices: Sequence[UnrelaxedDensityMatrix] | None
-  transition_density_matrices: Sequence[TransitionDensityMatrix] | None
-
-
-METADATA MODEL
---------------
-
-CalculationMetadata:
-  software_name: str             # "ORCA", "Q-Chem", etc.
-  software_version: str | None   # e.g., "5.0.3", "6.2"
-
-
-SERIALIZATION METHODS
----------------------
-All models inherit from FrozenModel, providing:
-
-  .to_dict() -> dict[str, Any]
-    Recursively converts to dictionary
-    Note: CalculationResult.to_dict() excludes raw_output to save space
-
-  .from_dict(data: dict[str, Any]) -> Self
-    Reconstructs from dictionary
-    Note: CalculationResult.from_dict() sets raw_output to "" if missing
-
-  .to_json(indent: int = 2) -> str
-    Serializes to JSON string
-
-  .from_json(json_str: str) -> Self
-    Deserializes from JSON string
-
-
-USAGE EXAMPLES
---------------
-
-1. Parse a calculation output:
-    from calcflow.io.qchem import parse_qchem_output
-    from calcflow.io.orca import parse_orca_output
-
-    # Parse Q-Chem output
-    with open("qchem.out") as f:
-        result = parse_qchem_output(f.read())
-
-    # Parse ORCA output
-    with open("orca.out") as f:
-        result = parse_orca_output(f.read())
-
-    # Check if successful
-    if result.termination_status == "NORMAL":
-        print(f"Final energy: {result.final_energy} Hartree")
-
-
-2. Access SCF results:
-    result = parse_qchem_output(output_text)
-
-    if result.scf:
-        print(f"SCF converged: {result.scf.converged}")
-        print(f"SCF energy: {result.scf.energy} Hartree")
-        print(f"Iterations: {result.scf.n_iterations}")
-
-        # Access last iteration
-        last_iter = result.scf.iterations[-1]
-        print(f"Final DIIS error: {last_iter.diis_error}")
-
-        # Energy components (if available)
-        if result.scf.components:
-            print(f"Nuclear repulsion: {result.scf.components.nuclear_repulsion}")
-            print(f"Electronic energy: {result.scf.components.electronic_eh}")
-
-
-3. Work with molecular orbitals:
-    if result.orbitals:
-        # Find HOMO-LUMO gap
-        homo_idx = result.orbitals.alpha_homo_index
-        lumo_idx = result.orbitals.alpha_lumo_index
-
-        if homo_idx is not None and lumo_idx is not None:
-            homo = result.orbitals.alpha_orbitals[homo_idx]
-            lumo = result.orbitals.alpha_orbitals[lumo_idx]
-            gap_ev = (lumo.energy - homo.energy) * 27.2114  # Hartree to eV
-            print(f"HOMO-LUMO gap: {gap_ev:.2f} eV")
-
-        # List occupied orbitals
-        occupied = [orb for orb in result.orbitals.alpha_orbitals
-                   if orb.occupation and orb.occupation > 0]
-        print(f"Number of occupied orbitals: {len(occupied)}")
-
-
-4. Extract excited state data:
-    if result.tddft and result.tddft.tddft_states:
-        for state in result.tddft.tddft_states[:5]:  # First 5 states
-            print(f"State {state.state_number}: "
-                  f"{state.excitation_energy_ev:.2f} eV "
-                  f"({state.multiplicity})")
-            if state.oscillator_strength:
-                print(f"  f = {state.oscillator_strength:.4f}")
-
-            # Dominant transitions
-            for trans in state.transitions[:3]:  # Top 3
-                print(f"  {trans.from_idx} -> {trans.to_idx} "
-                      f"(amplitude: {trans.amplitude:.2f})")
-
-
-5. Access population analysis:
-    if result.atomic_charges:
-        for charges in result.atomic_charges:
-            print(f"\n{charges.method} charges:")
-            for atom_idx, charge in charges.charges.items():
-                atom = result.input_geometry[atom_idx]
-                print(f"  {atom.symbol}{atom_idx}: {charge:+.3f}")
-
-            # Spin densities (if UKS)
-            if charges.spins:
-                print(f"\n{charges.method} spin densities:")
-                for atom_idx, spin in charges.spins.items():
-                    print(f"  Atom {atom_idx}: {spin:+.3f}")
-
-
-6. Check dipole moment:
-    if result.multipole and result.multipole.dipole:
-        dipole = result.multipole.dipole
-        print(f"Dipole moment: {dipole.magnitude:.3f} Debye")
-        print(f"  X: {dipole.x:.3f}")
-        print(f"  Y: {dipole.y:.3f}")
-        print(f"  Z: {dipole.z:.3f}")
-
-
-7. Extract solvation data:
-    if result.smd:
-        print(f"G_PCM: {result.smd.g_pcm_kcal_mol} kcal/mol")
-        print(f"G_CDS: {result.smd.g_cds_kcal_mol} kcal/mol")
-        print(f"Total free energy: {result.smd.g_tot_au} Hartree")
-
-
-8. Get dispersion correction:
-    if result.dispersion:
-        print(f"Method: {result.dispersion.method}")
-        print(f"E_disp: {result.dispersion.e_disp_au} Hartree")
-        if result.dispersion.e_disp_kcal:
-            print(f"E_disp: {result.dispersion.e_disp_kcal} kcal/mol")
-
-
-9. Save results to JSON:
-    result = parse_qchem_output(output_text)
-
-    # Serialize to JSON (raw_output automatically excluded)
-    with open("result.json", "w") as f:
-        f.write(result.to_json())
-
-    # Load from JSON
-    with open("result.json") as f:
-        loaded_result = CalculationResult.from_json(f.read())
-
-    # Verify (note: raw_output will be empty string in loaded_result)
-    assert loaded_result.final_energy == result.final_energy
-    assert loaded_result.scf.converged == result.scf.converged
-
-
-10. Work with geometry:
-    if result.input_geometry:
-        print("Initial geometry:")
-        for atom in result.input_geometry:
-            print(f"  {atom.symbol:2s} {atom.x:10.6f} {atom.y:10.6f} {atom.z:10.6f}")
-
-    if result.final_geometry:
-        print("\nOptimized geometry:")
-        for atom in result.final_geometry:
-            print(f"  {atom.symbol:2s} {atom.x:10.6f} {atom.y:10.6f} {atom.z:10.6f}")
-
-
-11. Analyze exciton properties (Q-Chem TDDFT):
-    if result.tddft and result.tddft.transition_density_matrices:
-        for tdm in result.tddft.transition_density_matrices:
-            print(f"\nState {tdm.state_number}:")
-            exciton = tdm.exciton_total
-            print(f"  Hole-electron separation: {exciton.separation_ang:.3f} Å")
-            print(f"  Hole size: {exciton.hole_size_ang:.3f} Å")
-            print(f"  Electron size: {exciton.electron_size_ang:.3f} Å")
-
-            # CT metrics
-            if tdm.omega:
-                print(f"  Omega: {tdm.omega:.3f}")
-            if tdm.loc:
-                print(f"  LOC: {tdm.loc:.3f}")
-
-
-12. Handle MOM calculations (multi-job outputs):
-    # MOM outputs are parsed as a single CalculationResult
-    # with the final job's data
-    result = parse_qchem_output(mom_output_text)
-
-    # Check program_specific for MOM-related data
-    if "mom" in result.program_specific:
-        print("MOM calculation detected")
-        print(result.program_specific["mom"])
-
-
-13. Extract timing information:
-    if result.timing:
-        if result.timing.total_wall_time_seconds:
-            minutes = result.timing.total_wall_time_seconds / 60
-            print(f"Total wall time: {minutes:.1f} minutes")
-
-        if result.timing.module_times:
-            print("\nModule timings:")
-            for module, seconds in result.timing.module_times.items():
-                print(f"  {module}: {seconds:.1f} s")
-
-
-14. Complete workflow - parse, analyze, save:
-    from calcflow.io.qchem import parse_qchem_output
-    from pathlib import Path
-
-    # Parse output
-    output_path = Path("calculation.out")
-    result = parse_qchem_output(output_path.read_text())
-
-    # Check status
-    if result.termination_status != "NORMAL":
-        print("Calculation failed!")
-        exit(1)
-
-    # Extract key data
-    data = {
-        "energy": result.final_energy,
-        "converged": result.scf.converged if result.scf else None,
-        "dipole": result.multipole.dipole.magnitude if result.multipole and result.multipole.dipole else None,
-    }
-
-    # Add excited state data
-    if result.tddft and result.tddft.tddft_states:
-        data["excitations"] = [
-            {
-                "state": s.state_number,
-                "energy_ev": s.excitation_energy_ev,
-                "f": s.oscillator_strength,
-            }
-            for s in result.tddft.tddft_states
-        ]
-
-    # Save to JSON
-    import json
-    with open("analysis.json", "w") as f:
-        json.dump(data, f, indent=2)
-
-    # Save full result (without raw_output)
-    with open("full_result.json", "w") as f:
-        f.write(result.to_json())
-
-
-IMPORTANT NOTES
----------------
-1. All models are immutable (frozen dataclasses). Once created, they cannot be modified.
-
-2. CalculationResult.to_dict() and .to_json() automatically EXCLUDE raw_output
-   to save space. The raw output is typically very large and not needed for
-   serialization.
-
-3. When deserializing with .from_dict() or .from_json(), raw_output is set to
-   an empty string ("").
-
-4. Optional fields default to None. Check for None before accessing nested attributes.
-
-5. Units are standardized:
-   - Energy: Hartree (unless field name specifies otherwise like _ev or _kcal_mol)
-   - Distance: Angstrom
-   - Dipole moments: Debye
-   - Time: seconds
-
-6. For UHF/UKS calculations, beta_orbitals will be populated. For RHF/RKS,
-   only alpha_orbitals is used.
-
-7. TDDFT results can contain multiple types of analyses:
-   - tda_states/tddft_states: Basic excitation data
-   - nto_analyses: Natural transition orbital analysis
-   - ground_state_ref: Ground state reference data
-   - unrelaxed_density_matrices: Excited state density analysis
-   - transition_density_matrices: Transition density with CT metrics
-
-8. Atom indices are 0-based throughout all models.
-
-9. State numbers in TDDFT are 1-based (S1, S2, etc.).
-
-10. All models support perfect roundtrip serialization (except raw_output):
-    reconstructed = Model.from_dict(original.to_dict())
-    assert reconstructed == original  # True (ignoring raw_output)
-""".strip()
