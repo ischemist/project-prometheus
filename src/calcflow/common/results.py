@@ -17,145 +17,35 @@ Design Philosophy:
 """
 
 import dataclasses
-import json
 import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from types import UnionType
-from typing import Any, Literal, TypeAliasType, TypeVar, Union, get_args, get_origin, get_type_hints
+from typing import Any, Literal, Union, get_args, get_origin, get_type_hints
 
 from calcflow._version import __version__ as _CALCFLOW_VERSION
-from calcflow.common.exceptions import ValidationError
+from calcflow.common.models import Atom, FrozenModel
 from calcflow.common.types import AdcSpin, Matrix3x3
-from calcflow.constants.ptable import ELEMENT_DATA
+from calcflow.geometry.static import Geometry
+
+# Re-export so that existing ``from calcflow.common.results import Atom``
+# and ``from calcflow.common.results import FrozenModel`` imports keep working.
+__all__ = ["Atom", "FrozenModel"]
 
 logger = logging.getLogger(__name__)
 
 # Schema version for CalculationResult serialization format.
 # Increment this when the serialized structure changes (field renames, removals,
 # type changes) and add a corresponding migration step in CalculationResult._migrate().
-RESULT_SCHEMA_VERSION: int = 1
-
-# =============================================================================
-# §0. BASE MODEL FOR SERIALIZATION & DESERIALIZATION
-# =============================================================================
-
-T = TypeVar("T")
-
-
-@dataclass(frozen=True)
-class FrozenModel:
-    """A base class providing to_dict and from_dict for frozen dataclasses."""
-
-    def to_dict(self) -> dict[str, Any]:
-        """Recursively converts the dataclass instance to a dictionary."""
-        return dataclasses.asdict(self)
-
-    @classmethod
-    def from_dict(cls: type[T], data: dict[str, Any]) -> T:
-        """
-        Recursively constructs a dataclass instance from a dictionary.
-        Ignores extraneous keys in the input dictionary.
-        """
-        kwargs = {}
-        cls_fields = {f.name: f for f in dataclasses.fields(cls)}
-
-        for field_name, field_info in cls_fields.items():
-            if field_name in data:
-                value = data[field_name]
-                kwargs[field_name] = cls._convert_value(value, field_info.type)
-
-        required_fields = {
-            f.name
-            for f in dataclasses.fields(cls)
-            if f.default is dataclasses.MISSING and f.default_factory is dataclasses.MISSING  # type: ignore[misc]
-        }
-        missing = sorted(required_fields - set(kwargs))
-        if missing:
-            raise ValidationError(f"{cls.__name__}.from_dict() missing required fields: {missing}")
-
-        return cls(**kwargs)
-
-    @staticmethod
-    def _convert_value(value: Any, target_type: type) -> Any:
-        """Helper to recursively convert dictionary values to dataclass fields."""
-        if value is None:
-            return None
-
-        if isinstance(target_type, TypeAliasType):
-            return FrozenModel._convert_value(value, target_type.__value__)
-
-        origin = get_origin(target_type)
-        args = get_args(target_type)
-
-        # Handle Optional[T] with both old (Union) and new (UnionType | None) syntax
-        if (origin is Union or origin is UnionType) and type(None) in args:
-            # Assumes Optional[T] is Union[T, NoneType] or T | None
-            inner_type = next(t for t in args if t is not type(None))
-            return FrozenModel._convert_value(value, inner_type)
-
-        if dataclasses.is_dataclass(target_type) and isinstance(value, dict):
-            # mypy complains here but it's correct; target_type has from_dict
-            return target_type.from_dict(value)  # type: ignore
-
-        if origin in (list, Sequence) and isinstance(value, list):
-            item_type = args[0]
-            return [FrozenModel._convert_value(item, item_type) for item in value]
-
-        if origin is tuple and isinstance(value, (list, tuple)):
-            if len(args) == 2 and args[1] is Ellipsis:
-                return tuple(FrozenModel._convert_value(item, args[0]) for item in value)
-            return tuple(
-                FrozenModel._convert_value(item, item_type) for item, item_type in zip(value, args, strict=True)
-            )
-
-        if origin in (dict, Mapping) and isinstance(value, dict):
-            key_type, val_type = args
-            return {
-                FrozenModel._convert_value(k, key_type): FrozenModel._convert_value(v, val_type)
-                for k, v in value.items()
-            }
-
-        if target_type in (int, float, str, bool) and not isinstance(value, target_type):
-            try:
-                return target_type(value)
-            except (TypeError, ValueError):
-                return value
-
-        return value
-
-    def to_json(self, indent: int = 2) -> str:
-        """Serializes the model to a JSON string."""
-        return json.dumps(self.to_dict(), indent=indent)
-
-    @classmethod
-    def from_json(cls: type[T], json_str: str) -> T:
-        """Deserializes a model from a JSON string."""
-        return cls.from_dict(json.loads(json_str))
-
+#
+# v1 → v2: input_geometry / final_geometry changed from a bare list of atom
+#           dicts  [{"symbol": "O", "x": 0, ...}, ...]  to a Geometry object
+#           {"comment": "", "atoms": [{"symbol": "O", ...}, ...]}.
+RESULT_SCHEMA_VERSION: int = 2
 
 # =============================================================================
 # §1. FUNDAMENTAL BUILDING BLOCKS
 # =============================================================================
-
-
-@dataclass(frozen=True)
-class Atom(FrozenModel):
-    """Represents a single atom with its Cartesian coordinates."""
-
-    symbol: str
-    x: float
-    y: float
-    z: float
-
-    def __post_init__(self):
-        """Validates the element symbol after initialization."""
-        # On frozen dataclasses, __post_init__ can't modify fields.
-        # It can only validate. Parsers are responsible for capitalization.
-        if self.symbol.upper() not in ELEMENT_DATA:
-            raise ValidationError(f"unknown element symbol: '{self.symbol}'")
-        if self.symbol != self.symbol.capitalize():
-            raise ValidationError(f"element symbol '{self.symbol}' must be capitalized.")
 
 
 @dataclass(frozen=True)
@@ -640,6 +530,28 @@ class AdcResults(FrozenModel):
 
 
 # =============================================================================
+# §4b. SCHEMA MIGRATION HELPERS
+# =============================================================================
+
+
+def _migrate_result_v1_to_v2(data: dict[str, Any]) -> dict[str, Any]:
+    """Migrate a v1 CalculationResult dict to v2.
+
+    v1 stored ``input_geometry`` / ``final_geometry`` as bare lists of atom
+    dicts: ``[{"symbol": "O", "x": 0.0, "y": 0.0, "z": 0.0}, ...]``.
+
+    v2 stores them as Geometry dicts: ``{"comment": "", "atoms": [...]}``.
+    """
+    data = {**data}
+    for field_name in ("input_geometry", "final_geometry"):
+        raw = data.get(field_name)
+        if isinstance(raw, list):
+            data[field_name] = {"comment": "", "atoms": raw}
+        # None or already a dict → leave as-is
+    return data
+
+
+# =============================================================================
 # §5. TOP-LEVEL RESULT MODELS
 # =============================================================================
 
@@ -665,8 +577,8 @@ class CalculationResult(FrozenModel):
     raw_output: str = field(repr=False)
 
     # --- Geometry ---
-    input_geometry: Sequence[Atom] | None = None
-    final_geometry: Sequence[Atom] | None = None
+    input_geometry: Geometry | None = None
+    final_geometry: Geometry | None = None
 
     # --- Energies ---
     final_energy: float | None = None  # e.g., SCF+Dispersion
@@ -724,8 +636,6 @@ class CalculationResult(FrozenModel):
         Each migration step transforms the dict from version *N* to *N+1*.
         Add new migration blocks here when ``RESULT_SCHEMA_VERSION`` is bumped::
 
-            if from_version < 2:
-                data = _migrate_result_v1_to_v2(data)
             if from_version < 3:
                 data = _migrate_result_v2_to_v3(data)
         """
@@ -743,7 +653,8 @@ class CalculationResult(FrozenModel):
                 from_version,
                 RESULT_SCHEMA_VERSION,
             )
-        # --- future migrations go here ---
+        if from_version < 2:
+            data = _migrate_result_v1_to_v2(data)
         return data
 
     def get_charges(self, method: str) -> "AtomicCharges | None":

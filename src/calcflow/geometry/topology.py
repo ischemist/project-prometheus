@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from typing import Literal
 
 from calcflow.common.exceptions import ConfigurationError
-from calcflow.common.results import Atom
+from calcflow.common.models import Atom
 from calcflow.constants.ptable import ELEMENT_DATA
 
 # Elements that can participate in aromatic rings

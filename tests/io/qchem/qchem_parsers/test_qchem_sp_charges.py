@@ -188,7 +188,7 @@ def test_charges_structure_has_three_atoms(parsed_qchem_data: CalculationResult)
 def test_charges_parsed_alongside_geometry(parsed_qchem_62_h2o_sp_data: CalculationResult):
     """Integration test: verify charges parser works alongside geometry parser."""
     assert parsed_qchem_62_h2o_sp_data.input_geometry is not None
-    assert len(parsed_qchem_62_h2o_sp_data.input_geometry) == 3  # H2O
+    assert parsed_qchem_62_h2o_sp_data.input_geometry.num_atoms == 3  # H2O
 
     mulliken_charges = None
     for charges in parsed_qchem_62_h2o_sp_data.atomic_charges:

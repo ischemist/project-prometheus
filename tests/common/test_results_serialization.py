@@ -44,6 +44,7 @@ from calcflow.common.results import (
     TimingResults,
     TwoPhotonAbsorption,
 )
+from calcflow.geometry.static import Geometry
 from calcflow.io.orca import parse_orca_output
 from calcflow.io.qchem import parse_qchem_output
 
@@ -562,22 +563,26 @@ class TestCalculationResultSerialization:
         assert reconstructed.raw_output == ""  # excluded from serialization
 
     def test_json_roundtrip_with_geometry(self):
+        geom = Geometry(
+            comment="",
+            atoms=(
+                Atom(symbol="O", x=0.0, y=0.0, z=0.0),
+                Atom(symbol="H", x=0.0, y=0.0, z=0.96),
+                Atom(symbol="H", x=0.93, y=0.0, z=-0.24),
+            ),
+        )
         result = CalculationResult(
             termination_status="NORMAL",
             metadata=CalculationMetadata(software_name="ORCA"),
             raw_output="output",
-            input_geometry=[
-                Atom(symbol="O", x=0.0, y=0.0, z=0.0),
-                Atom(symbol="H", x=0.0, y=0.0, z=0.96),
-                Atom(symbol="H", x=0.93, y=0.0, z=-0.24),
-            ],
+            input_geometry=geom,
             final_energy=-75.313506,
         )
         json_str = result.to_json()
         reconstructed = CalculationResult.from_json(json_str)
 
-        assert len(reconstructed.input_geometry) == 3
-        assert reconstructed.input_geometry[0].symbol == "O"
+        assert reconstructed.input_geometry.num_atoms == 3
+        assert reconstructed.input_geometry.atoms[0].symbol == "O"
         assert reconstructed.final_energy == result.final_energy
 
     def test_json_roundtrip_with_scf(self):
@@ -605,7 +610,7 @@ class TestCalculationResultSerialization:
             termination_status="NORMAL",
             metadata=CalculationMetadata(software_name="Q-Chem", software_version="6.2"),
             raw_output="very long output...",
-            input_geometry=[Atom(symbol="O", x=0.0, y=0.0, z=0.0)],
+            input_geometry=Geometry(comment="", atoms=(Atom(symbol="O", x=0.0, y=0.0, z=0.0),)),
             final_energy=-75.5,
             nuclear_repulsion_energy=8.0,
             scf=ScfResults(converged=True, energy=-75.5, n_iterations=10, iterations=[]),
