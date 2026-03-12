@@ -41,6 +41,8 @@ class AdcGroundStateParser(BlockParser):
     DAVIDSON_PAT: ClassVar[re.Pattern] = re.compile(r"Starting Davidson for excited states")
 
     def matches(self, line: str, state: ParseState) -> bool:
+        if "A D C" not in line:
+            return False
         if state.parsed_adc_gs:
             return False
         return bool(self.BANNER_PAT.search(line))

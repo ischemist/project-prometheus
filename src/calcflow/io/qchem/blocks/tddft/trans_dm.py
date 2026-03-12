@@ -46,6 +46,8 @@ class TransitionDensityMatrixParser(BlockParser):
     END_PAT: ClassVar[re.Pattern] = re.compile(r"^\s*-{5,}\s*$")
 
     def matches(self, line: str, state: ParseState) -> bool:
+        if "Transition Density" not in line:
+            return False
         if state.parsed_tddft_trans_dm:
             return False
         return bool(self.START_PAT.search(line))

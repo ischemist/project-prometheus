@@ -33,6 +33,8 @@ class ScfParser:
     """Parses the main SCF block, including iterations, final energies, and SMD summaries."""
 
     def matches(self, line: str, state: ParseState) -> bool:
+        if "General SCF" not in line:
+            return False
         return not state.parsed_scf and bool(SCF_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:

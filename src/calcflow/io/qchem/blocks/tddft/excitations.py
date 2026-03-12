@@ -56,6 +56,8 @@ class ExcitationsParser:
 
         Matches either TDA or full TDDFT block start, and only if not already parsed.
         """
+        if "Excitation" not in line:
+            return False
         if state.parsed_tddft_tda and state.parsed_tddft_full:
             return False
 

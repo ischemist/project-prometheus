@@ -60,7 +60,9 @@ class MultipoleParser:
 
     def matches(self, line: str, state: ParseState) -> bool:
         """Check if this line marks the beginning of the multipole moments block."""
-        return bool(MULTIPOLE_START_PAT.search(line)) and not state.parsed_multipole
+        if "Multipole Moments" not in line:
+            return False
+        return not state.parsed_multipole and bool(MULTIPOLE_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """

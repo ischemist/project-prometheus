@@ -34,7 +34,9 @@ class HirshfeldParser:
     """
 
     def matches(self, line: str, state: ParseState) -> bool:
-        return bool(HIRSHFELD_START_PAT.search(line)) and not state.parsed_hirshfeld
+        if "Hirshfeld" not in line:
+            return False
+        return not state.parsed_hirshfeld and bool(HIRSHFELD_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Parsing QChem Hirshfeld charges block.")

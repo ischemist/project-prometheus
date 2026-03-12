@@ -23,7 +23,9 @@ class MetadataParser:
         """
         if state.metadata.software_version is not None:
             return False
-        return QCHEM_VERSION_PAT.search(line) is not None
+        if "Q-Chem" not in line:
+            return False
+        return bool(QCHEM_VERSION_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """

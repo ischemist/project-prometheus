@@ -56,6 +56,8 @@ class AdcExcitedStatesParser(BlockParser):
     START_PAT: ClassVar[re.Pattern] = re.compile(r"Excited State Summary")
 
     def matches(self, line: str, state: ParseState) -> bool:
+        if "Excited State Summary" not in line:
+            return False
         if state.parsed_adc_excited:
             return False
         return bool(self.START_PAT.search(line))

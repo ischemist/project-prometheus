@@ -23,6 +23,8 @@ class TimingParser:
 
     def matches(self, line: str, state: ParseState) -> bool:
         """Matches on the total job time line."""
+        if "Total job time" not in line:
+            return False
         if state.parsed_timing:
             return False
         return bool(TOTAL_TIME_PAT.search(line))

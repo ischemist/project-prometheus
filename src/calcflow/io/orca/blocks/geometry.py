@@ -13,6 +13,8 @@ GEOMETRY_LINE_PAT = re.compile(r"^\s*([A-Za-z]{1,3})\s+(-?\d+\.\d+)\s+(-?\d+\.\d
 
 class GeometryParser:
     def matches(self, line: str, state: ParseState) -> bool:
+        if "CARTESIAN COORDINATES" not in line:
+            return False
         return not state.parsed_geometry and bool(GEOMETRY_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:

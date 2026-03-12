@@ -32,7 +32,9 @@ class Cm5Parser:
     """
 
     def matches(self, line: str, state: ParseState) -> bool:
-        return bool(CM5_START_PAT.search(line)) and not state.parsed_cm5
+        if "Charge Model 5" not in line:
+            return False
+        return not state.parsed_cm5 and bool(CM5_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Parsing QChem CM5 charges block.")

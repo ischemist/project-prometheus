@@ -39,6 +39,8 @@ class OrbitalsParser:
 
     def matches(self, line: str, state: ParseState) -> bool:
         """Check if this line marks the start of the orbital energies block."""
+        if "Orbital Energies" not in line:
+            return False
         if state.parsed_orbitals:
             return False
         return bool(ORBITAL_BLOCK_START_PAT.search(line))
