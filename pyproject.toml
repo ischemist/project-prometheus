@@ -42,6 +42,7 @@ dev = [
     "pytest-cov>=7.0.0",
     "ruff>=0.14.2",
     "ty>=0.0.1a24",
+    "zensical>=0.0.26",
 ]
 
 [tool.ty.src]
