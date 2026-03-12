@@ -17,7 +17,7 @@ import pytest
 from calcflow.common.results import AtomicCharges, CalculationResult
 from calcflow.io.peekable import PeekableIterator
 from calcflow.io.qchem.blocks.cm5 import Cm5Parser
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_CM5, ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
@@ -74,7 +74,7 @@ def test_cm5_parser_skips_if_already_parsed():
     """Unit test: verify Cm5Parser.matches() returns False when already parsed."""
     parser = Cm5Parser()
     state = ParseState(raw_output="")
-    state.parsed_cm5 = True
+    state.parsed_blocks.add(BLOCK_CM5)
 
     assert parser.matches("          Charge Model 5         ", state) is False
 
@@ -91,7 +91,7 @@ def test_cm5_parser_does_not_mutate_state_in_matches():
 
     assert result1 is True
     assert result2 is True
-    assert state.parsed_cm5 is False
+    assert BLOCK_CM5 not in state.parsed_blocks
     assert state.atomic_charges == []
 
 
@@ -113,7 +113,7 @@ def test_cm5_parser_parse_basic():
     ]
     parser.parse(PeekableIterator(iter(lines)), "          Charge Model 5         ", state)
 
-    assert state.parsed_cm5 is True
+    assert BLOCK_CM5 in state.parsed_blocks
     assert len(state.atomic_charges) == 1
     cm5 = state.atomic_charges[0]
     assert cm5.method == "CM5"
@@ -148,7 +148,7 @@ def test_cm5_parser_empty_block_adds_warning():
 
     parser.parse(PeekableIterator(iter(["  Sum of atomic charges =     0.000000"])), "Charge Model 5", state)
 
-    assert state.parsed_cm5 is False
+    assert BLOCK_CM5 not in state.parsed_blocks
     assert len(state.atomic_charges) == 0
     assert len(state.parsing_warnings) == 1
 

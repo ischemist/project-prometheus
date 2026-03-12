@@ -9,7 +9,7 @@ import re
 
 from calcflow.common.results import TimingResults
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_TIMING, ParseState
 from calcflow.utils import logger
 
 # Pattern for total job time: "Total job time:  0.77s(wall), 0.22s(cpu)"
@@ -25,7 +25,7 @@ class TimingParser:
         """Matches on the total job time line."""
         if "Total job time" not in line:
             return False
-        if state.parsed_timing:
+        if BLOCK_TIMING in state.parsed_blocks:
             return False
         return bool(TOTAL_TIME_PAT.search(line))
 
@@ -42,5 +42,5 @@ class TimingParser:
                 total_wall_time_seconds=wall_time,
                 total_cpu_time_seconds=cpu_time,
             )
-            state.parsed_timing = True
+            state.parsed_blocks.add(BLOCK_TIMING)
             logger.debug(f"Parsed timing: wall={wall_time}s, cpu={cpu_time}s")

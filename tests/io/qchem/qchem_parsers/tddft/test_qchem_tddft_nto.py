@@ -22,7 +22,7 @@ import pytest
 
 from calcflow.common.results import CalculationResult, NTOStateAnalysis
 from calcflow.io.qchem.blocks.tddft.nto import NTOParser
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_NTO, ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
@@ -213,7 +213,7 @@ def test_nto_parser_skips_if_already_parsed():
     """Unit test: verify NTOParser.matches() returns False when already parsed."""
     parser = NTOParser()
     state = ParseState(raw_output="")
-    state.parsed_nto = True
+    state.parsed_blocks.add(BLOCK_NTO)
 
     assert parser.matches("  SA-NTO Decomposition", state) is False
 
@@ -233,7 +233,7 @@ def test_nto_parser_does_not_mutate_state_in_matches():
 
     assert result1 is True
     assert result2 is True
-    assert state.parsed_nto is False  # Should NOT be set
+    assert BLOCK_NTO not in state.parsed_blocks  # Should NOT be set
 
 
 # =============================================================================

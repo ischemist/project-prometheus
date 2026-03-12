@@ -10,7 +10,7 @@ import re
 
 from calcflow.common.results import TimingResults
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_TIMING, ParseState
 
 # Pattern for total wall time: "TOTAL RUN TIME: 0 days 0 hours 1 minutes 31 seconds 640 msec"
 TOTAL_TIME_PAT = re.compile(
@@ -37,7 +37,7 @@ class TimingParser:
         """Matches on total wall time line or module timing lines."""
         if "..." not in line and "TOTAL RUN TIME" not in line:
             return False
-        if state.parsed_timing:
+        if BLOCK_TIMING in state.parsed_blocks:
             return False
         return bool(TOTAL_TIME_PAT.search(line)) or bool(MODULE_TIME_PAT.search(line))
 
@@ -63,7 +63,7 @@ class TimingParser:
                 total_wall_time_seconds=total_wall_seconds,
                 module_times=module_times,
             )
-            state.parsed_timing = True
+            state.parsed_blocks.add(BLOCK_TIMING)
             # Reset buffer for potential future use
             self.module_times_buffer = {}
         else:

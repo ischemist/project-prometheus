@@ -29,6 +29,7 @@ from calcflow.io.peekable import PeekableIterator
 from calcflow.io.qchem.blocks.parse_helpers import parse_key_value as _parse_key_value
 from calcflow.io.qchem.blocks.parse_helpers import parse_vector as _parse_vector
 from calcflow.io.qchem.blocks.parse_helpers import to_float as _to_float
+from calcflow.io.state import BLOCK_TDDFT_TRANS_DM
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ class TransitionDensityMatrixParser(BlockParser):
     def matches(self, line: str, state: ParseState) -> bool:
         if "Transition Density" not in line:
             return False
-        if state.parsed_tddft_trans_dm:
+        if BLOCK_TDDFT_TRANS_DM in state.parsed_blocks:
             return False
         return bool(self.START_PAT.search(line))
 
@@ -93,7 +94,7 @@ class TransitionDensityMatrixParser(BlockParser):
             logger.warning(msg)
             return
 
-        state.parsed_tddft_trans_dm = True
+        state.parsed_blocks.add(BLOCK_TDDFT_TRANS_DM)
         state.tddft_transition_density_matrices = all_analyses
         logger.debug("Finished parsing 'Transition Density Matrix Analysis'.")
 

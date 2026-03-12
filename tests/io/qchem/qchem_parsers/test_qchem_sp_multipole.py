@@ -16,7 +16,7 @@ import pytest
 
 from calcflow.common.results import CalculationResult, MultipoleResults
 from calcflow.io.qchem.blocks.multipole import MultipoleParser
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_MULTIPOLE, ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
@@ -111,7 +111,7 @@ def test_multipole_parser_skips_if_already_parsed():
     """Unit test: verify MultipoleParser.matches() returns False when already parsed."""
     parser = MultipoleParser()
     state = ParseState(raw_output="")
-    state.parsed_multipole = True
+    state.parsed_blocks.add(BLOCK_MULTIPOLE)
 
     start_line = "Multipole moment tensor (Debye.Ang**n / e.Bohr**n)"
     assert parser.matches(start_line, state) is False
@@ -134,7 +134,7 @@ def test_multipole_parser_does_not_mutate_state_in_matches():
     # State should be identical after calling matches()
     assert result1 is True
     assert result2 is True
-    assert state.parsed_multipole is False  # Should NOT be set
+    assert BLOCK_MULTIPOLE not in state.parsed_blocks  # Should NOT be set
     assert state.multipole is None  # Should NOT be populated
 
 

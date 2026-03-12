@@ -12,7 +12,7 @@ from calcflow.common.patterns import VersionSpec
 from calcflow.common.results import CalculationMetadata
 from calcflow.io.peekable import PeekableIterator
 from calcflow.io.qchem.blocks.metadata import MetadataParser
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_METADATA, ParseState
 
 
 @pytest.mark.unit
@@ -77,7 +77,7 @@ def test_metadata_parser_sets_software_name_and_version():
 
     assert state.metadata.software_name == "Q-Chem"
     assert state.metadata.software_version == "6.2"
-    assert state.parsed_metadata is True
+    assert BLOCK_METADATA in state.parsed_blocks
 
 
 @pytest.mark.unit

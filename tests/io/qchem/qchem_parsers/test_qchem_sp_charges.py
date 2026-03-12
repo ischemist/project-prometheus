@@ -15,7 +15,7 @@ import pytest
 
 from calcflow.common.results import AtomicCharges, CalculationResult
 from calcflow.io.qchem.blocks.charges import MullikenParser
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_MULLIKEN, ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
@@ -75,7 +75,7 @@ def test_mulliken_parser_skips_if_already_parsed():
     """Unit test: verify MullikenParser.matches() returns False when already parsed."""
     parser = MullikenParser()
     state = ParseState(raw_output="")
-    state.parsed_mulliken = True
+    state.parsed_blocks.add(BLOCK_MULLIKEN)
 
     start_line = "Ground-State Mulliken Net Atomic Charges"
     assert parser.matches(start_line, state) is False
@@ -96,7 +96,7 @@ def test_mulliken_parser_does_not_mutate_state_in_matches():
 
     assert result1 is True
     assert result2 is True
-    assert state.parsed_mulliken is False  # Should NOT be set
+    assert BLOCK_MULLIKEN not in state.parsed_blocks  # Should NOT be set
     assert state.atomic_charges == []  # Should NOT be populated
 
 

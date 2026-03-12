@@ -11,7 +11,7 @@ import pytest
 from calcflow.common.results import Atom, CalculationResult
 from calcflow.geometry.static import Geometry
 from calcflow.io.qchem.blocks.geometry import GeometryParser
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_GEOMETRY, ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # Tolerance for coordinate precision (7 decimal places)
@@ -67,7 +67,7 @@ def test_geometry_parser_skips_molecule_if_already_parsed():
     """
     parser = GeometryParser()
     state = ParseState(raw_output="")
-    state.parsed_geometry = True
+    state.parsed_blocks.add(BLOCK_GEOMETRY)
 
     molecule_line = "$molecule"
     assert parser.matches(molecule_line, state) is False

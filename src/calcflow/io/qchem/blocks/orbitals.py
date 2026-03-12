@@ -12,7 +12,7 @@ from calcflow.common.exceptions import ParsingError
 from calcflow.common.results import Orbital, OrbitalsSet
 from calcflow.common.types import SpinChannel
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_ORBITALS, ParseState
 from calcflow.utils import logger
 
 # Pattern definitions
@@ -41,7 +41,7 @@ class OrbitalsParser:
         """Check if this line marks the start of the orbital energies block."""
         if "Orbital Energies" not in line:
             return False
-        if state.parsed_orbitals:
+        if BLOCK_ORBITALS in state.parsed_blocks:
             return False
         return bool(ORBITAL_BLOCK_START_PAT.search(line))
 
@@ -174,7 +174,7 @@ class OrbitalsParser:
             beta_lumo_index=beta_lumo_index,
         )
 
-        state.parsed_orbitals = True
+        state.parsed_blocks.add(BLOCK_ORBITALS)
         logger.info(
             f"Parsed orbital energies. Alpha: {len(alpha_orbitals)} orbitals "
             f"(HOMO: {alpha_homo_index}, LUMO: {alpha_lumo_index}). "

@@ -21,7 +21,7 @@ import pytest
 
 from calcflow.common.results import CalculationResult, ScfIteration, ScfResults, SmdResults
 from calcflow.io.qchem.blocks.scf import ScfParser
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_SCF, ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
@@ -97,7 +97,7 @@ def test_scf_parser_skips_if_already_parsed():
     """Unit test: verify ScfParser.matches() returns False when already parsed."""
     parser = ScfParser()
     state = ParseState(raw_output="")
-    state.parsed_scf = True
+    state.parsed_blocks.add(BLOCK_SCF)
 
     start_line = " General SCF calculation program by"
     assert parser.matches(start_line, state) is False
@@ -120,7 +120,7 @@ def test_scf_parser_does_not_mutate_state_in_matches():
     # State should be identical after calling matches()
     assert result1 is True
     assert result2 is True
-    assert state.parsed_scf is False  # Should NOT be set
+    assert BLOCK_SCF not in state.parsed_blocks  # Should NOT be set
     assert state.scf is None  # Should NOT be populated
 
 

@@ -5,7 +5,7 @@ from calcflow.common.patterns import VersionSpec
 from calcflow.common.results import ScfIteration, ScfResults, SmdResults
 from calcflow.io.peekable import PeekableIterator
 from calcflow.io.qchem.blocks.patterns import QCHEM_PATTERNS
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_SCF, ParseState
 from calcflow.utils import logger
 
 # --- Non-versioned patterns specific to the SCF block's structure ---
@@ -35,7 +35,7 @@ class ScfParser:
     def matches(self, line: str, state: ParseState) -> bool:
         if "General SCF" not in line:
             return False
-        return not state.parsed_scf and bool(SCF_START_PAT.search(line))
+        return BLOCK_SCF not in state.parsed_blocks and bool(SCF_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Starting SCF block parsing.")
@@ -166,7 +166,7 @@ class ScfParser:
         # final energy, falling back to the SCF energy.
         state.final_energy = smd_data.get("g_tot_au", final_energy_data.get("final_energy", final_scf_energy))
 
-        state.parsed_scf = True
+        state.parsed_blocks.add(BLOCK_SCF)
         logger.info(f"Parsed SCF data. Converged: {converged}, Energy: {final_scf_energy:.8f}")
 
     def _process_versioned_patterns(

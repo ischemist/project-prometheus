@@ -24,7 +24,7 @@ import pytest
 
 from calcflow.common.results import CalculationResult, ExcitedState, OrbitalTransition, TddftResults
 from calcflow.io.qchem.blocks.tddft.excitations import ExcitationsParser
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_TDDFT_FULL, BLOCK_TDDFT_TDA, ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
@@ -139,8 +139,8 @@ def test_excitations_parser_skips_if_already_parsed():
     """Unit test: verify ExcitationsParser.matches() returns False when already parsed."""
     parser = ExcitationsParser()
     state = ParseState(raw_output="")
-    state.parsed_tddft_tda = True
-    state.parsed_tddft_full = True
+    state.parsed_blocks.add(BLOCK_TDDFT_TDA)
+    state.parsed_blocks.add(BLOCK_TDDFT_FULL)
 
     assert parser.matches("          TDDFT/TDA Excitation Energies", state) is False
 
@@ -150,7 +150,7 @@ def test_excitations_parser_matches_tda_even_if_full_parsed():
     """Unit test: verify TDA can be parsed after full TDDFT."""
     parser = ExcitationsParser()
     state = ParseState(raw_output="")
-    state.parsed_tddft_full = True
+    state.parsed_blocks.add(BLOCK_TDDFT_FULL)
 
     # Should still match TDA
     assert parser.matches("          TDDFT/TDA Excitation Energies", state) is True
@@ -161,7 +161,7 @@ def test_excitations_parser_matches_tddft_even_if_tda_parsed():
     """Unit test: verify full TDDFT can be parsed after TDA."""
     parser = ExcitationsParser()
     state = ParseState(raw_output="")
-    state.parsed_tddft_tda = True
+    state.parsed_blocks.add(BLOCK_TDDFT_TDA)
 
     # Should still match full TDDFT
     assert parser.matches("              TDDFT Excitation Energies", state) is True
@@ -182,8 +182,8 @@ def test_excitations_parser_does_not_mutate_state_in_matches():
 
     assert result1 is True
     assert result2 is True
-    assert state.parsed_tddft_tda is False  # Should NOT be set
-    assert state.parsed_tddft_full is False
+    assert BLOCK_TDDFT_TDA not in state.parsed_blocks  # Should NOT be set
+    assert BLOCK_TDDFT_FULL not in state.parsed_blocks
     assert state.tddft_tda_states == []  # Should NOT be populated
 
 

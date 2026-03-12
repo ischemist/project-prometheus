@@ -3,7 +3,7 @@ import re
 
 from calcflow.common.patterns import VersionSpec
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_METADATA, ParseState
 from calcflow.utils import logger
 
 # --- Regex Pattern ---
@@ -41,5 +41,5 @@ class MetadataParser:
                 software_version=normalized_version,
             )
             state.metadata = new_metadata
-            state.parsed_metadata = True
+            state.parsed_blocks.add(BLOCK_METADATA)
             logger.debug(f"Parsed Q-Chem version: {normalized_version}")

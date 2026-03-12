@@ -9,7 +9,7 @@ from calcflow.common.exceptions import ParsingError
 from calcflow.common.models import Atom
 from calcflow.geometry.static import Geometry
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_GEOMETRY, ParseState
 from calcflow.utils import logger
 
 # --- Regex Patterns ---
@@ -36,7 +36,7 @@ class GeometryParser:
         """Checks if the line starts either the input or standard geometry block."""
         if "$molecule" not in line.lower() and "Standard Nuclear Orientation" not in line:
             return False
-        if not state.parsed_geometry and INPUT_GEOM_START_PAT.search(line):
+        if BLOCK_GEOMETRY not in state.parsed_blocks and INPUT_GEOM_START_PAT.search(line):
             # We use a single 'parsed_geometry' flag for the input geometry
             return True
         # The final geometry is part of the main calculation, not a separate block to be parsed once
@@ -60,7 +60,7 @@ class GeometryParser:
         first_line = next(iterator, None)
         if first_line and first_line.strip().lower() == "read":
             logger.debug("Found '$molecule read' directive - skipping geometry parsing (inherited from previous job).")
-            state.parsed_geometry = True
+            state.parsed_blocks.add(BLOCK_GEOMETRY)
             return
 
         for line in iterator:
@@ -78,7 +78,7 @@ class GeometryParser:
             raise ParsingError("$molecule block found but no atoms could be parsed.")
 
         state.input_geometry = Geometry(comment="", atoms=tuple(atoms))
-        state.parsed_geometry = True  # Use the generic flag for the primary input geometry
+        state.parsed_blocks.add(BLOCK_GEOMETRY)  # Use the generic flag for the primary input geometry
         logger.debug(f"Parsed {len(atoms)} atoms from $molecule block.")
 
     def _parse_standard_orientation(self, iterator: PeekableIterator, state: ParseState) -> None:

@@ -16,7 +16,7 @@ import pytest
 
 from calcflow.common.results import AdcGroundState, AdcResults, CalculationResult
 from calcflow.io.qchem.blocks.adc.ground_state import AdcGroundStateParser
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_ADC_GS, ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
@@ -70,7 +70,7 @@ def test_adc_ground_state_parser_does_not_match_non_adc_lines() -> None:
 def test_adc_ground_state_parser_skips_if_already_parsed() -> None:
     parser = AdcGroundStateParser()
     state = ParseState(raw_output="")
-    state.parsed_adc_gs = True
+    state.parsed_blocks.add(BLOCK_ADC_GS)
 
     assert (
         parser.matches("|                                 A D C  M A N                                 |", state)
@@ -89,7 +89,7 @@ def test_adc_ground_state_parser_does_not_mutate_state_in_matches() -> None:
 
     assert result_1 is True
     assert result_2 is True
-    assert state.parsed_adc_gs is False
+    assert BLOCK_ADC_GS not in state.parsed_blocks
     assert state.adc_ground_state is None
 
 
