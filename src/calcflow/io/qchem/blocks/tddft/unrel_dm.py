@@ -17,6 +17,7 @@ from collections.abc import Iterator as LineIterator
 from itertools import chain
 from typing import Any, ClassVar
 
+from calcflow.common.patterns import extract_index
 from calcflow.common.results import (
     AtomicCharges,
     ExcitonAnalysis,
@@ -25,18 +26,11 @@ from calcflow.common.results import (
 )
 from calcflow.io.core import BlockParser, ParseState
 from calcflow.io.peekable import PeekableIterator
+from calcflow.io.qchem.blocks.parse_helpers import parse_key_value as _parse_key_value
+from calcflow.io.qchem.blocks.parse_helpers import parse_vector as _parse_vector
+from calcflow.io.qchem.blocks.parse_helpers import to_float as _to_float
 
 logger = logging.getLogger(__name__)
-
-
-def _to_float(val: str | None) -> float | None:
-    """Safely convert a string to float, returning None on failure."""
-    if val is None:
-        return None
-    try:
-        return float(val)
-    except (ValueError, TypeError):
-        return None
 
 
 class UnrelaxedDensityMatrixParser(BlockParser):
@@ -151,12 +145,10 @@ class UnrelaxedDensityMatrixParser(BlockParser):
             return None, line_buffer
 
     def _parse_key_value_line(self, line: str, key: str) -> float | None:
-        match = re.search(rf"{re.escape(key)}.*?:?\s+(-?[\d.]+)", line)
-        return _to_float(match.group(1)) if match else None
+        return _parse_key_value(line, key)
 
     def _parse_vector_line(self, line: str) -> tuple[float, ...] | None:
-        match = re.search(r"\[\s*([\d.-]+),\s*([\d.-]+),\s*([\d.-]+)\]", line)
-        return tuple(map(float, match.groups())) if match else None
+        return _parse_vector(line)
 
     def _parse_nos_section(
         self, iterator: LineIterator, start_line: str
@@ -236,7 +228,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
                 line_buffer = line
                 break
 
-            idx = int(parts[0]) - 1
+            idx = extract_index(parts[0])
             try:
                 if is_uks:
                     assert spins is not None and hole_populations_alpha is not None

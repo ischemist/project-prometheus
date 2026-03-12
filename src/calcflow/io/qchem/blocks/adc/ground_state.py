@@ -18,6 +18,7 @@ from collections.abc import Iterator as LineIterator
 from itertools import chain
 from typing import Any, ClassVar
 
+from calcflow.common.patterns import extract_index
 from calcflow.common.results import (
     AdcGroundState,
     AtomicCharges,
@@ -26,27 +27,10 @@ from calcflow.common.results import (
 )
 from calcflow.io.core import BlockParser, ParseState
 from calcflow.io.peekable import PeekableIterator
+from calcflow.io.qchem.blocks.parse_helpers import parse_key_value as _parse_kv
+from calcflow.io.qchem.blocks.parse_helpers import parse_vector as _parse_vec
 
 logger = logging.getLogger(__name__)
-
-
-def _to_float(val: str | None) -> float | None:
-    if val is None:
-        return None
-    try:
-        return float(val)
-    except (ValueError, TypeError):
-        return None
-
-
-def _parse_kv(line: str, key: str) -> float | None:
-    m = re.search(rf"{re.escape(key)}.*?:\s+(-?[\d.]+)", line)
-    return _to_float(m.group(1)) if m else None
-
-
-def _parse_vec(line: str) -> tuple[float, float, float] | None:
-    m = re.search(r"\[\s*([-\d.]+),\s*([-\d.]+),\s*([-\d.]+)\]", line)
-    return (float(m.group(1)), float(m.group(2)), float(m.group(3))) if m else None
 
 
 class AdcGroundStateParser(BlockParser):
@@ -209,7 +193,7 @@ class AdcGroundStateParser(BlockParser):
             if not parts or not parts[0].isdigit():
                 line_buffer = line
                 break
-            idx = int(parts[0]) - 1
+            idx = extract_index(parts[0])
             try:
                 charges[idx] = float(parts[2])
                 if is_uks:

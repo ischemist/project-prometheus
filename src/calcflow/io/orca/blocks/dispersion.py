@@ -1,12 +1,11 @@
 import re
 
 from calcflow.common.exceptions import ParsingError
+from calcflow.common.patterns import FLOAT_PAT
 from calcflow.common.results import DispersionCorrection
 from calcflow.io.peekable import PeekableIterator
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
-
-FLOAT_PAT = r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)"
 
 # Block markers
 START_PAT = re.compile(r"DFT DISPERSION CORRECTION")

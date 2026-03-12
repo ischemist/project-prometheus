@@ -5,10 +5,11 @@ This decouples the regex patterns and version logic from the parser's control fl
 
 import re
 
-from calcflow.common.patterns import PatternDefinition, VersionSpec
+from calcflow.common.patterns import NEG_FIXED_FLOAT_PAT, PatternDefinition, VersionSpec
 
-# Helper for floating point numbers
-FLOAT = r"(-?\d+\.\d+)"
+# Alias used throughout this module for negative-or-unsigned fixed-point floats
+# (SCF/SMD energies are never in scientific notation and the sign is always negative or absent).
+FLOAT = NEG_FIXED_FLOAT_PAT
 
 # Create VersionSpec instances for clarity
 V5_4 = VersionSpec.from_str("5.4.0")
