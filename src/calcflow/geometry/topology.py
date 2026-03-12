@@ -11,7 +11,7 @@ from calcflow.constants.ptable import ELEMENT_DATA
 # Elements that can participate in aromatic rings
 _AROMATIC_ELEMENTS = frozenset({"C", "N", "O", "S"})
 
-BondOrder = Literal["single", "double", "triple", "aromatic", "none"]
+BondOrder = Literal["single", "double", "triple", "aromatic"]
 
 
 # =============================================================================
@@ -328,12 +328,12 @@ def classify_bond(
     atom_j: Atom,
     dist_ang: float,
     tolerance: float = 0.2,
-) -> BondOrder:
+) -> BondOrder | None:
     """Classify the bond order between two atoms given their distance.
 
     Compares dist_ang against the Pyykkö 2009 reference radii (r1/r2/r3) for
     each atom. The order whose combined radius is closest to dist_ang and within
-    tolerance wins. Returns "none" if the distance exceeds all thresholds.
+    tolerance wins. Returns None if the distance exceeds all thresholds.
 
     Note: this function is purely geometric and has no knowledge of aromaticity.
     Aromatic bonds (e.g. benzene C-C at ~1.40 Å) will be reported as "double"
@@ -350,7 +350,7 @@ def classify_bond(
         tolerance: fractional slack around each reference radius sum.
 
     Returns:
-        "triple", "double", "single", or "none".
+        "triple", "double", "single", or None if distance exceeds all thresholds.
 
     Raises:
         ConfigurationError: if either element has no single-bond covalent radius.
@@ -366,7 +366,7 @@ def classify_bond(
                 "cannot classify bond. check ELEMENT_DATA in calcflow.constants.ptable."
             )
 
-    candidates: list[tuple[BondOrder, float]] = []
+    candidates: list[tuple[str, float]] = []
     for order, r_attr in (
         ("triple", "covalent_radius_triple_pm"),
         ("double", "covalent_radius_double_pm"),
@@ -379,9 +379,9 @@ def classify_bond(
 
     for order, ref in candidates:
         if dist_ang <= ref * (1.0 + tolerance):
-            return order
+            return order  # type: ignore[return-value]
 
-    return "none"
+    return None
 
 
 def classify_all_bonds(
@@ -419,7 +419,8 @@ def classify_all_bonds(
                 order = _aromatic_or_geometric(atoms, i, j, aromatic_rings, tolerance)
             else:
                 order = classify_bond(atoms[i], atoms[j], _dist(atoms[i], atoms[j]), tolerance=0.2)
-            result[(i, j)] = order
+            if order is not None:
+                result[(i, j)] = order
 
     return result
 
@@ -430,7 +431,7 @@ def _aromatic_or_geometric(
     j: int,
     aromatic_rings: list[frozenset[int]],
     tolerance: float,
-) -> BondOrder:
+) -> BondOrder | None:
     """For a bond between two aromatic atoms, return 'aromatic' only if they
     share a common aromatic ring. Otherwise fall back to geometric classification.
 

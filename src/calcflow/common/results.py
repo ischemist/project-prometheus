@@ -249,7 +249,19 @@ class AtomicCharges(FrozenModel):
 
         Missing indices (sparse charges) default to 0.0. n_atoms must be provided
         explicitly since AtomicCharges has no geometry reference.
+
+        Args:
+            n_atoms: expected number of atoms; defines the output list length.
+
+        Returns:
+            List of floats of length n_atoms.
+
+        Raises:
+            ValueError: if any charge index is >= n_atoms.
         """
+        out_of_range = [i for i in self.charges if i >= n_atoms]
+        if out_of_range:
+            raise ValueError(f"charge indices {sorted(out_of_range)} are out of range for n_atoms={n_atoms}")
         return [self.charges.get(i, 0.0) for i in range(n_atoms)]
 
 

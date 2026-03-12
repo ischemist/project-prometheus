@@ -64,8 +64,14 @@ class TestAtomicChargesToArray:
         arr = mulliken.to_array(5)
         assert arr == [-0.5, 0.25, 0.25, 0.0, 0.0]
 
-    def test_n_atoms_zero_returns_empty_list(self, mulliken: AtomicCharges):
-        assert mulliken.to_array(0) == []
+    def test_n_atoms_zero_with_empty_charges_returns_empty_list(self):
+        ac = AtomicCharges(method="Mulliken", charges={})
+        assert ac.to_array(0) == []
+
+    def test_out_of_range_index_raises(self, mulliken: AtomicCharges):
+        # mulliken has indices 0,1,2 — n_atoms=2 makes index 2 out of range
+        with pytest.raises(ValueError, match="out of range"):
+            mulliken.to_array(2)
 
     def test_single_atom(self):
         ac = AtomicCharges(method="Mulliken", charges={0: 1.0})

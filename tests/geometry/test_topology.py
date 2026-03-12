@@ -297,11 +297,11 @@ class TestClassifyBond:
 
     def test_returns_none_for_nonbonding_distance(self):
         # 5.0 Å C-C: way beyond any threshold
-        assert classify_bond(a("C", 0, 0, 0), a("C", 5.0, 0, 0), 5.0) == "none"
+        assert classify_bond(a("C", 0, 0, 0), a("C", 5.0, 0, 0), 5.0) is None
 
     def test_returns_none_just_above_single_threshold(self):
         # C-C r1 threshold = 1.50 * 1.2 = 1.80; use 1.85
-        assert classify_bond(a("C", 0, 0, 0), a("C", 1.85, 0, 0), 1.85) == "none"
+        assert classify_bond(a("C", 0, 0, 0), a("C", 1.85, 0, 0), 1.85) is None
 
     def test_prefers_higher_order_when_distance_fits_multiple(self):
         # at exactly r3 threshold, triple should win over double and single
@@ -310,9 +310,9 @@ class TestClassifyBond:
         assert classify_bond(c, a("C", 1.20, 0, 0), 1.20) == "triple"
 
     def test_element_with_no_r2_r3_only_returns_single_or_none(self):
-        # H has no r2 or r3 — result must be "single" or "none", never "double"/"triple"
+        # H has no r2 or r3 — result must be "single" or None, never "double"/"triple"
         result = classify_bond(a("H", 0, 0, 0), a("H", 0.74, 0, 0), 0.74)
-        assert result in ("single", "none")
+        assert result in ("single", None)
         assert result == "single"  # H2 bond length 0.74 is well within threshold
 
     def test_symmetric(self):
@@ -322,8 +322,8 @@ class TestClassifyBond:
         assert classify_bond(c, n, 1.16) == classify_bond(n, c, 1.16)
 
     def test_custom_tolerance(self):
-        # C-C at 1.54 with tolerance=0.0: r1 threshold = 1.50, so 1.54 > 1.50 → none
-        assert classify_bond(a("C", 0, 0, 0), a("C", 1.54, 0, 0), 1.54, tolerance=0.0) == "none"
+        # C-C at 1.54 with tolerance=0.0: r1 threshold = 1.50, so 1.54 > 1.50 → None
+        assert classify_bond(a("C", 0, 0, 0), a("C", 1.54, 0, 0), 1.54, tolerance=0.0) is None
         # same distance with tolerance=0.1: threshold = 1.65 > 1.54 → single
         assert classify_bond(a("C", 0, 0, 0), a("C", 1.54, 0, 0), 1.54, tolerance=0.1) == "single"
 
@@ -388,22 +388,35 @@ def _pyrrole_ring() -> list[Atom]:
 
 
 def _naphthalene() -> list[Atom]:
-    """Naphthalene: two fused 6-membered rings, flat, bonds ~1.40 Å.
-    Placed so the shared bond is at x=0.
+    """Naphthalene: two fused 6-membered rings sharing one bond, flat, bonds ~1.40 Å.
+
+    10 unique atoms: ring1 contributes all 6, ring2 contributes its 4 non-shared atoms.
+    Shared bond is the vertical edge at x=0 (atoms 0 and 5).
+    Indices 0-5: left ring, 6-9: right ring's unique atoms.
     """
-    # ring 1: left hexagon
-    r = 1.40
+    b = 1.40
+    d = b * math.sqrt(3) / 2  # distance from ring centre to shared bond
+    # Left ring centred at (-d, 0); start angle pi/6 so flat top/bottom edges are horizontal
     ring1 = [
-        Atom(symbol="C", x=-r + r * math.cos(2 * math.pi * i / 6), y=r * math.sin(2 * math.pi * i / 6), z=0.0)
-        for i in range(6)
+        Atom(
+            symbol="C",
+            x=-d + b * math.cos(math.pi / 6 + k * math.pi / 3),
+            y=b * math.sin(math.pi / 6 + k * math.pi / 3),
+            z=0.0,
+        )
+        for k in range(6)
     ]
-    # ring 2: right hexagon sharing atoms 0 and 5 of ring1
-    ring2 = [
-        Atom(symbol="C", x=r + r * math.cos(2 * math.pi * i / 6), y=r * math.sin(2 * math.pi * i / 6), z=0.0)
-        for i in range(6)
+    # Right ring centred at (+d, 0); k=2 and k=3 overlap with ring1[0] and ring1[5] (shared atoms)
+    ring2_unique = [
+        Atom(
+            symbol="C",
+            x=d + b * math.cos(math.pi / 6 + k * math.pi / 3),
+            y=b * math.sin(math.pi / 6 + k * math.pi / 3),
+            z=0.0,
+        )
+        for k in [0, 1, 4, 5]
     ]
-    # return both rings; shared atoms will be bonded by detect
-    return ring1 + ring2
+    return ring1 + ring2_unique
 
 
 # ---------------------------------------------------------------------------
@@ -498,13 +511,11 @@ class TestFindAromaticAtoms:
         assert isinstance(result, frozenset)
 
     def test_fused_rings_naphthalene(self):
-        """Naphthalene: both rings should be detected as aromatic (10 atoms total)."""
+        """Naphthalene: all 10 atoms across both fused rings must be aromatic."""
         atoms = _naphthalene()
         graph = build_bond_graph(atoms)
         aromatic = find_aromatic_atoms(atoms, graph)
-        # all 10 C atoms in the two fused rings should be aromatic
-        # (shared atoms are counted once)
-        assert len(aromatic) >= 8  # at least the non-shared atoms
+        assert aromatic == frozenset(range(10))
 
 
 # ---------------------------------------------------------------------------
@@ -568,3 +579,12 @@ class TestClassifyAllBonds:
         assert bonds[(0, 1)] == "single"
         assert bonds[(0, 2)] == "single"
         assert (1, 2) not in bonds  # H-H not bonded
+
+    def test_stretched_bond_absent_from_classify_all_bonds(self):
+        # C-C r1 threshold at classify_bond tolerance=0.2: 1.50 * 1.2 = 1.80 Å
+        # build_bond_graph tolerance=0.4 threshold: 1.50 * 1.4 = 2.10 Å
+        # place C-C at 1.90 Å: detected by bond graph (< 2.10), but unclassifiable (> 1.80)
+        # the pair must be absent from the result dict, not present as any sentinel value
+        atoms = [a("C", 0.0, 0.0, 0.0), a("C", 1.90, 0.0, 0.0)]
+        bonds = classify_all_bonds(atoms, tolerance=0.4)
+        assert (0, 1) not in bonds
