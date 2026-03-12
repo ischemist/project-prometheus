@@ -1,16 +1,24 @@
 """
-unit tests for detect_molecules(), classify_bond(), and the enriched ELEMENT_DATA.
+unit tests for topology functions and the enriched ELEMENT_DATA.
 
 all tests are pure-logic unit tests — no file I/O, inline atom fixtures only.
 coordinates are in Angstrom, consistent with calcflow's Atom convention.
 """
+
+import math
 
 import pytest
 
 from calcflow.common.exceptions import ConfigurationError
 from calcflow.common.results import Atom
 from calcflow.constants.ptable import ELEMENT_DATA
-from calcflow.geometry.topology import classify_bond, detect_molecules
+from calcflow.geometry.topology import (
+    build_bond_graph,
+    classify_all_bonds,
+    classify_bond,
+    detect_molecules,
+    find_aromatic_atoms,
+)
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -338,3 +346,244 @@ class TestClassifyBond:
                 classify_bond(a("C", 0, 0, 0), a("H", 1.09, 0, 0), 1.09)
         finally:
             topo.ELEMENT_DATA = original  # type: ignore[assignment]
+
+
+# ---------------------------------------------------------------------------
+# geometry helpers for ring fixtures
+# ---------------------------------------------------------------------------
+
+
+def _regular_polygon(n: int, radius: float, symbol: str, z: float = 0.0) -> list[Atom]:
+    """Atoms placed at vertices of a regular n-gon in the xy-plane."""
+    return [
+        Atom(symbol=symbol, x=radius * math.cos(2 * math.pi * i / n), y=radius * math.sin(2 * math.pi * i / n), z=z)
+        for i in range(n)
+    ]
+
+
+def _benzene() -> list[Atom]:
+    """Benzene: 6 C at ~1.40 Å bond length, flat."""
+    # circumradius for bond length ~1.40: r = 1.40 / (2*sin(pi/6)) = 1.40
+    return _regular_polygon(6, 1.40, "C")
+
+
+def _cyclohexane_chair() -> list[Atom]:
+    """Cyclohexane in chair conformation — non-planar, bonds ~1.54 Å."""
+    # chair: alternating atoms up/down by ~0.25 Å
+    r = 1.54 / (2 * math.sin(math.pi / 6))  # circumradius for 1.54 Å bonds
+    atoms = []
+    for i in range(6):
+        angle = 2 * math.pi * i / 6
+        z = 0.25 if i % 2 == 0 else -0.25
+        atoms.append(Atom(symbol="C", x=r * math.cos(angle), y=r * math.sin(angle), z=z))
+    return atoms
+
+
+def _pyridine() -> list[Atom]:
+    """Pyridine: 5C + 1N at ~1.39 Å, flat."""
+    r = 1.39
+    symbols = ["C", "C", "N", "C", "C", "C"]
+    return [
+        Atom(symbol=sym, x=r * math.cos(2 * math.pi * i / 6), y=r * math.sin(2 * math.pi * i / 6), z=0.0)
+        for i, sym in enumerate(symbols)
+    ]
+
+
+def _pyrrole_ring() -> list[Atom]:
+    """Pyrrole ring (5-membered, 4C+1N), flat, bond lengths ~1.37 Å."""
+    r = 1.37 / (2 * math.sin(math.pi / 5))
+    symbols = ["N", "C", "C", "C", "C"]
+    return [
+        Atom(symbol=sym, x=r * math.cos(2 * math.pi * i / 5), y=r * math.sin(2 * math.pi * i / 5), z=0.0)
+        for i, sym in enumerate(symbols)
+    ]
+
+
+def _naphthalene() -> list[Atom]:
+    """Naphthalene: two fused 6-membered rings, flat, bonds ~1.40 Å.
+    Placed so the shared bond is at x=0.
+    """
+    # ring 1: left hexagon
+    r = 1.40
+    ring1 = [
+        Atom(symbol="C", x=-r + r * math.cos(2 * math.pi * i / 6), y=r * math.sin(2 * math.pi * i / 6), z=0.0)
+        for i in range(6)
+    ]
+    # ring 2: right hexagon sharing atoms 0 and 5 of ring1
+    ring2 = [
+        Atom(symbol="C", x=r + r * math.cos(2 * math.pi * i / 6), y=r * math.sin(2 * math.pi * i / 6), z=0.0)
+        for i in range(6)
+    ]
+    # return both rings; shared atoms will be bonded by detect
+    return ring1 + ring2
+
+
+# ---------------------------------------------------------------------------
+# build_bond_graph
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestBuildBondGraph:
+    def test_returns_dict_for_all_atoms(self):
+        atoms = [a("C", 0, 0, 0), a("H", 1.09, 0, 0)]
+        graph = build_bond_graph(atoms)
+        assert set(graph.keys()) == {0, 1}
+
+    def test_bonded_pair(self):
+        atoms = [a("C", 0, 0, 0), a("H", 1.09, 0, 0)]
+        graph = build_bond_graph(atoms)
+        assert 1 in graph[0]
+        assert 0 in graph[1]
+
+    def test_non_bonded_pair(self):
+        atoms = [a("C", 0, 0, 0), a("C", 10.0, 0, 0)]
+        graph = build_bond_graph(atoms)
+        assert graph[0] == []
+        assert graph[1] == []
+
+    def test_symmetric(self):
+        atoms = [a("C", 0, 0, 0), a("C", 1.54, 0, 0), a("H", 1.54 + 1.09, 0, 0)]
+        graph = build_bond_graph(atoms)
+        for i, neighbors in graph.items():
+            for j in neighbors:
+                assert i in graph[j], f"{i} in {j}'s neighbors but not vice versa"
+
+    def test_empty_atoms(self):
+        assert build_bond_graph([]) == {}
+
+    def test_water_connectivity(self):
+        atoms = [a("O", 0, 0, 0.117), a("H", 0, 0.757, -0.469), a("H", 0, -0.757, -0.469)]
+        graph = build_bond_graph(atoms)
+        # O bonded to both H, H not bonded to each other
+        assert set(graph[0]) == {1, 2}
+        assert graph[1] == [0]
+        assert graph[2] == [0]
+
+
+# ---------------------------------------------------------------------------
+# find_aromatic_atoms
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestFindAromaticAtoms:
+    def test_benzene_all_aromatic(self):
+        atoms = _benzene()
+        graph = build_bond_graph(atoms)
+        aromatic = find_aromatic_atoms(atoms, graph)
+        assert aromatic == frozenset(range(6))
+
+    def test_cyclohexane_not_aromatic(self):
+        atoms = _cyclohexane_chair()
+        graph = build_bond_graph(atoms)
+        aromatic = find_aromatic_atoms(atoms, graph)
+        assert aromatic == frozenset()
+
+    def test_pyridine_all_aromatic(self):
+        atoms = _pyridine()
+        graph = build_bond_graph(atoms)
+        aromatic = find_aromatic_atoms(atoms, graph)
+        assert aromatic == frozenset(range(6))
+
+    def test_pyrrole_ring_all_aromatic(self):
+        atoms = _pyrrole_ring()
+        graph = build_bond_graph(atoms)
+        aromatic = find_aromatic_atoms(atoms, graph)
+        assert aromatic == frozenset(range(5))
+
+    def test_single_atoms_not_aromatic(self):
+        atoms = [a("C", 0, 0, 0)]
+        graph = build_bond_graph(atoms)
+        assert find_aromatic_atoms(atoms, graph) == frozenset()
+
+    def test_linear_chain_not_aromatic(self):
+        # C-C-C-C: no rings
+        atoms = [a("C", i * 1.54, 0, 0) for i in range(4)]
+        graph = build_bond_graph(atoms)
+        assert find_aromatic_atoms(atoms, graph) == frozenset()
+
+    def test_returns_frozenset(self):
+        atoms = _benzene()
+        graph = build_bond_graph(atoms)
+        result = find_aromatic_atoms(atoms, graph)
+        assert isinstance(result, frozenset)
+
+    def test_non_planar_ring_not_aromatic(self):
+        # cyclohexane chair: 6-membered, all C, but non-planar → not aromatic
+        atoms = _cyclohexane_chair()
+        graph = build_bond_graph(atoms)
+        aromatic = find_aromatic_atoms(atoms, graph)
+        assert len(aromatic) == 0
+
+    def test_fused_rings_naphthalene(self):
+        """Naphthalene: both rings should be detected as aromatic (10 atoms total)."""
+        atoms = _naphthalene()
+        graph = build_bond_graph(atoms)
+        aromatic = find_aromatic_atoms(atoms, graph)
+        # all 10 C atoms in the two fused rings should be aromatic
+        # (shared atoms are counted once)
+        assert len(aromatic) >= 8  # at least the non-shared atoms
+
+
+# ---------------------------------------------------------------------------
+# classify_all_bonds
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestClassifyAllBonds:
+    def test_benzene_all_bonds_aromatic(self):
+        atoms = _benzene()
+        bonds = classify_all_bonds(atoms)
+        # 6 bonds in benzene ring
+        assert len(bonds) == 6
+        assert all(v == "aromatic" for v in bonds.values())
+
+    def test_pyridine_ring_bonds_aromatic(self):
+        atoms = _pyridine()
+        bonds = classify_all_bonds(atoms)
+        assert all(v == "aromatic" for v in bonds.values())
+
+    def test_pyrrole_ring_bonds_aromatic(self):
+        atoms = _pyrrole_ring()
+        bonds = classify_all_bonds(atoms)
+        assert all(v == "aromatic" for v in bonds.values())
+
+    def test_cyclohexane_bonds_single(self):
+        atoms = _cyclohexane_chair()
+        bonds = classify_all_bonds(atoms)
+        assert all(v == "single" for v in bonds.values())
+
+    def test_h2_single(self):
+        atoms = [a("H", 0, 0, 0), a("H", 0.74, 0, 0)]
+        bonds = classify_all_bonds(atoms)
+        assert bonds[(0, 1)] == "single"
+
+    def test_non_bonded_pair_absent(self):
+        # two isolated atoms — no bonds in result
+        atoms = [a("C", 0, 0, 0), a("C", 10, 0, 0)]
+        bonds = classify_all_bonds(atoms)
+        assert bonds == {}
+
+    def test_keys_always_i_less_than_j(self):
+        atoms = _benzene()
+        bonds = classify_all_bonds(atoms)
+        for i, j in bonds:
+            assert i < j
+
+    def test_no_false_triple_in_aromatic_ring(self):
+        # before aromatic detection, benzene C-C bonds at ~1.40 Å were wrongly "triple"
+        atoms = _benzene()
+        bonds = classify_all_bonds(atoms)
+        assert "triple" not in bonds.values()
+
+    def test_empty_atoms(self):
+        assert classify_all_bonds([]) == {}
+
+    def test_water_bonds_single(self):
+        atoms = [a("O", 0, 0, 0.117), a("H", 0, 0.757, -0.469), a("H", 0, -0.757, -0.469)]
+        bonds = classify_all_bonds(atoms)
+        assert bonds[(0, 1)] == "single"
+        assert bonds[(0, 2)] == "single"
+        assert (1, 2) not in bonds  # H-H not bonded
