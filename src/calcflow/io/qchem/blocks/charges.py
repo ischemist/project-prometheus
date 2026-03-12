@@ -10,7 +10,7 @@ import re
 from calcflow.common.patterns import extract_index
 from calcflow.common.results import AtomicCharges
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_MULLIKEN, ParseState
 from calcflow.utils import logger
 
 # Regex pattern for identifying the Mulliken charges block header
@@ -42,7 +42,7 @@ class MullikenParser:
         """
         if "Mulliken" not in line:
             return False
-        return not state.parsed_mulliken and bool(MULLIKEN_START_PAT.search(line))
+        return BLOCK_MULLIKEN not in state.parsed_blocks and bool(MULLIKEN_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
@@ -87,4 +87,4 @@ class MullikenParser:
         logger.debug(f"Parsed Mulliken charges for {len(charges)} atoms")
 
         # Set flag to prevent duplicate parsing
-        state.parsed_mulliken = True
+        state.parsed_blocks.add(BLOCK_MULLIKEN)

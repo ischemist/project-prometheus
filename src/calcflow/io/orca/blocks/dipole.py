@@ -4,7 +4,7 @@ from calcflow.common.exceptions import ParsingError
 from calcflow.common.patterns import FLOAT_PAT
 from calcflow.common.results import DipoleMoment, MultipoleResults
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_DIPOLE, ParseState
 from calcflow.utils import logger
 
 # Pattern to match the start of the dipole block (e.g., "DIPOLE MOMENT")
@@ -26,7 +26,7 @@ class DipoleParser:
 
         The dipole block in ORCA output is identified by a line containing "DIPOLE MOMENT".
         """
-        if state.parsed_dipole:
+        if BLOCK_DIPOLE in state.parsed_blocks:
             return False
         return "DIPOLE MOMENT" in line
 
@@ -104,5 +104,5 @@ class DipoleParser:
                 quadrupole=state.multipole.quadrupole,
             )
 
-        state.parsed_dipole = True
+        state.parsed_blocks.add(BLOCK_DIPOLE)
         logger.debug("Finished parsing dipole moment block.")

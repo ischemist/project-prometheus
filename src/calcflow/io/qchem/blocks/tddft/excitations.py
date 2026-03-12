@@ -19,7 +19,7 @@ from calcflow.common.exceptions import ParsingError
 from calcflow.common.patterns import extract_index
 from calcflow.common.results import ExcitedState, OrbitalTransition
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_TDDFT_FULL, BLOCK_TDDFT_TDA, ParseState
 from calcflow.utils import logger
 
 # --- Pattern constants ---
@@ -58,7 +58,7 @@ class ExcitationsParser:
         """
         if "Excitation" not in line:
             return False
-        if state.parsed_tddft_tda and state.parsed_tddft_full:
+        if BLOCK_TDDFT_TDA in state.parsed_blocks and BLOCK_TDDFT_FULL in state.parsed_blocks:
             return False
 
         return bool(TDA_START_PAT.search(line) or TDDFT_START_PAT.search(line))
@@ -181,10 +181,10 @@ class ExcitationsParser:
         # --- Update ParseState ---
         # Determine which field to populate based on block type
         if is_tda:
-            state.parsed_tddft_tda = True
+            state.parsed_blocks.add(BLOCK_TDDFT_TDA)
             state.tddft_tda_states = excited_states
         else:  # is_tddft
-            state.parsed_tddft_full = True
+            state.parsed_blocks.add(BLOCK_TDDFT_FULL)
             state.tddft_tddft_states = excited_states
 
         logger.debug(f"Parsed {len(excited_states)} excited states.")

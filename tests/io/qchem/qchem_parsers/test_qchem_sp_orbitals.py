@@ -21,7 +21,7 @@ import pytest
 
 from calcflow.common.results import CalculationResult, Orbital, OrbitalsSet
 from calcflow.io.qchem.blocks.orbitals import OrbitalsParser
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_ORBITALS, ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
@@ -80,7 +80,7 @@ def test_orbitals_parser_skips_if_already_parsed():
     """Unit test: verify OrbitalsParser.matches() returns False when already parsed."""
     parser = OrbitalsParser()
     state = ParseState(raw_output="")
-    state.parsed_orbitals = True
+    state.parsed_blocks.add(BLOCK_ORBITALS)
 
     assert parser.matches("                    Orbital Energies (a.u.)", state) is False
 
@@ -100,7 +100,7 @@ def test_orbitals_parser_does_not_mutate_state_in_matches():
 
     assert result1 is True
     assert result2 is True
-    assert state.parsed_orbitals is False  # Should NOT be set
+    assert BLOCK_ORBITALS not in state.parsed_blocks  # Should NOT be set
     assert state.orbitals is None  # Should NOT be populated
 
 

@@ -16,7 +16,7 @@ import pytest
 from calcflow.common.results import AtomicCharges, CalculationResult
 from calcflow.io.peekable import PeekableIterator
 from calcflow.io.qchem.blocks.hirshfeld import HirshfeldParser
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_HIRSHFELD, ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
@@ -73,7 +73,7 @@ def test_hirshfeld_parser_skips_if_already_parsed():
     """Unit test: verify HirshfeldParser.matches() returns False when already parsed."""
     parser = HirshfeldParser()
     state = ParseState(raw_output="")
-    state.parsed_hirshfeld = True
+    state.parsed_blocks.add(BLOCK_HIRSHFELD)
 
     assert parser.matches("          Hirshfeld Atomic Charges         ", state) is False
 
@@ -90,7 +90,7 @@ def test_hirshfeld_parser_does_not_mutate_state_in_matches():
 
     assert result1 is True
     assert result2 is True
-    assert state.parsed_hirshfeld is False
+    assert BLOCK_HIRSHFELD not in state.parsed_blocks
     assert state.atomic_charges == []
 
 
@@ -112,7 +112,7 @@ def test_hirshfeld_parser_parse_basic():
     ]
     parser.parse(PeekableIterator(iter(lines)), "          Hirshfeld Atomic Charges         ", state)
 
-    assert state.parsed_hirshfeld is True
+    assert BLOCK_HIRSHFELD in state.parsed_blocks
     assert len(state.atomic_charges) == 1
     hirshfeld = state.atomic_charges[0]
     assert hirshfeld.method == "Hirshfeld"
@@ -147,7 +147,7 @@ def test_hirshfeld_parser_empty_block_adds_warning():
 
     parser.parse(PeekableIterator(iter(["  Sum of atomic charges =     0.000000"])), "Hirshfeld Atomic Charges", state)
 
-    assert state.parsed_hirshfeld is False
+    assert BLOCK_HIRSHFELD not in state.parsed_blocks
     assert len(state.atomic_charges) == 0
     assert len(state.parsing_warnings) == 1
 

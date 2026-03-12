@@ -11,7 +11,7 @@ import re
 from calcflow.common.patterns import extract_index
 from calcflow.common.results import AtomicCharges
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_HIRSHFELD, ParseState
 from calcflow.utils import logger
 
 # Header pattern — note the trailing spaces in Q-Chem output are trimmed by search
@@ -36,7 +36,7 @@ class HirshfeldParser:
     def matches(self, line: str, state: ParseState) -> bool:
         if "Hirshfeld" not in line:
             return False
-        return not state.parsed_hirshfeld and bool(HIRSHFELD_START_PAT.search(line))
+        return BLOCK_HIRSHFELD not in state.parsed_blocks and bool(HIRSHFELD_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Parsing QChem Hirshfeld charges block.")
@@ -59,5 +59,5 @@ class HirshfeldParser:
             return
 
         state.atomic_charges.append(AtomicCharges(method="Hirshfeld", charges=charges))
-        state.parsed_hirshfeld = True
+        state.parsed_blocks.add(BLOCK_HIRSHFELD)
         logger.debug(f"Parsed Hirshfeld charges for {len(charges)} atoms")

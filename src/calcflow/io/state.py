@@ -28,6 +28,29 @@ from calcflow.common.results import (
 )
 from calcflow.geometry.static import Geometry
 
+# Block name constants for use with ParseState.parsed_blocks.
+# Each constant names a parser block that tracks its own completion state.
+BLOCK_METADATA = "metadata"
+BLOCK_GEOMETRY = "geometry"
+BLOCK_SCF = "scf"
+BLOCK_ORBITALS = "orbitals"
+BLOCK_MULLIKEN = "mulliken"
+BLOCK_LOEWDIN = "loewdin"
+BLOCK_HIRSHFELD = "hirshfeld"
+BLOCK_CM5 = "cm5"
+BLOCK_DIPOLE = "dipole"
+BLOCK_DISPERSION = "dispersion"
+BLOCK_MULTIPOLE = "multipole"
+BLOCK_TIMING = "timing"
+BLOCK_TDDFT_TDA = "tddft_tda"
+BLOCK_TDDFT_FULL = "tddft_full"
+BLOCK_TDDFT_GS_REF = "tddft_gs_ref"
+BLOCK_TDDFT_UNRELAXED_DM = "tddft_unrelaxed_dm"
+BLOCK_TDDFT_TRANS_DM = "tddft_trans_dm"
+BLOCK_NTO = "nto"
+BLOCK_ADC_GS = "adc_gs"
+BLOCK_ADC_EXCITED = "adc_excited"
+
 
 class ParseState:
     """
@@ -71,27 +94,8 @@ class ParseState:
         self.tddft_transition_density_matrices: list[TransitionDensityMatrix] = []
 
         # --- Parser Control Flags ---
-        self.parsed_metadata: bool = False
-        self.parsed_geometry: bool = False
-        self.parsed_scf: bool = False
-        self.parsed_orbitals: bool = False
-        self.parsed_mulliken: bool = False
-        self.parsed_loewdin: bool = False
-        self.parsed_hirshfeld: bool = False
-        self.parsed_cm5: bool = False
-        self.parsed_dipole: bool = False
-        self.parsed_dispersion: bool = False
-        self.parsed_multipole: bool = False
-        self.parsed_timing: bool = False
-        self.parsed_tddft_tda: bool = False
-        self.parsed_tddft_full: bool = False
-        self.parsed_tddft_gs_ref: bool = False
-        self.parsed_tddft_unrelaxed_dm: bool = False
-        self.parsed_tddft_trans_dm: bool = False
-        self.parsed_nto: bool = False
-        self.parsed_adc_gs: bool = False
-        self.parsed_adc_excited: bool = False
-        # Add more as needed for other parsers...
+        # Set of block names that have been fully parsed. Use BLOCK_* constants as keys.
+        self.parsed_blocks: set[str] = set()
 
         # --- Communication & Error Handling ---
         self.parsing_errors: list[str] = []

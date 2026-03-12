@@ -4,7 +4,7 @@ from calcflow.common.exceptions import ParsingError
 from calcflow.common.patterns import FLOAT_PAT
 from calcflow.common.results import DispersionCorrection
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_DISPERSION, ParseState
 from calcflow.utils import logger
 
 # Block markers
@@ -53,7 +53,7 @@ class DispersionParser:
         """
         if "DISPERSION CORRECTION" not in line:
             return False
-        if state.parsed_dispersion:
+        if BLOCK_DISPERSION in state.parsed_blocks:
             return False
         return bool(START_PAT.search(line))
 
@@ -198,5 +198,5 @@ class DispersionParser:
             e8_percentage=self.e8_percentage,
         )
 
-        state.parsed_dispersion = True
+        state.parsed_blocks.add(BLOCK_DISPERSION)
         logger.debug("Finished parsing dispersion block.")

@@ -12,7 +12,7 @@ import re
 from calcflow.common.patterns import extract_index
 from calcflow.common.results import AtomicCharges
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_CM5, ParseState
 from calcflow.utils import logger
 
 CM5_START_PAT = re.compile(r"Charge Model 5")
@@ -34,7 +34,7 @@ class Cm5Parser:
     def matches(self, line: str, state: ParseState) -> bool:
         if "Charge Model 5" not in line:
             return False
-        return not state.parsed_cm5 and bool(CM5_START_PAT.search(line))
+        return BLOCK_CM5 not in state.parsed_blocks and bool(CM5_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         logger.debug("Parsing QChem CM5 charges block.")
@@ -57,5 +57,5 @@ class Cm5Parser:
             return
 
         state.atomic_charges.append(AtomicCharges(method="CM5", charges=charges))
-        state.parsed_cm5 = True
+        state.parsed_blocks.add(BLOCK_CM5)
         logger.debug(f"Parsed CM5 charges for {len(charges)} atoms")

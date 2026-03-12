@@ -17,7 +17,7 @@ from calcflow.common.exceptions import ParsingError
 from calcflow.common.patterns import extract_index
 from calcflow.common.results import AtomicCharges, GroundStateReference
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_TDDFT_GS_REF, ParseState
 from calcflow.utils import logger
 
 # --- Pattern constants ---
@@ -67,7 +67,7 @@ class GroundStateRefParser:
         """
         if "Ground State" not in line:
             return False
-        if state.parsed_tddft_gs_ref:
+        if BLOCK_TDDFT_GS_REF in state.parsed_blocks:
             return False
 
         return bool(GS_REF_START_PAT.search(line))
@@ -229,7 +229,7 @@ class GroundStateRefParser:
         )
 
         # --- Update ParseState ---
-        state.parsed_tddft_gs_ref = True
+        state.parsed_blocks.add(BLOCK_TDDFT_GS_REF)
 
         state.tddft_ground_state_ref = gs_ref
 

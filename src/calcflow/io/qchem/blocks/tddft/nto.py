@@ -17,7 +17,7 @@ from typing import cast
 from calcflow.common.results import NTOContribution, NTOStateAnalysis
 from calcflow.common.types import SpinChannel
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_NTO, ParseState
 from calcflow.utils import logger
 
 # --- Pattern constants ---
@@ -56,7 +56,7 @@ class NTOParser:
         """
         if "NTO" not in line:
             return False
-        if state.parsed_nto:
+        if BLOCK_NTO in state.parsed_blocks:
             return False
 
         return bool(NTO_START_PAT.search(line))
@@ -192,12 +192,12 @@ class NTOParser:
 
         if not nto_states:
             state.parsing_warnings.append("SA-NTO decomposition block found but no states parsed.")
-            state.parsed_nto = True
+            state.parsed_blocks.add(BLOCK_NTO)
             return
 
         # --- Update ParseState ---
         state.tddft_nto_analyses = nto_states
-        state.parsed_nto = True
+        state.parsed_blocks.add(BLOCK_NTO)
 
         logger.debug(f"Parsed {len(nto_states)} NTO states.")
 

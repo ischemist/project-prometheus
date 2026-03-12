@@ -4,7 +4,7 @@ from calcflow.common.exceptions import ParsingError
 from calcflow.common.patterns import FLOAT_PAT
 from calcflow.common.results import ScfEnergyComponents, ScfIteration, ScfResults
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_SCF, ParseState
 from calcflow.utils import logger
 
 SCF_CONVERGED_LINE_PAT = re.compile(r"SCF CONVERGED AFTER\s+(\d+)\s+CYCLES")
@@ -46,7 +46,7 @@ class ScfParser:
         self.iterations: list[ScfIteration] = []
 
     def matches(self, line: str, state: ParseState) -> bool:
-        return not state.parsed_scf and "D-I-I-S" in line
+        return BLOCK_SCF not in state.parsed_blocks and "D-I-I-S" in line
 
     def _is_iteration_line(self, line: str) -> bool:
         """Check if line is a numeric iteration line (starts with whitespace + number)."""
@@ -180,4 +180,4 @@ class ScfParser:
             iterations=self.iterations,
             components=components,
         )
-        state.parsed_scf = True
+        state.parsed_blocks.add(BLOCK_SCF)

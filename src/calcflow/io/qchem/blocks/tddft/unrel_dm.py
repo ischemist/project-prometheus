@@ -29,6 +29,7 @@ from calcflow.io.peekable import PeekableIterator
 from calcflow.io.qchem.blocks.parse_helpers import parse_key_value as _parse_key_value
 from calcflow.io.qchem.blocks.parse_helpers import parse_vector as _parse_vector
 from calcflow.io.qchem.blocks.parse_helpers import to_float as _to_float
+from calcflow.io.state import BLOCK_TDDFT_UNRELAXED_DM
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
     def matches(self, line: str, state: ParseState) -> bool:
         if "Unrelaxed" not in line:
             return False
-        if state.parsed_tddft_unrelaxed_dm:
+        if BLOCK_TDDFT_UNRELAXED_DM in state.parsed_blocks:
             return False
         return bool(self.START_PAT.search(line))
 
@@ -93,7 +94,7 @@ class UnrelaxedDensityMatrixParser(BlockParser):
             logger.warning(msg)
             return
 
-        state.parsed_tddft_unrelaxed_dm = True
+        state.parsed_blocks.add(BLOCK_TDDFT_UNRELAXED_DM)
         state.tddft_unrelaxed_density_matrices = all_analyses
         logger.debug("Finished parsing 'Analysis of Unrelaxed Density Matrices'.")
 

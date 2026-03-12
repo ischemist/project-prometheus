@@ -40,6 +40,7 @@ from calcflow.io.core import BlockParser, ParseState
 from calcflow.io.peekable import PeekableIterator
 from calcflow.io.qchem.blocks.parse_helpers import parse_key_value as _parse_kv
 from calcflow.io.qchem.blocks.parse_helpers import parse_vector as _parse_vec
+from calcflow.io.state import BLOCK_ADC_EXCITED
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ class AdcExcitedStatesParser(BlockParser):
     def matches(self, line: str, state: ParseState) -> bool:
         if "Excited State Summary" not in line:
             return False
-        if state.parsed_adc_excited:
+        if BLOCK_ADC_EXCITED in state.parsed_blocks:
             return False
         return bool(self.START_PAT.search(line))
 
@@ -98,7 +99,7 @@ class AdcExcitedStatesParser(BlockParser):
             logger.warning("AdcExcitedStatesParser: no states parsed.")
 
         state.adc_excited_states = excited_states
-        state.parsed_adc_excited = True
+        state.parsed_blocks.add(BLOCK_ADC_EXCITED)
         logger.debug(f"Finished parsing {len(excited_states)} ADC excited states.")
 
     # ------------------------------------------------------------------

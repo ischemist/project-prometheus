@@ -10,7 +10,7 @@ import re
 
 from calcflow.common.results import AtomicCharges
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_LOEWDIN, BLOCK_MULLIKEN, ParseState
 from calcflow.utils import logger
 
 # Regex patterns for identifying charge blocks
@@ -42,13 +42,13 @@ class ChargesParser:
         Returns True for either MULLIKEN or LOEWDIN atomic charges headers.
         Allows the parser to run twice (once per method); stops after both are parsed.
         """
-        if state.parsed_mulliken and state.parsed_loewdin:
+        if BLOCK_MULLIKEN in state.parsed_blocks and BLOCK_LOEWDIN in state.parsed_blocks:
             return False
         if "MULLIKEN" not in line and "LOEWDIN" not in line:
             return False
-        if not state.parsed_mulliken and MULLIKEN_START_PAT.search(line):
+        if BLOCK_MULLIKEN not in state.parsed_blocks and MULLIKEN_START_PAT.search(line):
             return True
-        return not state.parsed_loewdin and bool(LOEWDIN_START_PAT.search(line))
+        return BLOCK_LOEWDIN not in state.parsed_blocks and bool(LOEWDIN_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
@@ -102,6 +102,6 @@ class ChargesParser:
         logger.debug(f"Parsed {method} charges for {len(charges)} atoms")
 
         if method == "Mulliken":
-            state.parsed_mulliken = True
+            state.parsed_blocks.add(BLOCK_MULLIKEN)
         elif method == "Loewdin":
-            state.parsed_loewdin = True
+            state.parsed_blocks.add(BLOCK_LOEWDIN)

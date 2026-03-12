@@ -16,7 +16,7 @@ import pytest
 
 from calcflow.common.results import AdcExcitedState, CalculationResult
 from calcflow.io.qchem.blocks.adc.excited_states import AdcExcitedStatesParser
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_ADC_EXCITED, ParseState
 from tests.io.qchem.qchem_parsers.conftest import FIXTURE_SPECS
 
 # =============================================================================
@@ -95,7 +95,7 @@ def test_adc_excited_states_parser_does_not_match_non_summary_lines() -> None:
 def test_adc_excited_states_parser_skips_if_already_parsed() -> None:
     parser = AdcExcitedStatesParser()
     state = ParseState(raw_output="")
-    state.parsed_adc_excited = True
+    state.parsed_blocks.add(BLOCK_ADC_EXCITED)
 
     assert parser.matches("                             Excited State Summary", state) is False
 
@@ -111,7 +111,7 @@ def test_adc_excited_states_parser_does_not_mutate_state_in_matches() -> None:
 
     assert result_1 is True
     assert result_2 is True
-    assert state.parsed_adc_excited is False
+    assert BLOCK_ADC_EXCITED not in state.parsed_blocks
     assert state.adc_excited_states == []
 
 

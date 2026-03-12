@@ -16,7 +16,7 @@ from calcflow.common.results import (
     QuadrupoleMoment,
 )
 from calcflow.io.peekable import PeekableIterator
-from calcflow.io.state import ParseState
+from calcflow.io.state import BLOCK_MULTIPOLE, ParseState
 from calcflow.utils import logger
 
 # Regex patterns
@@ -62,7 +62,7 @@ class MultipoleParser:
         """Check if this line marks the beginning of the multipole moments block."""
         if "Multipole Moments" not in line:
             return False
-        return not state.parsed_multipole and bool(MULTIPOLE_START_PAT.search(line))
+        return BLOCK_MULTIPOLE not in state.parsed_blocks and bool(MULTIPOLE_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """
@@ -181,7 +181,7 @@ class MultipoleParser:
         else:
             state.parsing_warnings.append("Multipole moments block found but no moments were parsed.")
 
-        state.parsed_multipole = True
+        state.parsed_blocks.add(BLOCK_MULTIPOLE)
 
     @staticmethod
     def _parse_dipole(line: str, current_dipole: DipoleMoment | None, state: ParseState) -> DipoleMoment | None:

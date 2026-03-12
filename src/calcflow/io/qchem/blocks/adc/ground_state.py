@@ -29,6 +29,7 @@ from calcflow.io.core import BlockParser, ParseState
 from calcflow.io.peekable import PeekableIterator
 from calcflow.io.qchem.blocks.parse_helpers import parse_key_value as _parse_kv
 from calcflow.io.qchem.blocks.parse_helpers import parse_vector as _parse_vec
+from calcflow.io.state import BLOCK_ADC_GS
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class AdcGroundStateParser(BlockParser):
     def matches(self, line: str, state: ParseState) -> bool:
         if "A D C" not in line:
             return False
-        if state.parsed_adc_gs:
+        if BLOCK_ADC_GS in state.parsed_blocks:
             return False
         return bool(self.BANNER_PAT.search(line))
 
@@ -114,7 +115,7 @@ class AdcGroundStateParser(BlockParser):
             return
 
         state.adc_ground_state = gs
-        state.parsed_adc_gs = True
+        state.parsed_blocks.add(BLOCK_ADC_GS)
         logger.debug("Finished parsing ADC ground state block.")
 
     # ------------------------------------------------------------------
