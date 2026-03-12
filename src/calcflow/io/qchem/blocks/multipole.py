@@ -73,12 +73,7 @@ class MultipoleParser:
         """
         logger.debug("Parsing QChem Cartesian multipole moments block.")
 
-        # Skip the dashes separator line
-        try:
-            next(iterator)
-        except StopIteration:
-            logger.warning("Unexpected end of iterator after multipole moments header")
-            return
+        iterator.skip()  # consume the dashes separator line
 
         charge: float | None = None
         dipole: DipoleMoment | None = None

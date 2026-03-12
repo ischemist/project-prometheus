@@ -19,17 +19,11 @@ class GeometryParser:
         logger.debug("Parsing geometry block.")
         iterator.skip()  # Consume blank header line
         geometry: list[Atom] = []
-        for line in iterator:
-            line_stripped = line.strip()
-            if not line_stripped:
-                break
-            match = GEOMETRY_LINE_PAT.match(line_stripped)
+        for line in iterator.take_while(lambda ln: bool(ln.strip())):
+            match = GEOMETRY_LINE_PAT.match(line.strip())
             if match:
                 symbol, x, y, z = match.groups()
                 geometry.append(Atom(symbol=symbol, x=float(x), y=float(y), z=float(z)))
-            else:
-                iterator.push_back(line)
-                break
 
         if not geometry:
             raise ParsingError("Geometry block found but no atoms parsed.")

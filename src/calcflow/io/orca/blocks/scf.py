@@ -64,7 +64,7 @@ class ScfParser:
         logger.debug("Parsing SCF block.")
 
         # Parse DIIS iterations
-        next(iterator, None)  # consume dashes line
+        iterator.skip()  # consume dashes line
         in_diis = True
 
         for line in iterator:
@@ -75,8 +75,7 @@ class ScfParser:
             # Detect transition to SOSCF block
             if "S-O-S-C-F" in line:
                 in_diis = False
-                next(iterator, None)  # consume header line
-                next(iterator, None)  # consume dashes
+                iterator.skip(2)  # consume header line and dashes
                 continue
 
             # Stop at convergence message or energy sections
@@ -128,7 +127,9 @@ class ScfParser:
 
             if SCF_ENERGY_COMPONENTS_START_PAT.search(line):
                 # Now we are in the TOTAL SCF ENERGY block
-                for comp_line in iterator:
+                for comp_line in iterator.take_until(
+                    lambda ln: "FINAL SINGLE POINT ENERGY" in ln or "SCF CONVERGENCE" in ln
+                ):
                     if total_match := SCF_TOTAL_ENERGY_PAT.search(comp_line):
                         self.total_energy = float(total_match.group(1))
                     if nr_match := SCF_NUCLEAR_REP_PAT.search(comp_line):
@@ -141,10 +142,6 @@ class ScfParser:
                         self.two_electron_eh = float(two_el_match.group(1))
                     if xc_match := SCF_XC_ENERGY_PAT.search(comp_line):
                         self.xc_eh = float(xc_match.group(1))
-
-                    if "FINAL SINGLE POINT ENERGY" in comp_line or "SCF CONVERGENCE" in comp_line:
-                        iterator.push_back(comp_line)
-                        break
                 break  # Exit components search
 
         if not self.iterations:

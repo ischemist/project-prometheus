@@ -87,19 +87,13 @@ class GeometryParser:
         # Consume header lines ("I Atom X Y Z" and "----")
         iterator.skip(2)
 
-        for line in iterator:
-            if STANDARD_GEOM_END_PAT.search(line):
-                break
-
+        for line in iterator.take_until(
+            lambda ln: bool(STANDARD_GEOM_END_PAT.search(ln)) or bool(ln.strip() and not STANDARD_ATOM_PAT.search(ln))
+        ):
             match = STANDARD_ATOM_PAT.search(line)
             if match:
                 symbol, x, y, z = match.groups()
                 atoms.append(Atom(symbol=symbol, x=float(x), y=float(y), z=float(z)))
-            elif line.strip():
-                # This could be the start of the next section
-                iterator.push_back(line)
-                logger.debug(f"Non-atom line ended standard orientation block. Pushing back: {line.strip()}")
-                break
 
         if not atoms:
             raise ParsingError("Standard orientation block found but no atoms could be parsed.")

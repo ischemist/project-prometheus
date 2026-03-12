@@ -21,7 +21,6 @@ The block is terminated by "Time of ADC calculation" which is buffered.
 
 import logging
 import re
-from collections.abc import Iterator as LineIterator
 from itertools import chain
 from typing import Any, ClassVar
 
@@ -121,7 +120,7 @@ class AdcExcitedStatesParser(BlockParser):
     # ------------------------------------------------------------------
 
     def _parse_single_state(
-        self, iterator: LineIterator, state_number: int
+        self, iterator: PeekableIterator, state_number: int
     ) -> tuple[AdcExcitedState | None, str | None]:
         data: dict[str, Any] = {"state_number": state_number, "amplitudes": []}
         line_buffer: str | None = None
@@ -205,8 +204,7 @@ class AdcExcitedStatesParser(BlockParser):
             # --- Amplitude table ---
             elif "Important amplitudes:" in line:
                 in_amplitudes = True
-                next(iterator, None)  # header line (occ i  occ j  ...)
-                next(iterator, None)  # separator ---
+                iterator.skip(2)  # header line (occ i  occ j  ...) and separator ---
 
             elif in_amplitudes:
                 if "---" in stripped:
@@ -330,7 +328,7 @@ class AdcExcitedStatesParser(BlockParser):
     # ------------------------------------------------------------------
 
     def _parse_nos_section(
-        self, iterator: LineIterator, start_line: str
+        self, iterator: PeekableIterator, start_line: str
     ) -> tuple[dict[str, NaturalOrbitals | None], str | None]:
         nos: dict[str, NaturalOrbitals | None] = {}
         line_buffer: str | None = start_line
@@ -371,9 +369,9 @@ class AdcExcitedStatesParser(BlockParser):
 
         return nos, line_buffer
 
-    def _parse_mulliken_section(self, iterator: LineIterator) -> tuple[AtomicCharges | None, str | None]:
+    def _parse_mulliken_section(self, iterator: PeekableIterator) -> tuple[AtomicCharges | None, str | None]:
         header_line = next(iterator, "")
-        next(iterator, None)  # separator
+        iterator.skip()  # separator
 
         is_uks = "Spin (e)" in header_line
         data: dict[str, Any] = {
@@ -385,6 +383,13 @@ class AdcExcitedStatesParser(BlockParser):
             "electron_populations_alpha": {} if is_uks else None,
             "electron_populations_beta": {} if is_uks else None,
         }
+
+        charges: dict[int, float] = data["charges"]
+        spins: dict[int, float] | None = data["spins"]
+        hole_populations_alpha: dict[int, float] | None = data["hole_populations_alpha"]
+        hole_populations_beta: dict[int, float] | None = data["hole_populations_beta"]
+        electron_populations_alpha: dict[int, float] | None = data["electron_populations_alpha"]
+        electron_populations_beta: dict[int, float] | None = data["electron_populations_beta"]
 
         line_buffer = None
         for line in iterator:
@@ -398,19 +403,22 @@ class AdcExcitedStatesParser(BlockParser):
                 break
             idx = int(parts[0]) - 1
             try:
-                data["charges"][idx] = float(parts[2])
+                charges[idx] = float(parts[2])
                 if is_uks:
-                    data["spins"][idx] = float(parts[3])
-                    data["hole_populations_alpha"][idx] = float(parts[4])
-                    data["hole_populations_beta"][idx] = float(parts[5])
-                    data["electron_populations_alpha"][idx] = float(parts[6])
-                    data["electron_populations_beta"][idx] = float(parts[7])
+                    assert spins is not None and hole_populations_alpha is not None
+                    assert hole_populations_beta is not None and electron_populations_alpha is not None
+                    assert electron_populations_beta is not None
+                    spins[idx] = float(parts[3])
+                    hole_populations_alpha[idx] = float(parts[4])
+                    hole_populations_beta[idx] = float(parts[5])
+                    electron_populations_alpha[idx] = float(parts[6])
+                    electron_populations_beta[idx] = float(parts[7])
             except (ValueError, IndexError):
                 logger.warning(f"Could not parse Mulliken line: {line.strip()}")
 
         return (AtomicCharges.from_dict(data) if data["charges"] else None), line_buffer
 
-    def _parse_multipole_section(self, iterator: LineIterator) -> tuple[dict[str, Any], str | None]:
+    def _parse_multipole_section(self, iterator: PeekableIterator) -> tuple[dict[str, Any], str | None]:
         data: dict[str, Any] = {}
         line_buffer = None
         for line in iterator:
@@ -425,7 +433,7 @@ class AdcExcitedStatesParser(BlockParser):
                 break
         return data, line_buffer
 
-    def _parse_ct_section(self, iterator: LineIterator) -> tuple[dict[str, Any], str | None]:
+    def _parse_ct_section(self, iterator: PeekableIterator) -> tuple[dict[str, Any], str | None]:
         """Parse CT numbers: omega and Phe with alpha/beta decomposition."""
         data: dict[str, Any] = {}
         line_buffer = None
@@ -452,18 +460,16 @@ class AdcExcitedStatesParser(BlockParser):
         return data, line_buffer
 
     def _parse_exciton_section(
-        self, iterator: LineIterator, prefix: str = "exciton"
+        self, iterator: PeekableIterator, prefix: str = "exciton"
     ) -> tuple[dict[str, ExcitonAnalysis | None], str | None]:
         result: dict[str, ExcitonAnalysis | None] = {}
-        line_buffer: str | None = None
 
         # Find first meaningful line
-        for line in iterator:
-            if line.strip():
-                line_buffer = line
-                break
-        else:
+        iterator.take_while(lambda ln: not ln.strip())
+        line_buffer = iterator.peek()
+        if line_buffer is None:
             return {}, None
+        next(iterator)  # consume the peeked line
 
         # RKS (no Total: header)
         if "Total:" not in line_buffer:
@@ -474,18 +480,18 @@ class AdcExcitedStatesParser(BlockParser):
         result[f"{prefix}_total"], line_buffer = self._parse_exciton_sub(iterator)
 
         if line_buffer is None:
-            for line in iterator:
-                if line.strip():
-                    line_buffer = line
-                    break
+            iterator.take_while(lambda ln: not ln.strip())
+            line_buffer = iterator.peek()
+            if line_buffer is not None:
+                next(iterator)
 
         if line_buffer and "Alpha spin:" in line_buffer:
             result[f"{prefix}_alpha"], line_buffer = self._parse_exciton_sub(iterator)
             if line_buffer is None:
-                for line in iterator:
-                    if line.strip():
-                        line_buffer = line
-                        break
+                iterator.take_while(lambda ln: not ln.strip())
+                line_buffer = iterator.peek()
+                if line_buffer is not None:
+                    next(iterator)
 
         if line_buffer and "Beta spin:" in line_buffer:
             result[f"{prefix}_beta"], line_buffer = self._parse_exciton_sub(iterator)
@@ -493,7 +499,7 @@ class AdcExcitedStatesParser(BlockParser):
         return result, line_buffer
 
     def _parse_exciton_sub(
-        self, iterator: LineIterator, initial_line: str | None = None
+        self, iterator: PeekableIterator, initial_line: str | None = None
     ) -> tuple[ExcitonAnalysis, str | None]:
         data: dict[str, Any] = {}
         expecting_hole_comp = False

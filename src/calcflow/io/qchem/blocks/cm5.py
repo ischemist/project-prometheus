@@ -38,6 +38,7 @@ class Cm5Parser:
 
         charges: dict[int, float] = {}
 
+        # sum line is pushed back, not consumed
         for line in iterator.take_until(lambda ln: bool(SUM_LINE_PAT.search(ln))):
             match = CHARGE_LINE_PAT.match(line)
             if match:

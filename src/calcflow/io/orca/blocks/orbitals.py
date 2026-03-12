@@ -71,15 +71,7 @@ class OrbitalsParser:
         # Skip separator, empty line, and column header
         iterator.skip(3)
 
-        for line in iterator:
-            # Empty line might mark the end of orbital data
-            if not line.strip():
-                break
-
-            # Check for truncation message
-            if ORBITAL_END_PAT.search(line):
-                break
-
+        for line in iterator.take_while(lambda ln: bool(ln.strip()) and not ORBITAL_END_PAT.search(ln)):
             # Try to parse as an orbital data line
             match = ORBITAL_LINE_PAT.match(line.strip())
             if match:
@@ -108,11 +100,6 @@ class OrbitalsParser:
 
                 except (ValueError, IndexError) as e:
                     state.parsing_warnings.append(f"Could not parse orbital line: {line.strip()}. Error: {e}")
-            else:
-                # If line doesn't match orbital format and isn't empty/truncation msg,
-                # we've likely reached the next section. Push it back for the core parser.
-                iterator.push_back(line)
-                break
 
         if not orbitals:
             raise ParsingError("Orbital energies block found but no orbitals were parsed.")

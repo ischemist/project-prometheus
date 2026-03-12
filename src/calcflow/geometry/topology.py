@@ -2,7 +2,7 @@
 
 import math
 from collections.abc import Sequence
-from typing import Literal
+from typing import Literal, cast
 
 from calcflow.common.exceptions import ConfigurationError
 from calcflow.common.models import Atom
@@ -117,7 +117,7 @@ def _sssr(cycles: list[frozenset[int]]) -> list[frozenset[int]]:
     A candidate is discarded when its atom set is exactly the union of two smaller
     already-kept rings.
     """
-    sorted_cycles = sorted(cycles, key=len)
+    sorted_cycles = cast(list[frozenset[int]], sorted(cycles, key=len))
     kept: list[frozenset[int]] = []
     for candidate in sorted_cycles:
         # check if candidate can be formed by merging any two smaller kept rings

@@ -14,13 +14,10 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import UnionType
-from typing import Any, TypeAliasType, TypeVar, Union, get_args, get_origin
+from typing import Any, Self, TypeAliasType, Union, get_args, get_origin
 
 from calcflow.common.exceptions import ValidationError
 from calcflow.constants.ptable import ELEMENT_DATA
-
-T = TypeVar("T")
-
 
 # =============================================================================
 # §0. BASE MODEL FOR SERIALIZATION & DESERIALIZATION
@@ -36,7 +33,7 @@ class FrozenModel:
         return dataclasses.asdict(self)
 
     @classmethod
-    def from_dict(cls: type[T], data: dict[str, Any]) -> T:
+    def from_dict(cls, data: dict[str, Any]) -> Self:
         """Recursively constructs a dataclass instance from a dictionary.
 
         Ignores extraneous keys in the input dictionary.
@@ -56,12 +53,12 @@ class FrozenModel:
         for field_name, field_info in cls_fields.items():
             if field_name in data:
                 value = data[field_name]
-                kwargs[field_name] = cls._convert_value(value, field_info.type)
+                kwargs[field_name] = FrozenModel._convert_value(value, field_info.type)
 
         required_fields = {
             f.name
             for f in dataclasses.fields(cls)
-            if f.default is dataclasses.MISSING and f.default_factory is dataclasses.MISSING  # type: ignore[misc]
+            if f.default is dataclasses.MISSING and f.default_factory is dataclasses.MISSING
         }
         missing = sorted(required_fields - set(kwargs))
         if missing:
@@ -70,7 +67,7 @@ class FrozenModel:
         return cls(**kwargs)
 
     @staticmethod
-    def _convert_value(value: Any, target_type: type) -> Any:
+    def _convert_value(value: Any, target_type: Any) -> Any:
         """Recursively convert a raw dict/list value into the target Python type.
 
         Handles ``Optional[T]``, nested dataclasses, ``Sequence``, ``tuple``,
@@ -99,7 +96,7 @@ class FrozenModel:
 
         if dataclasses.is_dataclass(target_type) and isinstance(value, dict):
             # target_type is a FrozenModel subclass; delegate to its from_dict.
-            return target_type.from_dict(value)  # type: ignore[union-attr]
+            return target_type.from_dict(value)
 
         if origin in (list, Sequence) and isinstance(value, list):
             item_type = args[0]
@@ -139,7 +136,7 @@ class FrozenModel:
         return json.dumps(self.to_dict(), indent=indent)
 
     @classmethod
-    def from_json(cls: type[T], json_str: str) -> T:
+    def from_json(cls, json_str: str) -> Self:
         """Deserializes a model from a JSON string.
 
         Args:
