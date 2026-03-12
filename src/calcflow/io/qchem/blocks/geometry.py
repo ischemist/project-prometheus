@@ -37,7 +37,7 @@ class GeometryParser:
         if "$molecule" not in line.lower() and "Standard Nuclear Orientation" not in line:
             return False
         if BLOCK_GEOMETRY not in state.parsed_blocks and INPUT_GEOM_START_PAT.search(line):
-            # We use a single 'parsed_geometry' flag for the input geometry
+            # We use BLOCK_GEOMETRY in parsed_blocks to track the input geometry
             return True
         # The final geometry is part of the main calculation, not a separate block to be parsed once
         # For now, let's assume we only parse the final geometry once.
