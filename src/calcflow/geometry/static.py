@@ -4,7 +4,7 @@ from functools import cached_property
 from pathlib import Path
 
 from calcflow.common.exceptions import ParsingError
-from calcflow.common.models import Atom
+from calcflow.common.models import Atom, FrozenModel
 from calcflow.constants.ptable import ELEMENT_DATA
 
 
@@ -24,7 +24,7 @@ def _parse_energy_from_comment(comment: str) -> float | None:
 
 
 @dataclass(frozen=True)
-class Geometry:
+class Geometry(FrozenModel):
     """
     an immutable, dataclass-based representation of a molecular geometry.
     the number of atoms and energy are derived properties, not stored state.
@@ -56,7 +56,7 @@ class Geometry:
         """creates a Geometry instance from an xyz file."""
         file_path = Path(file)
         if not file_path.is_file():
-            raise FileNotFoundError(f"xyz file not found: {file_path}")
+            raise ParsingError(f"xyz file not found: {file_path}")
 
         with file_path.open("r") as f:
             lines = f.readlines()

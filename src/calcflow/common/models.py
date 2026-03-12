@@ -74,10 +74,7 @@ class FrozenModel:
         """Recursively convert a raw dict/list value into the target Python type.
 
         Handles ``Optional[T]``, nested dataclasses, ``Sequence``, ``tuple``,
-        and ``Mapping``.  For ``Geometry`` — which is a plain frozen dataclass
-        that does not inherit ``FrozenModel`` — a dedicated conversion path is
-        used so that ``CalculationResult`` can store ``Geometry | None`` fields
-        without requiring ``Geometry`` to carry the full serialization protocol.
+        and ``Mapping``.
 
         Args:
             value: raw value, typically from ``json.loads``.
@@ -99,15 +96,6 @@ class FrozenModel:
         if (origin is Union or origin is UnionType) and type(None) in args:
             inner_type = next(t for t in args if t is not type(None))
             return FrozenModel._convert_value(value, inner_type)
-
-        # Geometry is a plain frozen dataclass (no FrozenModel) — handle it
-        # explicitly so CalculationResult.from_dict can reconstruct it.
-        # Import lazily to avoid a module-level circular dependency.
-        if isinstance(value, dict) and getattr(target_type, "__name__", None) == "Geometry":
-            from calcflow.geometry.static import Geometry
-
-            atoms = tuple(Atom.from_dict(a) for a in value.get("atoms", []))
-            return Geometry(comment=value.get("comment", ""), atoms=atoms)
 
         if dataclasses.is_dataclass(target_type) and isinstance(value, dict):
             # target_type is a FrozenModel subclass; delegate to its from_dict.

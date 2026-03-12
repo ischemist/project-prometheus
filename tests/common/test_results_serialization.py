@@ -481,6 +481,24 @@ class TestCalculationResultSerialization:
         assert result.termination_status == "NORMAL"
         assert result.final_energy == -75.313506
 
+    def test_from_dict_migrates_v1_geometry(self):
+        v1_data = {
+            "calcflow_version": "0.0.0",
+            "schema_version": 1,
+            "termination_status": "NORMAL",
+            "metadata": {"software_name": "ORCA"},
+            "input_geometry": [
+                {"symbol": "O", "x": 0.0, "y": 0.0, "z": 0.0},
+                {"symbol": "H", "x": 0.0, "y": 0.0, "z": 0.96},
+            ],
+        }
+
+        result = CalculationResult.from_dict(v1_data)
+
+        assert isinstance(result.input_geometry, Geometry)
+        assert result.input_geometry.num_atoms == 2
+        assert result.input_geometry.atoms[0].symbol == "O"
+
     def test_from_dict_logs_warning_on_old_schema(self, caplog):
         """migration from an older schema version emits a warning."""
         import logging
