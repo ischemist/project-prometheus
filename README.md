@@ -269,6 +269,19 @@ for pop in mulliken.populations:
     print(f"{pop.symbol}: {pop.transition_charge_e}")
 ```
 
+## CalcFlow Agent for opencode
+
+A purpose-built [opencode](https://opencode.ai) agent is included in this repo at [`calcflow.md`](./calcflow.md). It configures an AI assistant that knows how to parse quantum chemistry output files, build calculation inputs, and navigate the CalcFlow API — without ever reading files directly (all inspection goes through `calcflow` via the shell).
+
+Install it with a single command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ischemist/project-prometheus/master/calcflow.md \
+  -o ~/.config/opencode/agents/calcflow.md
+```
+
+Once installed, open opencode in any directory with `.out` files or `.xyz` geometries and the CalcFlow agent will be available.
+
 ## LLM & Programmatic Usage
 
 CalcFlow provides built-in API documentation for easy exploration and LLM-assisted workflows:
