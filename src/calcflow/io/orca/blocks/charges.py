@@ -46,7 +46,9 @@ class ChargesParser:
             return False
         if "MULLIKEN" not in line and "LOEWDIN" not in line:
             return False
-        return bool(MULLIKEN_START_PAT.search(line)) or bool(LOEWDIN_START_PAT.search(line))
+        if not state.parsed_mulliken and MULLIKEN_START_PAT.search(line):
+            return True
+        return not state.parsed_loewdin and bool(LOEWDIN_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """

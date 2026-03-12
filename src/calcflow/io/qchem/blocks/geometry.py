@@ -41,7 +41,7 @@ class GeometryParser:
             return True
         # The final geometry is part of the main calculation, not a separate block to be parsed once
         # For now, let's assume we only parse the final geometry once.
-        return state.final_geometry is None and STANDARD_GEOM_START_PAT.search(line) is not None
+        return state.final_geometry is None and bool(STANDARD_GEOM_START_PAT.search(line))
 
     def parse(self, iterator: PeekableIterator, start_line: str, state: ParseState) -> None:
         """Delegates to the appropriate parsing method based on the start line."""
