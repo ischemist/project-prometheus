@@ -443,7 +443,7 @@ def test_mom_scf_works_with_geometry(parsed_qchem_62_h2o_mom_sp_job2: Calculatio
     # But final_geometry should be present from Standard Nuclear Orientation
     assert parsed_qchem_62_h2o_mom_sp_job2.input_geometry is None
     assert parsed_qchem_62_h2o_mom_sp_job2.final_geometry is not None
-    assert len(parsed_qchem_62_h2o_mom_sp_job2.final_geometry) > 0
+    assert parsed_qchem_62_h2o_mom_sp_job2.final_geometry.num_atoms > 0
     assert parsed_qchem_62_h2o_mom_sp_job2.scf is not None
 
 

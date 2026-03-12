@@ -276,7 +276,7 @@ def test_multipole_parsed_alongside_geometry(parsed_qchem_62_h2o_sp_data: Calcul
     All should be present in final result.
     """
     assert parsed_qchem_62_h2o_sp_data.input_geometry is not None
-    assert len(parsed_qchem_62_h2o_sp_data.input_geometry) == 3  # H2O
+    assert parsed_qchem_62_h2o_sp_data.input_geometry.num_atoms == 3  # H2O
 
     assert parsed_qchem_62_h2o_sp_data.multipole is not None
 

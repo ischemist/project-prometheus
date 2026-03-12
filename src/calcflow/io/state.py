@@ -4,14 +4,12 @@ the parsing process. It is the mutable counterpart to the final, immutable
 CalculationResult model.
 """
 
-from collections.abc import Sequence
 from typing import Literal
 
 from calcflow.common.results import (
     AdcExcitedState,
     AdcGroundState,
     AdcResults,
-    Atom,
     AtomicCharges,
     CalculationMetadata,
     CalculationResult,
@@ -28,6 +26,7 @@ from calcflow.common.results import (
     TransitionDensityMatrix,
     UnrelaxedDensityMatrix,
 )
+from calcflow.geometry.static import Geometry
 
 
 class ParseState:
@@ -44,8 +43,8 @@ class ParseState:
 
         # --- Core Results ---
         self.termination_status: Literal["NORMAL", "ERROR", "UNKNOWN"] = "UNKNOWN"
-        self.input_geometry: Sequence[Atom] | None = None
-        self.final_geometry: Sequence[Atom] | None = None
+        self.input_geometry: Geometry | None = None
+        self.final_geometry: Geometry | None = None
         self.final_energy: float | None = None
         self.nuclear_repulsion_energy: float | None = None
 

@@ -2,7 +2,8 @@ import re
 from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
-from calcflow.common.results import Atom
+from calcflow.common.models import Atom
+from calcflow.geometry.static import Geometry
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -33,6 +34,6 @@ class GeometryParser:
         if not geometry:
             raise ParsingError("Geometry block found but no atoms parsed.")
 
-        state.input_geometry = tuple(geometry)
+        state.input_geometry = Geometry(comment="", atoms=tuple(geometry))
         state.parsed_geometry = True
         logger.debug(f"Parsed {len(geometry)} atoms.")

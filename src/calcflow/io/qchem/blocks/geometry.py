@@ -7,7 +7,8 @@ import re
 from collections.abc import Iterator
 
 from calcflow.common.exceptions import ParsingError
-from calcflow.common.results import Atom
+from calcflow.common.models import Atom
+from calcflow.geometry.static import Geometry
 from calcflow.io.state import ParseState
 from calcflow.utils import logger
 
@@ -74,7 +75,7 @@ class GeometryParser:
         if not atoms:
             raise ParsingError("$molecule block found but no atoms could be parsed.")
 
-        state.input_geometry = tuple(atoms)
+        state.input_geometry = Geometry(comment="", atoms=tuple(atoms))
         state.parsed_geometry = True  # Use the generic flag for the primary input geometry
         logger.debug(f"Parsed {len(atoms)} atoms from $molecule block.")
 
@@ -104,5 +105,5 @@ class GeometryParser:
         if not atoms:
             raise ParsingError("Standard orientation block found but no atoms could be parsed.")
 
-        state.final_geometry = tuple(atoms)
+        state.final_geometry = Geometry(comment="", atoms=tuple(atoms))
         logger.debug(f"Parsed {len(atoms)} atoms from standard orientation.")

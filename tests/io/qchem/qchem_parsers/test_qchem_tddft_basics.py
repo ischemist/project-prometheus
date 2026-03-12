@@ -97,22 +97,21 @@ class TestTDDFTGeometryBlock:
         """Contract test: verify geometry is parsed from TDDFT output (all variants)."""
         data = request.getfixturevalue(fixture_name)
         assert data.input_geometry is not None
-        assert isinstance(data.input_geometry, tuple)
-        assert len(data.input_geometry) > 0
+        assert data.input_geometry.num_atoms > 0
 
     @pytest.mark.regression
     @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_geometry_has_three_atoms(self, fixture_name: str, request):
         """Regression test: verify exactly 3 atoms in H2O geometry (all variants)."""
         data = request.getfixturevalue(fixture_name)
-        assert len(data.input_geometry) == EXPECTED_GEOMETRY_ATOMS
+        assert data.input_geometry.num_atoms == EXPECTED_GEOMETRY_ATOMS
 
     @pytest.mark.regression
     @pytest.mark.parametrize("fixture_name", FIXTURE_SPECS["tddft_excitations"])
     def test_geometry_atom_symbols(self, fixture_name: str, request):
         """Regression test: verify atom symbols are H, O, H (all variants)."""
         data = request.getfixturevalue(fixture_name)
-        symbols = [atom.symbol for atom in data.input_geometry]
+        symbols = [atom.symbol for atom in data.input_geometry.atoms]
         assert symbols == EXPECTED_GEOMETRY_SYMBOLS
 
     @pytest.mark.regression
@@ -137,7 +136,7 @@ class TestTDDFTGeometryBlock:
     ):
         """Regression test: verify exact geometry coordinates (all variants)."""
         data = request.getfixturevalue(fixture_name)
-        atom = data.input_geometry[atom_idx]
+        atom = data.input_geometry.atoms[atom_idx]
         assert atom.x == pytest.approx(expected_x, abs=COORD_TOL)
         assert atom.y == pytest.approx(expected_y, abs=COORD_TOL)
         assert atom.z == pytest.approx(expected_z, abs=COORD_TOL)
@@ -150,14 +149,14 @@ class TestTDDFTGeometryBlock:
     ):
         """Integration test: verify geometry parsed in both UKS and RKS TDDFT."""
         # Both should have identical geometry
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.input_geometry) == len(
-            parsed_qchem_62_h2o_rks_tddft_data.input_geometry
+        assert parsed_qchem_62_h2o_uks_tddft_data.input_geometry.num_atoms == (
+            parsed_qchem_62_h2o_rks_tddft_data.input_geometry.num_atoms
         )
 
         # Check coordinates match
         for uks_atom, rks_atom in zip(
-            parsed_qchem_62_h2o_uks_tddft_data.input_geometry,
-            parsed_qchem_62_h2o_rks_tddft_data.input_geometry,
+            parsed_qchem_62_h2o_uks_tddft_data.input_geometry.atoms,
+            parsed_qchem_62_h2o_rks_tddft_data.input_geometry.atoms,
             strict=True,
         ):
             assert uks_atom.x == pytest.approx(rks_atom.x, abs=COORD_TOL)
@@ -591,7 +590,7 @@ class TestTDDFTBlockIntegration:
         """Integration test: verify all major blocks are parsed in TDDFT (all variants)."""
         data = request.getfixturevalue(fixture_name)
         assert data.input_geometry is not None
-        assert len(data.input_geometry) > 0
+        assert data.input_geometry.num_atoms > 0
 
         assert data.scf is not None
         assert len(data.scf.iterations) > 0
@@ -615,7 +614,7 @@ class TestTDDFTBlockIntegration:
     def test_geometry_atoms_count_consistent_with_scf(self, parsed_qchem_62_h2o_uks_tddft_data: CalculationResult):
         """Integration test: verify geometry atom count is consistent."""
         # H2O should have 3 atoms - verify this matches what we expect
-        assert len(parsed_qchem_62_h2o_uks_tddft_data.input_geometry) == 3
+        assert parsed_qchem_62_h2o_uks_tddft_data.input_geometry.num_atoms == 3
 
         # SCF should also be for H2O system
         assert parsed_qchem_62_h2o_uks_tddft_data.scf is not None

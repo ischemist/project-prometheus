@@ -8,6 +8,7 @@ the final `calculationresult` object is assembled correctly.
 import pytest
 
 from calcflow.common.results import Atom, CalculationResult, ScfEnergyComponents, ScfResults
+from calcflow.geometry.static import Geometry
 
 GEOM_TOL = 1e-6
 ENERGY_TOL = 1e-8
@@ -40,10 +41,11 @@ def test_orca_sp_input_geometry_structure(parsed_orca_h2o_sp_data: CalculationRe
     """
     geom = parsed_orca_h2o_sp_data.input_geometry
     assert geom is not None
-    assert len(geom) == 3
-    assert all(isinstance(atom, Atom) for atom in geom)
+    assert isinstance(geom, Geometry)
+    assert geom.num_atoms == 3
+    assert all(isinstance(atom, Atom) for atom in geom.atoms)
 
-    symbols = [atom.symbol for atom in geom]
+    symbols = [atom.symbol for atom in geom.atoms]
     assert symbols == ["H", "O", "H"]
 
 
@@ -62,9 +64,9 @@ def test_orca_sp_input_geometry_values(parsed_orca_h2o_sp_data: CalculationResul
     parsed_geom = parsed_orca_h2o_sp_data.input_geometry
 
     # this is a bit verbose but avoids ambiguity with the two H atoms
-    h1 = parsed_geom[0]
-    o = parsed_geom[1]
-    h2 = parsed_geom[2]
+    h1 = parsed_geom.atoms[0]
+    o = parsed_geom.atoms[1]
+    h2 = parsed_geom.atoms[2]
 
     assert h1.symbol == "H"
     assert h1.x == pytest.approx(expected_coords["H"][0], abs=GEOM_TOL)
