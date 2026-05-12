@@ -29,7 +29,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.uv]
 # Delay newly uploaded artifacts to reduce exposure to malicious fresh releases.
-required-version = ">=0.5.0"
+required-version = ">=0.9.17"
 exclude-newer = "7 days"
 
 [tool.setuptools]
