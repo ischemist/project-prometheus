@@ -7,11 +7,11 @@ updates:
     cooldown:
       default-days: 7
     labels:
-      - "type/security"
+      - "scope/ci-cd"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     labels:
-      - "type/security"
+      - "scope/ci-cd"
